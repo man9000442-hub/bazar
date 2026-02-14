@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}بازارنا{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+<!-- ... (نفس الـ Head كما هو) ... -->
+
+    <style>
+        /* 1. نظام الألوان الجديد */
+        :root {
+            --primary-gold: #D4AF37;       /* ذهبي */
+            --bg-beige: #FAF8F1;          /* بيج فاتح جداً للخلفية */
+            --nescafe: #C6A664;           /* لون النسكافيه */
+            --text-coffee: #4B3621;       /* بني غامق للنصوص */
+            --white: #FFFFFF;
+        }
+
+        body { 
+            padding-bottom: 70px; 
+            background-color: var(--bg-beige); 
+            color: var(--text-coffee);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* خط نظيف */
+        }
+
+        /* 2. تحسين البطاقات (Cards) */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15); /* ظل ذهبي خفيف */
+        }
+
+        /* 3. شريط التنقل السفلي (Bottom Nav) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: var(--white);
+            border-top: 1px solid #eee;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+            z-index: 1000;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            border-radius: 20px 20px 0 0; /* زوايا دائرية من الأعلى */
+        }
+
+        .nav-item { 
+            text-align: center; 
+            color: #999; 
+            text-decoration: none; 
+            font-size: 11px; 
+            transition: 0.3s;
+        }
+
+        .nav-item i { 
+            display: block; 
+            font-size: 22px; 
+            margin-bottom: 4px; 
+        }
+
+        .nav-item.active { 
+            color: var(--primary-gold); 
+            transform: translateY(-2px); /* حركة بسيطة للأعلى عند التفعيل */
+        }
+
+        /* 4. تحسين الأزرار */
+        .btn-gold {
+            background-color: var(--primary-gold);
+            color: white;
+            border: none;
+        }
+        .btn-gold:hover {
+            background-color: #bfa13a;
+            color: white;
+        }
+        
+        .text-gold { color: var(--primary-gold) !important; }
+        
+    </style>
+
+    <!-- ... (داخل الـ Body) ... -->
+    {% block content %}{% endblock %}
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item active">
+            <i class="fas fa-home"></i> الرئيسية
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-search"></i> البحث
+        </a>
+        <a href="http://127.0.0.1:8000/cart/" class="nav-item position-relative">
+            <i class="fas fa-shopping-bag"></i> السلة
+            <!-- Badge -->
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 8px;">
+                2
+            </span>
+        </a>
+        <a href="{% url 'profile' %}" class="nav-item">
+            <i class="fas fa-user-circle"></i> حسابي
+        </a>
+    </nav>
+
+<!-- ... (باقي السكربتات كما هي) ... -->
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

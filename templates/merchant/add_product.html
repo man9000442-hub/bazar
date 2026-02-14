@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mb-5">
+    <div class="d-flex align-items-center mb-4 pt-2">
+        <a href="{% url 'merchant_dashboard' %}" class="text-decoration-none text-muted me-3">
+            <i class="fas fa-arrow-right fs-5"></i>
+        </a>
+        <h5 class="m-0 fw-bold" style="color: var(--text-coffee);">إضافة منتج جديد 📦</h5>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="card p-4 shadow-sm border-0">
+        {% csrf_token %}
+
+        <!-- البيانات الأساسية -->
+        <h6 class="fw-bold text-gold mb-3">1. تفاصيل المنتج</h6>
+        
+        <div class="mb-3">
+            <label class="form-label small text-muted">اسم المنتج</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+
+        <div class="row">
+            <div class="col-6 mb-3">
+                <label class="form-label small text-muted">السعر (ج.م)</label>
+                <input type="number" name="price" class="form-control" step="0.5" required>
+            </div>
+            <div class="col-6 mb-3">
+                <label class="form-label small text-muted">القسم</label>
+                <select name="category" class="form-select" required>
+                    <option value="">اختر القسم...</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small text-muted">وصف المنتج</label>
+            <textarea name="description" class="form-control" rows="3" required></textarea>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label small text-muted">الصورة الرئيسية</label>
+            <input type="file" name="main_image" class="form-control" accept="image/*" required>
+        </div>
+
+        <!-- المقاسات والألوان -->
+        <h6 class="fw-bold text-gold mb-3 d-flex justify-content-between">
+            <span>2. المخزون (الألوان والمقاسات)</span>
+            <button type="button" class="btn btn-sm btn-outline-warning" onclick="addSizeRow()">
+                <i class="fas fa-plus"></i> إضافة سطر
+            </button>
+        </h6>
+
+        <div id="sizes-container">
+            <!-- السطر الأول (إجباري) -->
+            <div class="row g-2 mb-2 size-row">
+                <div class="col-4">
+                    <input type="text" name="sizes[]" class="form-control form-control-sm" placeholder="المقاس (XL)" required>
+                </div>
+                <div class="col-4">
+                    <input type="text" name="colors[]" class="form-control form-control-sm" placeholder="اللون (أحمر)" required>
+                </div>
+                <div class="col-3">
+                    <input type="number" name="quantities[]" class="form-control form-control-sm" placeholder="الكمية" required>
+                </div>
+                <div class="col-1 text-center">
+                    <!-- زر الحذف (مخفي للسطر الأول) -->
+                </div>
+            </div>
+        </div>
+        <p class="form-text text-muted small mb-4">اضغط "إضافة سطر" لإضافة المزيد من الألوان والمقاسات.</p>
+
+        <!-- صور المعرض -->
+        <h6 class="fw-bold text-gold mb-3">3. صور إضافية (اختياري)</h6>
+        <div class="mb-4">
+            <input type="file" name="gallery_images" class="form-control" multiple accept="image/*">
+            <div class="form-text">يمكنك اختيار أكثر من صورة مرة واحدة.</div>
+        </div>
+
+        <button type="submit" class="btn btn-gold w-100 fw-bold py-2 shadow-sm">حفظ المنتج</button>
+    </form>
+</div>
+
+<!-- JavaScript لإضافة السطور ديناميكياً -->
+<script>
+function addSizeRow() {
+    const container = document.getElementById('sizes-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'row g-2 mb-2 size-row';
+    newRow.innerHTML = `
+        <div class="col-4">
+            <input type="text" name="sizes[]" class="form-control form-control-sm" placeholder="المقاس">
+        </div>
+        <div class="col-4">
+            <input type="text" name="colors[]" class="form-control form-control-sm" placeholder="اللون">
+        </div>
+        <div class="col-3">
+            <input type="number" name="quantities[]" class="form-control form-control-sm" placeholder="الكمية">
+        </div>
+        <div class="col-1 text-center">
+            <button type="button" class="btn btn-sm text-danger p-0 mt-1" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+</script>
+{% endblock %}

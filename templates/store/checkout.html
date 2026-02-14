@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-center mb-4 pt-2">
+    <a href="{% url 'cart_view' %}" class="text-decoration-none text-muted me-3">
+        <i class="fas fa-arrow-right fs-5"></i>
+    </a>
+    <h5 class="m-0 fw-bold" style="color: var(--text-coffee);">تأكيد الطلب 📝</h5>
+</div>
+
+<form method="POST">
+    {% csrf_token %}
+    
+    <div class="row">
+        <!-- قسم العنوان (Address Section) -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h6 class="fw-bold m-0" style="color: var(--text-coffee);">
+                        <i class="fas fa-map-marker-alt text-gold me-2"></i>عنوان التوصيل
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- رقم الهاتف -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">رقم الهاتف للاستلام</label>
+                        <input type="tel" name="phone" class="form-control" value="{{ request.user.phone_primary }}" required>
+                    </div>
+                    
+                    <!-- المحافظة (Dropdown) -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">المحافظة / المدينة</label>
+                        <select name="city" id="city-select" class="form-select" onchange="updateShipping()" required>
+                            <option value="">اختر المحافظة...</option>
+                            {% for gov in governorates %}
+                            <option value="{{ gov.id }}">{{ gov.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text text-gold small" id="shipping-loading" style="display: none;">
+                            جاري حساب تكلفة الشحن... <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- العنوان التفصيلي -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">العنوان بالتفصيل (الشارع، رقم العمارة)</label>
+                        <textarea name="address" class="form-control" rows="2" placeholder="مثال: شارع التحرير، عمارة 5، شقة 10" required></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ملخص الطلب (Order Summary) -->
+        <div class="col-12 mb-5 pb-5"> <!-- هوامش سفلية عشان الزر العائم -->
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3" style="color: var(--text-coffee);">ملخص الفاتورة</h6>
+                    
+                    <!-- إجمالي المنتجات -->
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">مجموع المنتجات</span>
+                        <span class="fw-bold">{{ order.total_products_price }} ج.م</span>
+                    </div>
+                    
+                    <!-- مصاريف الشحن (ديناميكي) -->
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">مصاريف الشحن</span>
+                        <span id="shipping-cost" class="fw-bold text-dark">-- ج.م</span>
+                    </div>
+
+                    <!-- رسوم الخدمة -->
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">رسوم الخدمة</span>
+                        <span>{{ order.platform_fees }} ج.م</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- الإجمالي الكلي (ديناميكي) -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-coffee">الإجمالي الكلي</span>
+                        <span id="final-total" class="fw-bold text-gold fs-5">-- ج.م</span>
+                    </div>
+                    
+                    <p class="text-muted small mt-2 mb-0">
+                        * سيتم الدفع عند الاستلام (COD).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- زر التأكيد العائم (Fixed Bottom Button) -->
+    <div class="fixed-bottom bg-white p-3 shadow-lg rounded-top-4" 
+         style="bottom: 70px; z-index: 990; border-top: 1px solid #eee;">
+        
+        <button type="submit" class="btn btn-gold w-100 py-2 fw-bold shadow-sm rounded-pill" id="confirm-btn" disabled>
+            تأكيد الطلب الآن (دفع عند الاستلام)
+        </button>
+        <div class="text-center mt-2 small text-muted" id="select-city-msg">
+            يرجى اختيار المحافظة لإكمال الطلب
+        </div>
+    </div>
+</form>
+
+<!-- JavaScript لحساب الشحن تلقائياً -->
+<script>
+function updateShipping() {
+    const govId = document.getElementById('city-select').value;
+    const shippingEl = document.getElementById('shipping-cost');
+    const totalEl = document.getElementById('final-total');
+    const loadingEl = document.getElementById('shipping-loading');
+    const confirmBtn = document.getElementById('confirm-btn');
+    const msgEl = document.getElementById('select-city-msg');
+
+    // إذا لم يتم اختيار محافظة
+    if (!govId) {
+        shippingEl.innerText = "-- ج.م";
+        totalEl.innerText = "-- ج.م";
+        confirmBtn.disabled = true;
+        msgEl.style.display = 'block';
+        return;
+    }
+
+    // إظهار اللودينج
+    loadingEl.style.display = 'block';
+    shippingEl.innerText = "...";
+    totalEl.innerText = "...";
+    confirmBtn.disabled = true; // تعطيل الزر حتى ينتهي الحساب
+
+    // استدعاء API الباك إند
+    fetch(`/api/calc-shipping/?gov_id=${govId}`)
+        .then(response => {
+            if (!response.ok) { throw new Error('Network response was not ok'); }
+            return response.json();
+        })
+        .then(data => {
+            // تحديث الأرقام في الصفحة
+            shippingEl.innerText = data.shipping.toFixed(2) + " ج.م";
+            totalEl.innerText = data.total.toFixed(2) + " ج.م";
+            
+            // تفعيل زر التأكيد وإخفاء اللودينج
+            loadingEl.style.display = 'none';
+            confirmBtn.disabled = false;
+            msgEl.style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error fetching shipping cost:', error);
+            shippingEl.innerText = "خطأ";
+            totalEl.innerText = "خطأ";
+            loadingEl.style.display = 'none';
+            alert("حدث خطأ أثناء حساب الشحن. يرجى المحاولة مرة أخرى.");
+        });
+}
+</script>
+
+{% endblock %}

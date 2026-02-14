@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mb-5">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4 pt-2">
+        <a href="{% url 'merchant_orders' %}" class="text-decoration-none text-muted me-3">
+            <i class="fas fa-arrow-right fs-5"></i>
+        </a>
+        <div>
+            <h5 class="m-0 fw-bold" style="color: var(--text-coffee);">تفاصيل الطلب #{{ order.order_id }}</h5>
+            <span class="badge {% if order.status == 'DELIVERED' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                {{ order.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- بيانات العميل (للشحن) -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="fw-bold m-0"><i class="fas fa-user text-gold me-2"></i> بيانات العميل</h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-1"><strong>الاسم:</strong> {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
+            <p class="mb-1"><strong>الهاتف:</strong> <a href="tel:{{ order.shipping_phone }}" class="text-decoration-none">{{ order.shipping_phone }}</a></p>
+            <p class="mb-0"><strong>العنوان:</strong> {{ order.shipping_address }}</p>
+        </div>
+    </div>
+
+    <!-- المنتجات المطلوبة -->
+    <h6 class="fw-bold mb-3" style="color: var(--text-coffee);">المنتجات المطلوبة منك</h6>
+    {% for item in items %}
+    <div class="card border-0 shadow-sm mb-2">
+        <div class="card-body p-3 d-flex align-items-center">
+            <img src="{{ item.product_size.product.image.url }}" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+            <div>
+                <h6 class="m-0 fw-bold small">{{ item.product_size.product.name }}</h6>
+                <p class="m-0 text-muted small">
+                    {{ item.product_size.size_label }} | {{ item.product_size.color_label }} 
+                    <span class="text-dark fw-bold ms-2">x {{ item.quantity }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- أزرار الإجراءات -->
+    <div class="fixed-bottom bg-white p-3 shadow-lg border-top" style="bottom: 0;">
+        <div class="d-flex gap-2">
+            <a href="https://wa.me/20{{ order.shipping_phone|slice:'1:' }}" target="_blank" class="btn btn-success flex-grow-1">
+                <i class="fab fa-whatsapp"></i> تواصل مع العميل
+            </a>
+            <!-- زر تغيير الحالة (يمكن تفعيله لاحقاً) -->
+            <button class="btn btn-gold flex-grow-1" disabled>تحديث الحالة</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- 1. Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 pt-2">
+    <h5 class="m-0 fw-bold" style="color: var(--text-coffee);">👋 أهلاً بك في بازارنا</h5>
+    <i class="fas fa-bell text-gold fs-4"></i>
+</div>
+
+<!-- 2. Banner Slider -->
+<div class="card text-white mb-4 p-4 rounded-4 shadow-sm" 
+     style="background: linear-gradient(45deg, var(--primary-gold), var(--nescafe)); border: none;">
+    <h2 class="fw-bold">عروض الصيف</h2>
+    <p class="mb-3 opacity-75">خصومات تصل إلى 50% على الملابس</p>
+    <button class="btn btn-light text-gold fw-bold rounded-pill px-4">تسوق الآن</button>
+</div>
+
+<!-- 3. Categories (ديناميكي + فلتر نشط) -->
+<div class="d-flex overflow-auto mb-4 pb-2" style="gap: 15px;">
+    
+    <!-- زر "الكل" -->
+    <a href="{% url 'home' %}" class="text-decoration-none text-dark text-center">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-sm" 
+             style="width: 60px; height: 60px; 
+                    background-color: {% if not selected_category %}var(--primary-gold){% else %}white{% endif %}; 
+                    border: 2px solid var(--primary-gold);">
+            <i class="fas fa-th-large {% if not selected_category %}text-white{% else %}text-gold{% endif %} fs-4"></i>
+        </div>
+        <span style="font-size: 12px; font-weight: bold;">الكل</span>
+    </a>
+
+    <!-- الأقسام -->
+    {% for category in categories %}
+    <a href="{% url 'home' %}?category={{ category.id }}" class="text-decoration-none text-dark text-center">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 shadow-sm" 
+             style="width: 60px; height: 60px; 
+                    background-color: {% if selected_category == category.id %}var(--primary-gold){% else %}white{% endif %}; 
+                    border: {% if selected_category == category.id %}2px solid var(--primary-gold){% else %}1px solid #eee{% endif %};">
+            
+            {% if category.image %}
+                <img src="{{ category.image.url }}" class="rounded-circle" 
+                     style="width: 100%; height: 100%; object-fit: cover; opacity: {% if selected_category == category.id %}0.8{% else %}1{% endif %};">
+            {% else %}
+                <i class="fas fa-box {% if selected_category == category.id %}text-white{% else %}text-muted{% endif %} fs-4"></i>
+            {% endif %}
+        </div>
+        <span style="font-size: 12px; {% if selected_category == category.id %}font-weight: bold; color: var(--primary-gold);{% endif %}">
+            {{ category.name }}
+        </span>
+    </a>
+    {% endfor %}
+    
+</div>
+
+<!-- 4. Products Grid -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="fw-bold m-0" style="color: var(--text-coffee);">
+        {% if selected_category %}نتائج الفلتر{% else %}وصل حديثاً ✨{% endif %}
+    </h6>
+    <a href="{% url 'home' %}" class="text-decoration-none text-gold" style="font-size: 12px;">عرض الكل</a>
+</div>
+
+<div class="row g-3">
+    {% for product in products %}
+    <div class="col-6 col-md-4">
+        <!-- الرابط لكامل الكارت لسهولة الضغط -->
+        <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none text-dark">
+            <div class="card h-100 border-0 shadow-sm hover-up">
+                <!-- صورة المنتج -->
+                <div style="position: relative;">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top rounded-top-3" alt="{{ product.name }}" style="height: 160px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light text-muted d-flex align-items-center justify-content-center rounded-top-3" style="height: 160px;">
+                            <i class="fas fa-camera fa-2x text-secondary opacity-25"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- زر المفضلة (لا يعمل حالياً) -->
+                    <button class="btn btn-light btn-sm rounded-circle position-absolute top-0 end-0 m-2 shadow-sm" style="width: 30px; height: 30px; padding: 0;">
+                        <i class="far fa-heart text-danger"></i>
+                    </button>
+                </div>
+                
+                <div class="card-body p-2 d-flex flex-column">
+                    <h6 class="card-title text-truncate mb-1" style="font-size: 13px; font-weight: bold; color: var(--text-coffee);">
+                        {{ product.name }}
+                    </h6>
+                    
+                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                        <span class="text-gold fw-bold" style="font-size: 14px;">{{ product.base_price }} ج.م</span>
+                        
+                        <!-- زر إضافة سريع -->
+                        <span class="btn btn-gold btn-sm rounded-3 shadow-sm px-2 py-1">
+                            <i class="fas fa-plus text-white"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <i class="fas fa-box-open fa-3x text-muted mb-3 opacity-50"></i>
+        <p class="text-muted">لا توجد منتجات في هذا القسم.</p>
+        <a href="{% url 'home' %}" class="btn btn-outline-warning btn-sm mt-3 rounded-pill">تصفح كل المنتجات</a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- CSS لتحسين تأثير التحويم (Hover) -->
+<style>
+    .hover-up { transition: transform 0.2s; }
+    .hover-up:hover { transform: translateY(-3px); }
+</style>
+
+{% endblock %}
