@@ -2,112 +2,139 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}بازارنا{% endblock %}</title>
+    <!-- هذا السطر هو الأهم لجعل الموقع يعمل كموبايل أبليكيشن -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Elbazaar{% endblock %}</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (خط "تجوال" أو "كايرو" للعربي) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     
-<!-- ... (نفس الـ Head كما هو) ... -->
-
     <style>
-        /* 1. نظام الألوان الجديد */
+        /* 1. ألوان اللوجو الجديد */
         :root {
-            --primary-gold: #D4AF37;       /* ذهبي */
-            --bg-beige: #FAF8F1;          /* بيج فاتح جداً للخلفية */
-            --nescafe: #C6A664;           /* لون النسكافيه */
-            --text-coffee: #4B3621;       /* بني غامق للنصوص */
-            --white: #FFFFFF;
+            --primary-blue: #007bff; /* أزرق اللوجو */
+            --accent-yellow: #ffc107; /* أصفر النجوم والعربة */
+            --bg-light: #f5f7fa;      /* خلفية رمادية فاتحة جداً */
+            --text-dark: #2c3e50;
+            --white: #ffffff;
         }
 
         body { 
-            padding-bottom: 70px; 
-            background-color: var(--bg-beige); 
-            color: var(--text-coffee);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* خط نظيف */
+            padding-bottom: 80px; /* مسافة للشريط السفلي */
+            background-color: var(--bg-light); 
+            font-family: 'Tajawal', sans-serif;
+            color: var(--text-dark);
+            -webkit-tap-highlight-color: transparent; /* إزالة الوميض عند اللمس */
         }
 
-        /* 2. تحسين البطاقات (Cards) */
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15); /* ظل ذهبي خفيف */
-        }
-
-        /* 3. شريط التنقل السفلي (Bottom Nav) */
+        /* 2. شريط التنقل السفلي (Bottom Nav) بتصميم عصري */
         .bottom-nav {
             position: fixed;
             bottom: 0;
-            width: 100%;
+            left: 0;
+            right: 0;
             background: var(--white);
-            border-top: 1px solid #eee;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
             z-index: 1000;
             display: flex;
             justify-content: space-around;
-            padding: 12px 0;
-            border-radius: 20px 20px 0 0; /* زوايا دائرية من الأعلى */
+            padding: 10px 0;
+            border-radius: 20px 20px 0 0;
         }
 
         .nav-item { 
             text-align: center; 
-            color: #999; 
+            color: #9ca3af; 
             text-decoration: none; 
-            font-size: 11px; 
+            font-size: 10px; 
+            font-weight: 500;
             transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .nav-item i { 
-            display: block; 
-            font-size: 22px; 
+            font-size: 20px; 
             margin-bottom: 4px; 
+            transition: 0.3s;
         }
 
         .nav-item.active { 
-            color: var(--primary-gold); 
-            transform: translateY(-2px); /* حركة بسيطة للأعلى عند التفعيل */
+            color: var(--primary-blue); 
+        }
+        
+        .nav-item.active i {
+            transform: translateY(-3px);
+            color: var(--primary-blue);
         }
 
-        /* 4. تحسين الأزرار */
-        .btn-gold {
-            background-color: var(--primary-gold);
+        /* تحسين شكل البطاقات */
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        /* تحسين الأزرار */
+        .btn-primary-app {
+            background-color: var(--primary-blue);
             color: white;
             border: none;
+            border-radius: 50px;
         }
-        .btn-gold:hover {
-            background-color: #bfa13a;
-            color: white;
+        .btn-yellow-app {
+            background-color: var(--accent-yellow);
+            color: #333;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
         }
         
-        .text-gold { color: var(--primary-gold) !important; }
-        
+        /* إخفاء شريط التمرير (Scrollbar) */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
     </style>
+</head>
+<body>
 
-    <!-- ... (داخل الـ Body) ... -->
-    {% block content %}{% endblock %}
+    <!-- المحتوى المتغير -->
+    <div class="container-fluid px-0"> <!-- container-fluid ليأخذ كامل العرض -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} m-2 rounded-3 small">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
     <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
-        <a href="/" class="nav-item active">
-            <i class="fas fa-home"></i> الرئيسية
+        <a href="{% url 'home' %}" class="nav-item active">
+            <i class="fas fa-home-alt"></i> الرئيسية
         </a>
-        <a href="#" class="nav-item">
-            <i class="fas fa-search"></i> البحث
+        <a href="{% url 'categories_page' %}" class="nav-item">
+            <i class="fas fa-th-large"></i> الأقسام
         </a>
-        <a href="http://127.0.0.1:8000/cart/" class="nav-item position-relative">
-            <i class="fas fa-shopping-bag"></i> السلة
+        <a href="{% url 'cart_view' %}" class="nav-item position-relative">
+            <i class="fas fa-shopping-cart"></i> السلة
             <!-- Badge -->
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 8px;">
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 8px; left: 60% !important;">
                 2
             </span>
         </a>
         <a href="{% url 'profile' %}" class="nav-item">
-            <i class="fas fa-user-circle"></i> حسابي
+            <i class="fas fa-user"></i> حسابي
         </a>
     </nav>
 
-<!-- ... (باقي السكربتات كما هي) ... -->
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

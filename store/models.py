@@ -203,3 +203,15 @@ class OrderItem(models.Model):
         return self.quantity * price
     
 
+
+class PaymobTransaction(models.Model):
+    merchant = models.ForeignKey(MerchantProfile, on_delete=models.CASCADE)
+    paymob_order_id = models.CharField(max_length=50, unique=True) # رقم الطلب عند Paymob
+    amount_cents = models.IntegerField() # المبلغ بالقروش
+    is_paid = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.merchant} - {self.paymob_order_id}"
+    
+

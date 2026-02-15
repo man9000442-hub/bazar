@@ -9,4 +9,6 @@ urlpatterns = [
     path('shipping/', views.shipping_settings, name='merchant_shipping'),
     path('orders/<str:order_id>/', views.merchant_order_detail, name='merchant_order_detail'),
     path('wallet/', views.merchant_wallet, name='merchant_wallet'),
+    path('deposit/paymob/', views.paymob_deposit, name='paymob_deposit'),
+    path('deposit/callback/', views.paymob_callback, name='paymob_callback'),
 ]

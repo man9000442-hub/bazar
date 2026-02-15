@@ -3,107 +3,73 @@
 {% block content %}
 
 <!-- Header -->
-<div class="d-flex align-items-center mb-4 pt-2">
-    <a href="{% url 'cart_view' %}" class="text-decoration-none text-muted me-3">
-        <i class="fas fa-arrow-right fs-5"></i>
-    </a>
-    <h5 class="m-0 fw-bold" style="color: var(--text-coffee);">تأكيد الطلب 📝</h5>
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
+    <a href="javascript:history.back()" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
+    <h5 class="m-0 fw-bold">الشحن والدفع</h5>
 </div>
 
-<form method="POST">
-    {% csrf_token %}
-    
-    <div class="row">
-        <!-- قسم العنوان (Address Section) -->
-        <div class="col-12 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 pt-3">
-                    <h6 class="fw-bold m-0" style="color: var(--text-coffee);">
-                        <i class="fas fa-map-marker-alt text-gold me-2"></i>عنوان التوصيل
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <!-- رقم الهاتف -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">رقم الهاتف للاستلام</label>
-                        <input type="tel" name="phone" class="form-control" value="{{ request.user.phone_primary }}" required>
-                    </div>
-                    
-                    <!-- المحافظة (Dropdown) -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">المحافظة / المدينة</label>
-                        <select name="city" id="city-select" class="form-select" onchange="updateShipping()" required>
-                            <option value="">اختر المحافظة...</option>
-                            {% for gov in governorates %}
-                            <option value="{{ gov.id }}">{{ gov.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text text-gold small" id="shipping-loading" style="display: none;">
-                            جاري حساب تكلفة الشحن... <i class="fas fa-spinner fa-spin"></i>
-                        </div>
-                    </div>
-                    
-                    <!-- العنوان التفصيلي -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">العنوان بالتفصيل (الشارع، رقم العمارة)</label>
-                        <textarea name="address" class="form-control" rows="2" placeholder="مثال: شارع التحرير، عمارة 5، شقة 10" required></textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ملخص الطلب (Order Summary) -->
-        <div class="col-12 mb-5 pb-5"> <!-- هوامش سفلية عشان الزر العائم -->
-            <div class="card border-0 shadow-sm bg-light">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3" style="color: var(--text-coffee);">ملخص الفاتورة</h6>
-                    
-                    <!-- إجمالي المنتجات -->
-                    <div class="d-flex justify-content-between mb-2 small">
-                        <span class="text-muted">مجموع المنتجات</span>
-                        <span class="fw-bold">{{ order.total_products_price }} ج.م</span>
-                    </div>
-                    
-                    <!-- مصاريف الشحن (ديناميكي) -->
-                    <div class="d-flex justify-content-between mb-2 small">
-                        <span class="text-muted">مصاريف الشحن</span>
-                        <span id="shipping-cost" class="fw-bold text-dark">-- ج.م</span>
-                    </div>
-
-                    <!-- رسوم الخدمة -->
-                    <div class="d-flex justify-content-between mb-2 small">
-                        <span class="text-muted">رسوم الخدمة</span>
-                        <span>{{ order.platform_fees }} ج.م</span>
-                    </div>
-                    
-                    <hr>
-                    
-                    <!-- الإجمالي الكلي (ديناميكي) -->
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-coffee">الإجمالي الكلي</span>
-                        <span id="final-total" class="fw-bold text-gold fs-5">-- ج.م</span>
-                    </div>
-                    
-                    <p class="text-muted small mt-2 mb-0">
-                        * سيتم الدفع عند الاستلام (COD).
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- زر التأكيد العائم (Fixed Bottom Button) -->
-    <div class="fixed-bottom bg-white p-3 shadow-lg rounded-top-4" 
-         style="bottom: 70px; z-index: 990; border-top: 1px solid #eee;">
+<div class="container pb-5 mb-5">
+    <form method="POST">
+        {% csrf_token %}
         
-        <button type="submit" class="btn btn-gold w-100 py-2 fw-bold shadow-sm rounded-pill" id="confirm-btn" disabled>
-            تأكيد الطلب الآن (دفع عند الاستلام)
-        </button>
-        <div class="text-center mt-2 small text-muted" id="select-city-msg">
-            يرجى اختيار المحافظة لإكمال الطلب
+        <!-- 1. عنوان التوصيل -->
+        <div class="card border-0 shadow-sm mb-3 p-3">
+            <h6 class="fw-bold mb-3 d-flex align-items-center">
+                <div class="bg-light rounded-circle p-2 me-2"><i class="fas fa-map-marker-alt text-primary"></i></div>
+                عنوان التوصيل
+            </h6>
+            
+            <div class="mb-3">
+                <label class="form-label text-muted small">المحافظة</label>
+                <select name="city" id="city-select" class="form-select bg-light border-0" onchange="updateShipping()" required>
+                    <option value="">اختر المحافظة...</option>
+                    {% for gov in governorates %}
+                    <option value="{{ gov.id }}">{{ gov.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label text-muted small">العنوان التفصيلي</label>
+                <textarea name="address" class="form-control bg-light border-0" rows="2" placeholder="اسم الشارع، رقم العمارة..." required></textarea>
+            </div>
+
+            <div class="mb-0">
+                <label class="form-label text-muted small">رقم الهاتف</label>
+                <input type="tel" name="phone" class="form-control bg-light border-0" value="{{ request.user.phone_primary }}" required>
+            </div>
         </div>
-    </div>
-</form>
+
+        <!-- 2. ملخص الدفع -->
+        <div class="card border-0 shadow-sm mb-3 p-3 bg-white">
+            <h6 class="fw-bold mb-3">ملخص الدفع</h6>
+            
+            <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-muted">قيمة المنتجات</span>
+                <span class="fw-bold">{{ order.total_products_price }} ج.م</span>
+            </div>
+            
+            <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-muted">رسوم الشحن</span>
+                <span id="shipping-cost" class="fw-bold text-dark">-- ج.م</span>
+            </div>
+            
+            <hr class="my-2">
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold">الإجمالي الكلي</span>
+                <span id="final-total" class="fw-bold text-primary fs-5">-- ج.م</span>
+            </div>
+        </div>
+
+        <!-- زر التأكيد العائم -->
+        <div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 70px;">
+            <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold shadow-sm" id="confirm-btn" disabled>
+                تأكيد الطلب (دفع عند الاستلام)
+            </button>
+        </div>
+    </form>
+</div>
 
 <!-- JavaScript لحساب الشحن تلقائياً -->
 <script>
@@ -155,5 +121,7 @@ function updateShipping() {
         });
 }
 </script>
+
+
 
 {% endblock %}

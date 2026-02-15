@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow border-0 p-4">
+        <h4 class="fw-bold mb-3" style="color: var(--text-coffee);">شحن رصيد (أونلاين) 💳</h4>
+        <p class="text-muted">اشحن محفظتك فوراً باستخدام الفيزا أو المحفظة الإلكترونية.</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="form-label fw-bold">المبلغ المراد شحنه (ج.م)</label>
+                <input type="number" name="amount" class="form-control form-control-lg" placeholder="مثلاً: 500" required>
+            </div>
+
+            <!-- يمكن إضافة خيار (فيزا / محفظة) لاحقاً -->
+            
+            <button type="submit" class="btn btn-gold w-100 py-3 fw-bold rounded-pill shadow-sm">
+                الانتقال لصفحة الدفع الآمن <i class="fas fa-lock ms-2"></i>
+            </button>
+        </form>
+        
+        <div class="text-center mt-3">
+            <img src="https://accept.paymob.com/public/images/accept_logo.png" width="100" style="opacity: 0.7;">
+        </div>
+    </div>
+</div>
+{% endblock %}

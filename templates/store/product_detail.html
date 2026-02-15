@@ -2,90 +2,127 @@
 
 {% block content %}
 
-<!-- زر الرجوع -->
-<div class="mb-3">
-    <a href="{% url 'home' %}" class="text-decoration-none text-muted">
-        <i class="fas fa-arrow-right"></i> رجوع
+<!-- زر الرجوع ومشاركة (في الأعلى) -->
+<div class="d-flex justify-content-between align-items-center p-3 sticky-top bg-white border-bottom shadow-sm">
+    <a href="javascript:history.back()" class="text-dark">
+        <i class="fas fa-arrow-right fs-5"></i>
     </a>
+    <div class="d-flex gap-3">
+        <i class="far fa-heart fs-5 text-muted"></i>
+        <i class="fas fa-share-alt fs-5 text-muted"></i>
+    </div>
 </div>
 
-<div class="card border-0 shadow-sm overflow-hidden mb-4">
-    <!-- سلايدر الصور (Bootstrap Carousel) -->
-    <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
-        <div class="carousel-inner">
-            <!-- الصورة الرئيسية -->
-            <div class="carousel-item active">
-                {% if product.image %}
-                <img src="{{ product.image.url }}" class="d-block w-100" style="height: 300px; object-fit: cover;">
-                {% else %}
-                <div class="d-flex align-items-center justify-content-center bg-light" style="height: 300px;">لا صورة</div>
-                {% endif %}
-            </div>
-            
-            <!-- الصور الإضافية -->
-            {% for img in product.images.all %}
-            <div class="carousel-item">
-                <img src="{{ img.image.url }}" class="d-block w-100" style="height: 300px; object-fit: cover;">
-            </div>
-            {% endfor %}
+<!-- صور المنتج (سلايدر كامل العرض) -->
+<div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-inner">
+        <!-- الصورة الرئيسية -->
+        <div class="carousel-item active">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" class="d-block w-100" style="height: 350px; object-fit: cover;">
+            {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 350px;">
+                    <i class="fas fa-camera fa-3x text-muted opacity-25"></i>
+                </div>
+            {% endif %}
         </div>
         
-        <!-- أزرار التنقل (تظهر فقط لو فيه أكثر من صورة) -->
-        {% if product.images.exists %}
-        <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon bg-dark rounded-circle p-2" aria-hidden="true"></span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon bg-dark rounded-circle p-2" aria-hidden="true"></span>
-        </button>
+        <!-- الصور الإضافية -->
+        {% for img in product.images.all %}
+        <div class="carousel-item">
+            <img src="{{ img.image.url }}" class="d-block w-100" style="height: 350px; object-fit: cover;">
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- مؤشرات السلايدر -->
+    {% if product.images.exists %}
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active"></button>
+        {% for img in product.images.all %}
+        <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter }}"></button>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- تفاصيل المنتج -->
+<div class="container bg-white rounded-top-4 p-4 position-relative" style="margin-top: -20px; z-index: 10;">
+    
+    <!-- القسم والتقييم -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-light text-primary border border-primary rounded-pill px-3 py-1">
+            {{ product.category.name }}
+        </span>
+        <div class="text-warning small">
+            <i class="fas fa-star"></i> 4.5
+        </div>
+    </div>
+
+    <!-- الاسم والسعر -->
+    <h5 class="fw-bold mb-2">{{ product.name }}</h5>
+    <div class="d-flex align-items-center mb-3">
+        <h3 class="text-primary fw-bold mb-0 me-2">{{ product.base_price }}</h3>
+        <span class="text-muted small">ج.م</span>
+        
+        {% if product.shipping_fee == 0 %}
+            <span class="badge bg-success ms-auto">شحن مجاني</span>
+        {% else %}
+            <span class="text-muted small ms-auto">+ {{ product.shipping_fee }} ج.م شحن</span>
         {% endif %}
     </div>
 
-    <div class="card-body p-4">
-        <h4 class="fw-bold mb-2">{{ product.name }}</h4>
-        <h5 class="text-gold fw-bold mb-3">{{ product.base_price }} ج.م</h5>
+    <hr class="text-muted opacity-25">
+
+    <!-- الوصف -->
+    <h6 class="fw-bold mb-2">الوصف</h6>
+    <p class="text-muted small mb-4" style="line-height: 1.6;">
+        {{ product.description|linebreaksbr }}
+    </p>
+
+    <!-- فورم الإضافة للسلة -->
+    <form method="POST" action="{% url 'add_to_cart' product.pk %}" class="pb-5 mb-5">
+        {% csrf_token %}
         
-        <p class="text-muted small mb-4">
-            {{ product.description|linebreaks }}
-        </p>
+        <!-- اختيار المقاس/اللون -->
+        <h6 class="fw-bold mb-3">اختر المقاس واللون</h6>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            {% for size in sizes %}
+            <div>
+                <input type="radio" class="btn-check" name="size_id" id="size_{{ size.id }}" value="{{ size.id }}" required>
+                <label class="btn btn-outline-secondary rounded-3 px-3 py-2 d-flex flex-column align-items-center" for="size_{{ size.id }}" style="min-width: 80px;">
+                    <span class="fw-bold">{{ size.size_label }}</span>
+                    <small style="font-size: 10px;">{{ size.color_label }}</small>
+                </label>
+            </div>
+            {% empty %}
+            <p class="text-danger small">غير متوفر حالياً.</p>
+            {% endfor %}
+        </div>
 
-        <!-- فورم الإضافة للسلة -->
-        <form method="POST" action="{% url 'add_to_cart' product.pk %}">
-            {% csrf_token %}
-            
-            <div class="mb-4">
-                <label class="form-label fw-bold text-muted small">اختر المقاس واللون:</label>
-                <div class="d-flex flex-wrap gap-2">
-                    {% for size in sizes %}
-                    <div>
-                        <input type="radio" class="btn-check" name="size_id" id="size_{{ size.id }}" value="{{ size.id }}" required>
-                        <label class="btn btn-outline-secondary btn-sm rounded-pill px-3" for="size_{{ size.id }}">
-                            {{ size.size_label }} - {{ size.color_label }}
-                        </label>
-                    </div>
-                    {% empty %}
-                    <p class="text-danger small">عفواً، المنتج غير متوفر حالياً.</p>
-                    {% endfor %}
-                </div>
+        <!-- الشريط السفلي العائم (الإضافة للسلة) -->
+        <div class="fixed-bottom bg-white p-3 border-top shadow-lg d-flex align-items-center gap-3" style="z-index: 1000;">
+            <!-- الكمية -->
+            <div class="bg-light rounded-pill d-flex align-items-center px-2 py-1 border" style="width: 120px; justify-content: space-between;">
+                <button type="button" class="btn btn-sm text-muted" onclick="this.nextElementSibling.stepDown()"><i class="fas fa-minus"></i></button>
+                <input type="number" name="quantity" class="form-control form-control-sm border-0 bg-transparent text-center p-0 fw-bold" value="1" min="1" max="10" style="width: 40px;">
+                <button type="button" class="btn btn-sm text-primary" onclick="this.previousElementSibling.stepUp()"><i class="fas fa-plus"></i></button>
             </div>
 
-            <div class="d-flex gap-3">
-                <div style="width: 80px;">
-                    <input type="number" name="quantity" class="form-control text-center" value="1" min="1" max="10">
-                </div>
-                <button type="submit" class="btn btn-gold w-100 fw-bold shadow-sm" {% if not sizes %}disabled{% endif %}>
-                    <i class="fas fa-shopping-cart me-2"></i> إضافة للسلة
-                </button>
-            </div>
-        </form>
-    </div>
+            <!-- زر الإضافة -->
+            <button type="submit" class="btn btn-primary-app w-100 py-2 fw-bold shadow-sm" {% if not sizes %}disabled{% endif %}>
+                إضافة للسلة <i class="fas fa-shopping-bag ms-2"></i>
+            </button>
+        </div>
+    </form>
 </div>
 
 <style>
-    .btn-check:checked + .btn-outline-secondary {
-        background-color: var(--text-coffee);
+    /* تخصيص زر الراديو المختار */
+    .btn-check:checked + label {
+        background-color: var(--primary-blue);
         color: white;
-        border-color: var(--text-coffee);
+        border-color: var(--primary-blue);
     }
 </style>
 

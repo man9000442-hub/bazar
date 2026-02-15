@@ -123,17 +123,28 @@ def shipping_settings(request):
     if request.method == 'POST':
         # حفظ الأسعار
         for gov in governorates:
-            price = request.POST.get(f'rate_{gov.id}') # نستقبل السعر من الـ Input
-            if price:
+            # اسم الحقل في HTML هو rate_1, rate_2 وهكذا
+            input_name = f'rate_{gov.id}'
+            price = request.POST.get(input_name)
+            
+            # إذا كان الحقل فارغاً أو 0، نحذفه (ليعود للافتراضي)
+            if not price or float(price) == 0:
+                MerchantShippingRate.objects.filter(merchant=merchant, governorate=gov).delete()
+            else:
+                # تحديث أو إنشاء
                 MerchantShippingRate.objects.update_or_create(
                     merchant=merchant,
                     governorate=gov,
                     defaults={'rate': price}
                 )
-        return redirect('merchant_dashboard')
+        
+        messages.success(request, "تم حفظ أسعار الشحن بنجاح ✅")
+        return redirect('merchant_shipping') # نعيد التوجيه لنفس الصفحة للتأكيد
 
-    # جلب الأسعار الحالية لعرضها في الفورم
-    current_rates = {rate.governorate_id: rate.rate for rate in merchant.shipping_rates.all()}
+    # جلب الأسعار الحالية لعرضها
+    current_rates = {}
+    for rate in merchant.shipping_rates.all():
+        current_rates[rate.governorate_id] = rate.rate
     
     return render(request, 'merchant/shipping_settings.html', {
         'governorates': governorates,
@@ -182,3 +193,95 @@ def merchant_wallet(request):
 # (صفحة طلب السحب - سنبنيها لاحقاً)
 def request_withdrawal(request):
     pass 
+
+
+from django.http import HttpResponse
+from store.paymob_utils import PaymobManager
+from store.models import PaymobTransaction, WalletTransaction, Wallet
+from django.conf import settings
+
+# 1. صفحة طلب الشحن (يختار المبلغ وطريقة الدفع)
+@login_required
+def paymob_deposit(request):
+    if not is_merchant(request.user):
+        return redirect('home')
+
+    if request.method == 'POST':
+        amount = float(request.POST.get('amount'))
+        amount_cents = int(amount * 100) # Paymob يتعامل بالقروش
+        
+        # بيانات وهمية للفوترة (مطلوبة من Paymob)
+        user = request.user
+        billing_data = {
+            "first_name": user.first_name or "Merchant",
+            "last_name": user.last_name or "User",
+            "email": user.email,
+            "phone_number": user.phone_primary,
+            "apartment": "NA", "email": user.email, "floor": "NA", 
+            "street": "NA", "building": "NA", "shipping_method": "NA", 
+            "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
+        }
+
+        # --- بدء التعامل مع Paymob ---
+        paymob = PaymobManager()
+        token = paymob.get_token()
+        order_id = paymob.create_order(token, amount_cents)
+        
+        # تسجيل المعاملة في الداتابيز عندنا
+        PaymobTransaction.objects.create(
+            merchant=request.user.merchant_profile,
+            paymob_order_id=order_id,
+            amount_cents=amount_cents
+        )
+
+        # الحصول على Payment Key (للكروت حالياً كمثال)
+        # يمكنك إضافة شرط لو اختار محفظة تستخدم Integration ID آخر
+        integration_id = settings.PAYMOB_INTEGRATION_ID_CARD 
+        payment_key = paymob.get_payment_key(token, order_id, amount_cents, integration_id, billing_data)
+
+        # التوجيه لصفحة الدفع (Iframe)
+        iframe_id = settings.PAYMOB_IFRAME_ID
+        return redirect(f"https://accept.paymob.com/api/acceptance/iframes/{iframe_id}?payment_token={payment_key}")
+
+    return render(request, 'merchant/paymob_deposit.html')
+
+
+# 2. Callback (الصفحة التي يعود لها التاجر بعد الدفع)
+def paymob_callback(request):
+    # Paymob بيرسل البيانات في الـ GET params
+    success = request.GET.get('success')
+    order_id = request.GET.get('order') # Paymob Order ID
+    
+    if success == "true":
+        try:
+            # البحث عن المعاملة عندنا
+            tx = PaymobTransaction.objects.get(paymob_order_id=order_id, is_paid=False)
+            
+            # تحديث الحالة
+            tx.is_paid = True
+            tx.save()
+            
+            # --- إضافة الرصيد للمحفظة ---
+            wallet = tx.merchant.wallet
+            amount_egp = tx.amount_cents / 100
+            
+            WalletTransaction.objects.create(
+                wallet=wallet,
+                amount=amount_egp,
+                transaction_type=WalletTransaction.TxType.COMPENSATION, # أو نوع جديد DEPOSIT
+                description=f"شحن رصيد (Paymob) #{tx.id}",
+                balance_after=wallet.balance + Decimal(amount_egp)
+            )
+            
+            wallet.balance += Decimal(amount_egp)
+            wallet.save()
+            
+            messages.success(request, "تم شحن الرصيد بنجاح! 🎉")
+            return redirect('merchant_wallet')
+            
+        except PaymobTransaction.DoesNotExist:
+            # قد تكون دفعت وسجلت بالفعل (تكرار الريكوست)
+            return redirect('merchant_wallet')
+    else:
+        messages.error(request, "عملية الدفع فشلت أو تم إلغاؤها.")
+        return redirect('merchant_wallet')

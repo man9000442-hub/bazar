@@ -11,4 +11,6 @@ urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('order-success/', views.order_success, name='order_success'),
     path('api/calc-shipping/', views.calculate_shipping_api, name='calc_shipping_api'),
+    path('categories/', views.categories_page, name='categories_page'),
+    path('my-orders/', views.my_orders, name='my_orders'),
 ]

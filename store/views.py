@@ -4,18 +4,25 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import Product, Category, Order, OrderItem, ProductSize, Governorate,MerchantShippingRate
 from django.db.models import F
+from django.db.models import Q
 # الصفحة الرئيسية
 def home(request):
     if request.user.is_authenticated:
         if not request.user.phone_primary:
             return redirect('complete_profile')
-
+    query = request.GET.get('q') # كلمة البحث
     category_id = request.GET.get('category')
     products = Product.objects.filter(
         is_active=True,
         merchant__wallet__balance__gte=F('merchant__minimum_balance_required')
     ).order_by('-created_at')
 
+
+    if query:
+        products = products.filter(
+            Q(name__icontains=query) | 
+            Q(description__icontains=query)
+        )
 
     if category_id:
         products = products.filter(category_id=category_id)
@@ -26,7 +33,8 @@ def home(request):
     return render(request, 'store/home.html', {
         'products': products,
         'categories': categories,
-        'selected_category': int(category_id) if category_id else None
+        'selected_category': int(category_id) if category_id else None,
+        'search_query': query # لإبقائها في مربع البحث
     })
 
 # تفاصيل المنتج
@@ -228,3 +236,14 @@ def calculate_shipping_api(request):
 # صفحة النجاح (تظهر بعد إتمام الطلب)
 def order_success(request):
     return render(request, 'store/order_success.html')
+
+def categories_page(request):
+    categories = Category.objects.all()
+    return render(request, 'store/categories.html', {'categories': categories})
+
+
+@login_required
+def my_orders(request):
+    # نستبعد حالة السلة (CART)
+    orders = Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).order_by('-created_at')
+    return render(request, 'store/my_orders.html', {'orders': orders})

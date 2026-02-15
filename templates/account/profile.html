@@ -2,60 +2,62 @@
 
 {% block content %}
 
-<div class="alert alert-info">
-    DEBUG INFO:<br>
-    Role: {{ request.user.role }} <br>
-    Has Profile? {{ request.user.merchant_profile }} <br>
-    Is Approved? {{ request.user.merchant_profile.is_approved }}
+<!-- Header Profile -->
+<div class="bg-primary text-white p-4 pt-5 pb-5 text-center position-relative" style="border-radius: 0 0 30px 30px;">
+    <div class="bg-white rounded-circle d-inline-flex p-1 mb-2 shadow-sm">
+        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=random" 
+             class="rounded-circle" width="80">
+    </div>
+    <h5 class="fw-bold mb-0">{{ request.user.first_name }} {{ request.user.last_name }}</h5>
+    <p class="small opacity-75 mb-0">{{ request.user.phone_primary }}</p>
+    
+    {% if request.user.role == 'MERCHANT' %}
+        <span class="badge bg-warning text-dark rounded-pill mt-2 px-3">تاجر</span>
+    {% endif %}
 </div>
 
-<div class="container mt-4">
-    <!-- Header -->
-    <div class="text-center mb-5">
-        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" 
-             style="width: 80px; height: 80px; border: 2px solid var(--primary-gold);">
-            <i class="fas fa-user text-gold fs-1"></i>
-        </div>
-        <h5 class="fw-bold mb-1">{{ request.user.first_name }} {{ request.user.last_name }}</h5>
-        <p class="text-muted small">{{ request.user.phone_primary }}</p>
-        
-        <!-- Badge للدور -->
-        {% if request.user.role == 'MERCHANT' %}
-            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">تاجر</span>
-        {% else %}
-            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">عميل</span>
-        {% endif %}
-    </div>
-
-    <!-- قائمة الخيارات -->
+<!-- القائمة -->
+<div class="container py-4" style="margin-top: -30px;">
     <div class="card border-0 shadow-sm overflow-hidden">
         <div class="list-group list-group-flush">
             
             <!-- لوحة التاجر (تظهر فقط للتجار) -->
             {% if request.user.role == 'MERCHANT' and request.user.merchant_profile.is_approved %}
-            <a href="{% url 'merchant_dashboard' %}" class="list-group-item list-group-item-action py-3 d-flex justify-content-between align-items-center bg-light">
-                <div>
-                    <i class="fas fa-store text-gold me-3"></i>
-                    <span class="fw-bold text-coffee">لوحة تحكم التاجر</span>
-                </div>
+            <a href="{% url 'merchant_dashboard' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
+                <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-store text-warning"></i></div>
+                <div class="flex-grow-1 fw-bold text-dark">لوحة التاجر</div>
                 <i class="fas fa-chevron-left text-muted small"></i>
             </a>
             {% endif %}
 
-            <a href="#" class="list-group-item list-group-item-action py-3 d-flex justify-content-between align-items-center">
-                <div><i class="fas fa-box-open text-muted me-3"></i> طلباتي</div>
+            <a href="#" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
+                <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-box text-primary"></i></div>
+                <div class="flex-grow-1">طلباتي السابقة</div>
                 <i class="fas fa-chevron-left text-muted small"></i>
             </a>
             
-            <a href="#" class="list-group-item list-group-item-action py-3 d-flex justify-content-between align-items-center">
-                <div><i class="fas fa-map-marker-alt text-muted me-3"></i> العناوين</div>
+            <a href="#" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
+                <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-heart text-danger"></i></div>
+                <div class="flex-grow-1">المفضلة</div>
                 <i class="fas fa-chevron-left text-muted small"></i>
             </a>
 
-            <a href="{% url 'account_logout' %}" class="list-group-item list-group-item-action py-3 text-danger d-flex justify-content-between align-items-center">
-                <div><i class="fas fa-sign-out-alt me-3"></i> تسجيل خروج</div>
+            <a href="#" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
+                <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-map-marker-alt text-success"></i></div>
+                <div class="flex-grow-1">عناويني</div>
+                <i class="fas fa-chevron-left text-muted small"></i>
+            </a>
+            
+            <a href="{% url 'account_logout' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center text-danger">
+                <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-sign-out-alt text-danger"></i></div>
+                <div class="flex-grow-1 fw-bold">تسجيل الخروج</div>
             </a>
         </div>
     </div>
+    
+    <div class="text-center mt-4 text-muted small">
+        نسخة التطبيق 1.0.0
+    </div>
 </div>
+
 {% endblock %}

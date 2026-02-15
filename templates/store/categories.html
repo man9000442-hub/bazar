@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="bg-white p-3 border-bottom shadow-sm mb-3">
+    <h5 class="m-0 fw-bold">كل الأقسام</h5>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-3">
+        {% for cat in categories %}
+        <div class="col-4 text-center">
+            <a href="{% url 'home' %}?category={{ cat.id }}" class="text-decoration-none text-dark d-block">
+                <div class="card border-0 shadow-sm mb-2 d-flex align-items-center justify-content-center p-2" style="aspect-ratio: 1/1;">
+                    {% if cat.image %}
+                        <img src="{{ cat.image.url }}" class="img-fluid" style="max-height: 50px;">
+                    {% else %}
+                        <i class="fas fa-th-large fa-2x text-muted opacity-50"></i>
+                    {% endif %}
+                </div>
+                <small class="fw-bold">{{ cat.name }}</small>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-2=@6ne*bhsuw#t^inbg*7fs5h5*@&h)(1f90mp45jp1oh+f(o@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['bazar-production-f1e0.up.railway.app','http://127.0.0.1:8000/']
+ALLOWED_HOSTS = ['bazar-production-f1e0.up.railway.app','127.0.0.1']
 
 
 # Application definition
@@ -167,3 +167,10 @@ SOCIALACCOUNT_PROVIDERS = {
         }
     }
 }
+
+# Paymob Configuration
+PAYMOB_API_KEY = "اكتب_هنا_API_KEY_الخاص_بك"
+PAYMOB_INTEGRATION_ID_CARD = "رقم_ID_للكروت"  # Online Card Integration ID
+PAYMOB_INTEGRATION_ID_WALLET = "رقم_ID_للمحافظ" # Online Wallet Integration ID
+PAYMOB_IFRAME_ID = "رقم_ID_للإطار" # Iframe ID
+

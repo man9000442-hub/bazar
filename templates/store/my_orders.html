@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
+    <a href="{% url 'profile' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
+    <h5 class="m-0 fw-bold">طلباتي السابقة</h5>
+</div>
+
+<div class="container pb-5">
+    {% for order in orders %}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0 d-flex justify-content-between pt-3">
+            <span class="fw-bold small">طلب #{{ order.order_id }}</span>
+            <span class="badge bg-light text-dark border rounded-pill">{{ order.get_status_display }}</span>
+        </div>
+        <div class="card-body py-2">
+            <div class="d-flex overflow-auto" style="gap: 10px;">
+                {% for item in order.items.all %}
+                <img src="{{ item.product_size.product.image.url }}" class="rounded border" style="width: 50px; height: 50px; object-fit: cover; flex-shrink: 0;">
+                {% endfor %}
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <small class="text-muted">{{ order.created_at|date:"d M Y" }}</small>
+                <span class="fw-bold text-primary">{{ order.final_total }} ج.م</span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5">
+        <p class="text-muted">لم تقم بأي طلبات بعد.</p>
+        <a href="{% url 'home' %}" class="btn btn-primary-app px-4">تسوق الآن</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
