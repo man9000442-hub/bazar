@@ -3,7 +3,7 @@ from django.shortcuts import  get_object_or_404
 from django.contrib.auth.decorators import login_required
 from store.models import Product, Order, OrderItem, Wallet
 from accounts.models import User
-
+from django.contrib import messages
 # دالة مساعدة للتحقق من التاجر
 def is_merchant(user):
     return user.role == User.Role.MERCHANT and hasattr(user, 'merchant_profile') and user.merchant_profile.is_approved
