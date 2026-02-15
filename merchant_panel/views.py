@@ -120,35 +120,40 @@ def shipping_settings(request):
     merchant = request.user.merchant_profile
     governorates = Governorate.objects.all()
 
+    # 1. معالجة الحفظ (POST) - (كما هي لم تتغير)
     if request.method == 'POST':
-        # حفظ الأسعار
         for gov in governorates:
-            # اسم الحقل في HTML هو rate_1, rate_2 وهكذا
             input_name = f'rate_{gov.id}'
             price = request.POST.get(input_name)
             
-            # إذا كان الحقل فارغاً أو 0، نحذفه (ليعود للافتراضي)
             if not price or float(price) == 0:
                 MerchantShippingRate.objects.filter(merchant=merchant, governorate=gov).delete()
             else:
-                # تحديث أو إنشاء
                 MerchantShippingRate.objects.update_or_create(
                     merchant=merchant,
                     governorate=gov,
                     defaults={'rate': price}
                 )
-        
         messages.success(request, "تم حفظ أسعار الشحن بنجاح ✅")
-        return redirect('merchant_shipping') # نعيد التوجيه لنفس الصفحة للتأكيد
+        return redirect('merchant_shipping')
 
-    # جلب الأسعار الحالية لعرضها
-    current_rates = {}
-    for rate in merchant.shipping_rates.all():
-        current_rates[rate.governorate_id] = rate.rate
+    # 2. تجهيز البيانات للعرض (GET) - (هنا التعديل لإصلاح الخطأ)
+    
+    # جلب الأسعار الحالية في قاموس
+    current_rates_dict = {rate.governorate_id: rate.rate for rate in merchant.shipping_rates.all()}
+    
+    # دمج المحافظة مع سعرها في قائمة واحدة
+    shipping_data = []
+    for gov in governorates:
+        shipping_data.append({
+            'id': gov.id,
+            'name': gov.name,
+            # إذا كان هناك سعر نضعه، وإلا نترك القيمة فارغة
+            'current_rate': current_rates_dict.get(gov.id, '') 
+        })
     
     return render(request, 'merchant/shipping_settings.html', {
-        'governorates': governorates,
-        'current_rates': current_rates
+        'shipping_data': shipping_data # نرسل القائمة الجديدة بدلاً من القديمة
     })
 
 @login_required
