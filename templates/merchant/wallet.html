@@ -38,6 +38,22 @@
             </button>
         </div>
     </div>
+    
+
+    <div class="row g-2 mb-4">
+        <div class="col-6">
+            <div class="card p-3 bg-white border-0 shadow-sm">
+                <small class="text-muted">متاح للسحب</small>
+                <h4 class="fw-bold text-success">{{ wallet.balance }}</h4>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card p-3 bg-light border-0 shadow-sm">
+                <small class="text-muted">معلق (24 ساعة)</small>
+                <h4 class="fw-bold text-warning">{{ wallet.pending_balance }}</h4>
+            </div>
+        </div>
+    </div>
 
     <!-- السجل -->
     <h6 class="fw-bold mb-3 px-1">سجل المعاملات</h6>

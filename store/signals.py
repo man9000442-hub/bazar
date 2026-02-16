@@ -7,6 +7,8 @@ from .models import Order, OrderItem, ProductSize, Wallet, WalletTransaction
 from .models import SiteSetting
 # 1. تحديث إجمالي الطلب عند تغيير المنتجات
 from .models import SiteSetting
+from .models import Notification
+
 
 @receiver(post_save, sender=OrderItem)
 @receiver(post_delete, sender=OrderItem)
@@ -113,18 +115,24 @@ def distribute_profits(sender, instance, created, **kwargs):
             merchant_earnings[merchant] += net_profit
 
         # تنفيذ التحويلات المالية
+# ... داخل دالة distribute_profits ...
+
+        # تنفيذ التحويلات المالية
         with transaction.atomic():
             for merchant, amount in merchant_earnings.items():
                 wallet, _ = Wallet.objects.get_or_create(merchant=merchant)
                 
-                # تسجيل الحركة في السجل
+                # إضافة للرصيد المعلق
+                wallet.pending_balance += amount 
+                wallet.save()
+                
+                # تسجيل الحركة (نوع جديد: PENDING)
                 WalletTransaction.objects.create(
                     wallet=wallet,
                     amount=amount,
-                    transaction_type=WalletTransaction.TxType.SALE,
-                    related_order_id=instance.order_id,
-                    description=f"أرباح طلب #{instance.order_id}",
-                    balance_after=wallet.balance + amount
+                    transaction_type='PENDING', # تحتاج لإضافتها في الـ Choices
+                    description=f"أرباح معلقة (طلب #{instance.order_id})",
+                    balance_after=wallet.balance # الرصيد المتاح لم يتغير
                 )
                 
                 # تحديث الرصيد الفعلي
@@ -162,7 +170,7 @@ def process_deposit(sender, instance, **kwargs):
             wallet.balance += amount
             wallet.save()
 
-from .models import Notification
+
 
 # 1. إشعار للتاجر عند وصول طلب جديد
 @receiver(post_save, sender=Order)

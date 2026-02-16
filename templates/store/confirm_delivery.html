@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5 text-center">
+    <div class="card shadow p-4">
+        <h4 class="text-primary mb-3">تأكيد استلام الطلب #{{ order.order_id }}</h4>
+        <p class="text-muted">للمتابعة في التسوق، يرجى تأكيد حالة آخر طلب وصلك.</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="d-grid gap-3 mt-4">
+                <!-- خيار التأكيد -->
+                <button type="button" class="btn btn-success py-3" onclick="document.getElementById('confirm-section').style.display='block'; document.getElementById('reject-section').style.display='none';">
+                    <i class="fas fa-check-circle"></i> استلمت المنتج وأريد التقييم
+                </button>
+                
+                <!-- خيار الرفض -->
+                <button type="button" class="btn btn-outline-danger py-3" onclick="document.getElementById('reject-section').style.display='block'; document.getElementById('confirm-section').style.display='none';">
+                    <i class="fas fa-times-circle"></i> لم أستلم / يوجد مشكلة (رفض)
+                </button>
+            </div>
+
+            <!-- قسم التقييم (مخفي) -->
+            <div id="confirm-section" style="display:none;" class="mt-4 bg-light p-3 rounded">
+                <label>ما تقييمك للتجربة؟</label>
+                <div class="rating mb-3 fs-3 text-warning">
+                    <input type="number" name="rating" value="5" class="form-control" max="5" min="1">
+                </div>
+                <button type="submit" name="action" value="confirm" class="btn btn-primary-app w-100">إرسال التقييم والمتابعة</button>
+            </div>
+
+            <!-- قسم الرفض (مخفي) -->
+            <div id="reject-section" style="display:none;" class="mt-4 bg-light p-3 rounded">
+                <label class="fw-bold text-danger">سبب الرفض / المشكلة:</label>
+                <textarea name="reason" class="form-control mb-3" rows="3" placeholder="اكتب التفاصيل هنا..."></textarea>
+                <button type="submit" name="action" value="reject" class="btn btn-danger w-100">إرسال الشكوى</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

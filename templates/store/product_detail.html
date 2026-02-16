@@ -8,7 +8,6 @@
         <i class="fas fa-arrow-right fs-5"></i>
     </a>
     <div class="d-flex gap-3">
-        <!-- زر المفضلة (Ajax) -->
         <button onclick="toggleFavDetail('{{ product.id }}')" class="btn border-0 bg-transparent p-0">
             <i class="{% if is_fav %}fas text-danger{% else %}far text-muted{% endif %} fa-heart fs-5" id="fav-icon"></i>
         </button>
@@ -59,17 +58,14 @@
 
     <h5 class="fw-bold mb-2">{{ product.name }}</h5>
     
-    <!-- السعر (مع العرض إن وجد) -->
+    <!-- السعر -->
     <div class="d-flex align-items-center mb-3">
         {% if product.active_offer and product.active_offer.is_active %}
-            <!-- السعر الجديد -->
             <h3 class="text-danger fw-bold mb-0 me-2">{{ product.active_offer.discounted_price|floatformat:0 }}</h3>
             <span class="text-danger small fw-bold me-2">ج.م</span>
-            <!-- السعر القديم مشطوب -->
             <span class="text-muted text-decoration-line-through small me-2">{{ product.base_price }}</span>
             <span class="badge bg-danger rounded-pill">-{{ product.active_offer.discount_percentage }}%</span>
         {% else %}
-            <!-- السعر العادي -->
             <h3 class="text-primary fw-bold mb-0 me-2">{{ product.base_price }}</h3>
             <span class="text-muted small">ج.م</span>
         {% endif %}
@@ -88,23 +84,35 @@
         {{ product.description|linebreaksbr }}
     </p>
 
-    <!-- 4. Form (Add to Cart) -->
+    <!-- 4. Form (Colors & Sizes Logic) -->
     <form method="POST" action="{% url 'add_to_cart' product.pk %}" class="pb-5 mb-5">
         {% csrf_token %}
         
-        <h6 class="fw-bold mb-3">اختر المقاس واللون</h6>
+        <!-- Input مخفي للمقاس النهائي -->
+        <input type="hidden" name="size_id" id="selected_variant_id" required>
+
+        <!-- A. اختيار اللون -->
+        <h6 class="fw-bold mb-2">1. اختر اللون</h6>
         <div class="d-flex flex-wrap gap-2 mb-4">
-            {% for size in sizes %}
+            {% for color in available_colors %}
             <div>
-                <input type="radio" class="btn-check" name="size_id" id="size_{{ size.id }}" value="{{ size.id }}" required>
-                <label class="btn btn-outline-secondary rounded-3 px-3 py-2 d-flex flex-column align-items-center" for="size_{{ size.id }}" style="min-width: 80px;">
-                    <span class="fw-bold">{{ size.size_label }}</span>
-                    <small style="font-size: 10px;">{{ size.color_label }}</small>
+                <input type="radio" class="btn-check" name="color_option" id="color_{{ forloop.counter }}" 
+                       value="{{ color }}" onchange="selectColor('{{ color }}')">
+                <label class="btn btn-outline-secondary rounded-pill px-3 py-1" for="color_{{ forloop.counter }}">
+                    {{ color }}
                 </label>
             </div>
             {% empty %}
-            <p class="text-danger small">غير متوفر حالياً.</p>
+            <p class="text-danger small">غير متوفر</p>
             {% endfor %}
+        </div>
+
+        <!-- B. اختيار المقاس (يظهر بالـ JS) -->
+        <div id="sizes-section" style="display: none;">
+            <h6 class="fw-bold mb-2">2. اختر المقاس</h6>
+            <div class="d-flex flex-wrap gap-2 mb-4" id="sizes-container">
+                <!-- المقاسات ستضاف هنا -->
+            </div>
         </div>
 
         <!-- 5. Similar Products -->
@@ -138,7 +146,8 @@
                 <button type="button" class="btn btn-sm text-primary" onclick="this.previousElementSibling.stepUp()"><i class="fas fa-plus"></i></button>
             </div>
 
-            <button type="submit" class="btn btn-primary-app w-100 py-2 fw-bold shadow-sm" {% if not sizes %}disabled{% endif %}>
+            <!-- الزر معطل افتراضياً -->
+            <button type="submit" id="add-to-cart-btn" class="btn btn-primary-app w-100 py-2 fw-bold shadow-sm" disabled>
                 إضافة للسلة <i class="fas fa-shopping-bag ms-2"></i>
             </button>
         </div>
@@ -146,6 +155,7 @@
 </div>
 
 <style>
+    /* تنسيق زر الراديو عند الاختيار */
     .btn-check:checked + label {
         background-color: var(--primary-blue);
         color: white;
@@ -153,21 +163,59 @@
     }
 </style>
 
+<!-- JavaScript Logic -->
 <script>
-function toggleFavDetail(productId) {
-    fetch(`/wishlist/toggle/${productId}/`)
-        .then(response => response.json())
-        .then(data => {
-            const icon = document.getElementById('fav-icon');
-            if (data.added) {
-                icon.classList.remove('far', 'text-muted');
-                icon.classList.add('fas', 'text-danger');
-            } else {
-                icon.classList.remove('fas', 'text-danger');
-                icon.classList.add('far', 'text-muted');
-            }
+    const variantsData = {{ variants_json|safe }};
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
+    
+    function selectColor(colorName) {
+        const sizesContainer = document.getElementById('sizes-container');
+        const sizesSection = document.getElementById('sizes-section');
+        const hiddenInput = document.getElementById('selected_variant_id');
+        
+        // إعادة تعيين الحالة
+        sizesSection.style.display = 'block';
+        sizesContainer.innerHTML = '';
+        hiddenInput.value = '';
+        addToCartBtn.disabled = true; // تعطيل الزر عند تغيير اللون
+
+        const sizes = variantsData[colorName];
+
+        sizes.forEach(variant => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+                <input type="radio" class="btn-check" name="size_option" id="variant_${variant.id}" value="${variant.id}" onchange="selectSize('${variant.id}')">
+                <label class="btn btn-outline-secondary rounded-3 px-3 py-2 d-flex flex-column align-items-center" for="variant_${variant.id}" style="min-width: 60px;">
+                    <span class="fw-bold">${variant.size}</span>
+                    <small style="font-size: 9px;">متاح: ${variant.qty}</small>
+                </label>
+            `;
+            sizesContainer.appendChild(wrapper);
         });
-}
+    }
+
+    function selectSize(variantId) {
+        document.getElementById('selected_variant_id').value = variantId;
+        addToCartBtn.disabled = false; // تفعيل الزر الآن!
+        addToCartBtn.classList.remove('btn-secondary');
+        addToCartBtn.classList.add('btn-primary-app');
+    }
+
+    // المفضلة
+    function toggleFavDetail(productId) {
+        fetch(`/wishlist/toggle/${productId}/`)
+            .then(response => response.json())
+            .then(data => {
+                const icon = document.getElementById('fav-icon');
+                if (data.added) {
+                    icon.classList.remove('far', 'text-muted');
+                    icon.classList.add('fas', 'text-danger');
+                } else {
+                    icon.classList.remove('fas', 'text-danger');
+                    icon.classList.add('far', 'text-muted');
+                }
+            });
+    }
 </script>
 
 {% endblock %}

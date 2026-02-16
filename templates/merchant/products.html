@@ -60,20 +60,25 @@
                                 {% endif %}
                             </div>
 
-                            <!-- أزرار التحكم -->
+                            <!-- أزرار التحكم الجديدة -->
                             <div class="d-flex justify-content-between align-items-center mt-auto">
                                 <small class="text-muted" style="font-size: 10px;">{{ product.category.name }}</small>
                                 
                                 <div class="d-flex gap-2">
-                                    <!-- زر إضافة عرض -->
+                                    <!-- زر إضافة/تعديل عرض -->
                                     <a href="{% url 'merchant_add_offer' product.id %}" class="btn btn-sm btn-light border text-warning px-2 py-0 rounded-pill d-flex align-items-center" style="font-size: 11px;">
                                         <i class="fas fa-tag me-1"></i> 
                                         {% if product.active_offer %}تعديل{% else %}عرض{% endif %}
                                     </a>
                                     
-                                    <!-- زر تعديل المنتج (سنضيفه لاحقاً) -->
-                                    <a href="#" class="btn btn-sm btn-light border text-muted px-2 py-0 rounded-pill">
+                                    <!-- زر تعديل المنتج -->
+                                    <a href="{% url 'merchant_edit_product' product.id %}" class="btn btn-sm btn-light border text-primary px-2 py-0 rounded-pill">
                                         <i class="fas fa-pen"></i>
+                                    </a>
+
+                                    <!-- زر الحذف -->
+                                    <a href="{% url 'merchant_delete_product' product.id %}" class="btn btn-sm btn-light border text-danger px-2 py-0 rounded-pill" onclick="return confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')">
+                                        <i class="fas fa-trash"></i>
                                     </a>
                                 </div>
                             </div>

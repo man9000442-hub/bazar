@@ -79,9 +79,15 @@ class OrderAdmin(admin.ModelAdmin):
             'CART': 'gray',
         }
         color = colors.get(obj.status, 'black')
-        return format_html(f'<span style="color: {color}; font-weight: bold;">{obj.get_status_display()}</span>')
+        
+        # الطريقة الصحيحة لاستخدام format_html (تمرير المتغيرات كـ args)
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+    
     status_colored.short_description = "الحالة"
-
 
 # ----------------------------------------
 # 3. Merchant & Wallet Admin (التجار والمحفظة)

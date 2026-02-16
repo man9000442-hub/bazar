@@ -5,8 +5,57 @@ from django.utils import timezone
 from .models import Product, Category, Order, OrderItem, ProductSize, Governorate,MerchantShippingRate
 from django.db.models import F
 from django.db.models import Q
+import json
+from .models import Notification
+
+
+def check_pending_confirmations(user):
+    """
+    دالة تفحص هل يوجد طلبات (تم تسليمها) لكن العميل لم يؤكدها أو يرفضها بعد.
+    ترجع الطلب المعلق إن وجد، أو None.
+    """
+    if not user.is_authenticated: return None
+    
+    # نبحث عن طلب حالته DELIVERED ولكن العميل لم يؤكده (is_confirmed_by_customer is None)
+    pending = Order.objects.filter(
+        customer=user, 
+        status=Order.Status.DELIVERED, 
+        is_confirmed_by_customer__isnull=True
+    ).first()
+    return pending
+
+# صفحة التأكيد الإجبارية
+@login_required
+def confirm_delivery_view(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, customer=request.user)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action') # confirm or reject
+        
+        if action == 'confirm':
+            order.is_confirmed_by_customer = True
+            order.rating = int(request.POST.get('rating', 5))
+            messages.success(request, "شكراً لتقييمك! يمكنك الآن التسوق من جديد.")
+            
+        elif action == 'reject':
+            order.is_confirmed_by_customer = False
+            order.rejection_reason = request.POST.get('reason')
+            # هنا ممكن نغير حالة الطلب لـ RETURNED أو نرسل إشعار للأدمن
+            order.status = Order.Status.RETURNED # أو حالة خاصة "نزاع"
+            messages.warning(request, "تم تسجيل رفضك وسيتم مراجعة الإدارة.")
+            
+        order.save()
+        return redirect('home')
+
+    return render(request, 'store/confirm_delivery.html', {'order': order})
+
+
 # الصفحة الرئيسية
 def home(request):
+    pending_conf = check_pending_confirmations(request.user)
+    if pending_conf:
+        # توجيه إجباري لصفحة التأكيد
+        return redirect('confirm_delivery_view', order_id=pending_conf.id)
     if request.user.is_authenticated:
         if not request.user.phone_primary:
             return redirect('complete_profile')
@@ -166,63 +215,98 @@ def update_cart_qty(request, item_id, action):
     return redirect('cart_view')
 
 # إتمام الطلب (Checkout)
+from collections import defaultdict
+
 @login_required
 def checkout(request):
-    # 1. جلب السلة (CART)
-    # إذا تحولت الحالة بالخطأ لـ PENDING سابقاً، هذا السطر لن يجد الطلب وسيعيدك للرئيسية
-    order = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
-    
-    # حماية: لو السلة فاضية أو مش موجودة، ارجع للرئيسية
-    if not order or order.items.count() == 0:
+    # ... (فحص المانع أولاً) ...
+    pending_conf = check_pending_confirmations(request.user)
+    if pending_conf: return redirect('confirm_delivery_view', order_id=pending_conf.id)
+
+    # جلب السلة
+    cart = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
+    if not cart or not cart.items.exists():
         return redirect('home')
 
-    # جلب المحافظات للعرض
     governorates = Governorate.objects.all()
 
-    # 2. هل العميل ضغط على زر التأكيد؟ (POST)
+    # --- تجهيز البيانات للعرض (Grouping by Merchant) ---
+    grouped_items = defaultdict(list)
+    merchant_totals = defaultdict(int) # لحساب مجموع منتجات كل تاجر
+    
+    for item in cart.items.all():
+        merch = item.product_size.product.merchant
+        grouped_items[merch].append(item)
+        merchant_totals[merch] += item.total_price # تأكد أن OrderItem لديه property total_price
+
+    # تحويلها لقائمة ليسهل عرضها في التمبلت
+    cart_structure = []
+    for merch, items in grouped_items.items():
+        cart_structure.append({
+            'merchant': merch,
+            'items': items,
+            'subtotal': merchant_totals[merch]
+        })
+
+    # --- معالجة الـ POST (إنشاء الطلبات الحقيقية) ---
     if request.method == 'POST':
-        # --- هنا فقط نبدأ التعديل والحفظ ---
-        
         address = request.POST.get('address')
         gov_id = request.POST.get('city')
         phone = request.POST.get('phone')
-
-        if not (address and gov_id and phone):
-            messages.error(request, "يرجى ملء جميع البيانات")
-            return redirect('checkout')
-
-        governorate = get_object_or_404(Governorate, pk=gov_id)
-
-        # تحديث البيانات
-        order.shipping_address = f"{governorate.name} - {address}"
-        order.governorate = governorate
-        order.shipping_phone = phone
         
-        # حساب الشحن النهائي
-        total_shipping = 0
-        merchants = set(item.product_size.product.merchant for item in order.items.all())
-        for merchant in merchants:
-            rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=governorate).first()
-            if rate_obj:
-                total_shipping += rate_obj.rate
-            else:
-                total_shipping += 50
+        gov = get_object_or_404(Governorate, pk=gov_id)
         
-        order.shipping_cost = total_shipping
-        
-        # ⚠️ اللحظة الحاسمة: هنا فقط نغير الحالة
-        order.status = Order.Status.PENDING 
-        order.created_at = timezone.now()
-        order.save()
-        
-        messages.success(request, "تم استلام طلبك بنجاح!")
-        return redirect('order_success')
+        # 1. هل هذا أول طلب للعميل؟ (للشحن المجاني)
+        is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).exists()
+        free_shipping_used = False # عشان نطبق المجاني مرة واحدة بس
 
-    # 3. مجرد عرض الصفحة (GET)
-    # ⚠️ لا نكتب أي كود save() أو تغيير status هنا أبداً
+        # 2. اللوب الجهنمية (إنشاء طلب لكل تاجر) 🔥
+        for group in cart_structure:
+            merchant = group['merchant']
+            items = group['items']
+            
+            # أ. حساب شحن هذا التاجر لهذه المحافظة
+            shipping_rate = MerchantShippingRate.objects.filter(merchant=merchant, governorate=gov).first()
+            shipping_cost = shipping_rate.rate if shipping_rate else 50 # افتراضي
+            
+            # ب. تطبيق الشحن المجاني (لأول تاجر فقط في اللوب)
+            if is_first_order and not free_shipping_used:
+                shipping_cost = 0
+                free_shipping_used = True
+                # (هنا ممكن نسجل في Log إن التاجر ده ليه تعويض شحن عند الإدارة)
+
+            # ج. إنشاء الطلب الجديد الخاص بالتاجر
+            new_order = Order.objects.create(
+                customer=request.user,
+                merchant=merchant, # ربطنا الطلب بالتاجر
+                shipping_address=f"{gov.name} - {address}",
+                governorate=gov,
+                shipping_phone=phone,
+                status=Order.Status.PENDING,
+                # الأرقام سيتم حسابها بالـ Signal لما ننقل المنتجات
+                shipping_cost=shipping_cost,
+                is_first_order=(shipping_cost == 0) # علامة إن الشحن مجاني
+            )
+            
+            # د. نقل المنتجات من السلة للطلب الجديد
+            for item in items:
+                item.order = new_order # تغيير الأب
+                item.save() # الـ Signal هيشتغل ويحسب مجاميع الطلب الجديد
+            
+            # هـ. الـ Signal في OrderItem هيحدث new_order
+            new_order.save() 
+
+        # 3. حذف السلة القديمة (لأنها فضيت خلاص)
+        cart.delete()
+        
+        messages.success(request, "تم تقسيم الطلبات وإرسالها للتجار بنجاح! 🎉")
+        return redirect('my_orders') # نوديه لصفحة طلباتي يشوفهم
+
     return render(request, 'store/checkout.html', {
-        'order': order,
-        'governorates': governorates
+        'cart_structure': cart_structure, # الهيكل المقسم
+        'governorates': governorates,
+        'cart_total': cart.total_products_price, # مجرد رقم للعرض
+        'platform_fees': cart.platform_fees
     })
 
 
@@ -230,40 +314,46 @@ from django.http import JsonResponse # مهم
 
 @login_required
 def calculate_shipping_api(request):
-    """
-    API تستقبل ID المحافظة، وتحسب الشحن بناءً على التجار في السلة.
-    ترجع JSON: { 'shipping': 50, 'total': 150 }
-    """
     gov_id = request.GET.get('gov_id')
-    if not gov_id:
-        return JsonResponse({'error': 'No ID'}, status=400)
+    if not gov_id: return JsonResponse({'error': 'No ID'}, status=400)
 
-    # 1. جلب السلة
-    order = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
-    if not order:
-        return JsonResponse({'shipping': 0, 'total': 0})
+    cart = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
+    if not cart: return JsonResponse({'shipping_details': [], 'total_shipping': 0, 'grand_total': 0})
 
-    # 2. جلب المحافظة
     governorate = get_object_or_404(Governorate, pk=gov_id)
     
-    # 3. حساب الشحن (نفس منطق الـ checkout بالضبط)
-    total_shipping = 0
-    merchants = set(item.product_size.product.merchant for item in order.items.all())
+    # 1. تجميع التجار
+    merchants = set(item.product_size.product.merchant for item in cart.items.all())
     
+    shipping_details = []
+    total_shipping = 0
+    
+    # 2. فحص الشحن المجاني (أول مرة)
+    is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).exists()
+    free_shipping_used = False
+
     for merchant in merchants:
         rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=governorate).first()
-        if rate_obj:
-            total_shipping += rate_obj.rate
-        else:
-            total_shipping += 50 # الافتراضي
+        cost = rate_obj.rate if rate_obj else 50
+        
+        # تطبيق المجاني
+        if is_first_order and not free_shipping_used:
+            cost = 0
+            free_shipping_used = True
+            
+        total_shipping += cost
+        shipping_details.append({
+            'merchant_id': merchant.id,
+            'cost': float(cost)
+        })
 
-    # 4. حساب الإجمالي النهائي (للعرض)
-    # ملاحظة: platform_fees محسوبة مسبقاً في الـ Order
-    final_total = order.total_products_price + order.platform_fees + total_shipping
+    # الإجمالي النهائي المتوقع
+    grand_total = float(cart.total_products_price + cart.platform_fees) + float(total_shipping)
 
     return JsonResponse({
-        'shipping': float(total_shipping),
-        'total': float(final_total)
+        'shipping_details': shipping_details, # قائمة {تاجر: سعر}
+        'total_shipping': float(total_shipping),
+        'grand_total': grand_total
     })
 
 # صفحة النجاح (تظهر بعد إتمام الطلب)
@@ -310,29 +400,47 @@ def wishlist_view(request):
 
 
 
+import json # استيراد json
+
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    sizes = product.variations.filter(stock_quantity__gt=0)
     
-    # جلب منتجات مشابهة (نفس القسم، باستثناء المنتج الحالي)
-    similar_products = Product.objects.filter(
-        category=product.category, 
-        is_active=True
-    ).exclude(pk=pk).order_by('?')[:4] # نختار 4 عشوائياً
+    # جلب كل المتغيرات المتاحة
+    variations = product.variations.filter(stock_quantity__gt=0)
+    
+    # تجميع الألوان المتاحة (بدون تكرار)
+    available_colors = set(v.color_label for v in variations)
+    
+    # بناء قاموس: { 'أحمر': [ {id: 1, size: 'XL'}, {id: 2, size: 'L'} ], ... }
+    variants_data = {}
+    for v in variations:
+        if v.color_label not in variants_data:
+            variants_data[v.color_label] = []
+        variants_data[v.color_label].append({
+            'id': v.id,
+            'size': v.size_label,
+            'qty': v.stock_quantity
+        })
 
-    # التحقق هل المنتج في المفضلة؟
+    # تحويل القاموس لنص JSON لنستخدمه في الجافاسكربت
+    variants_json = json.dumps(variants_data)
+
+    # ... (باقي الكود: منتجات مشابهة، مفضلة) ...
+    # (نفس الكود السابق للمنتجات المشابهة والمفضلة)
+    similar_products = Product.objects.filter(category=product.category, is_active=True).exclude(pk=pk)[:4]
     is_fav = False
     if request.user.is_authenticated:
         is_fav = Favorite.objects.filter(user=request.user, product=product).exists()
 
     return render(request, 'store/product_detail.html', {
         'product': product,
-        'sizes': sizes,
+        'available_colors': available_colors,
+        'variants_json': variants_json, # البيانات الجديدة
         'similar_products': similar_products,
         'is_fav': is_fav
     })
 
-from .models import Notification
+
 
 @login_required
 def notifications_view(request):

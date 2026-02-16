@@ -5,7 +5,7 @@
 <!-- Header -->
 <div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
     <a href="{% url 'merchant_products' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <h5 class="m-0 fw-bold">إضافة / تعديل عرض</h5>
+    <h5 class="m-0 fw-bold">إدارة العروض</h5>
 </div>
 
 <div class="container mt-4">
@@ -22,45 +22,79 @@
             </div>
         </div>
         
-        <form method="POST">
-            {% csrf_token %}
-            
-            <!-- نسبة الخصم -->
-            <div class="mb-3">
-                <label class="form-label fw-bold small">نسبة الخصم (%)</label>
-                <div class="input-group">
-                    <input type="number" name="percentage" class="form-control" 
-                           min="1" max="99" 
-                           placeholder="مثلاً: 20" 
-                           value="{{ offer.discount_percentage|default:'' }}" 
+        <!-- حالة القفل (عرض منصة) -->
+        {% if is_locked %}
+            <div class="text-center py-4">
+                <div class="bg-warning-subtle text-warning-emphasis rounded-circle d-inline-flex p-3 mb-3">
+                    <i class="fas fa-crown fa-2x"></i>
+                </div>
+                <h5 class="fw-bold">عرض خاص من المنصة 👑</h5>
+                <p class="text-muted small">
+                    هذا المنتج عليه عرض نشط تم وضعه بواسطة المشرف.
+                    <br>
+                    <strong class="text-success">سيتم تعويضك بالفرق تلقائياً عند كل عملية بيع.</strong>
+                </p>
+                <div class="alert alert-light border mt-3 d-inline-block px-4">
+                    نسبة الخصم الحالية: <strong>{{ offer.discount_percentage }}%</strong>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'merchant_products' %}" class="btn btn-outline-dark rounded-pill px-4">عودة للمنتجات</a>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- الفورم العادي (للتعديل أو الإلغاء) -->
+            <form method="POST">
+                {% csrf_token %}
+                
+                <!-- نسبة الخصم -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">نسبة الخصم (%)</label>
+                    <div class="input-group">
+                        <input type="number" name="percentage" class="form-control" 
+                               min="1" max="99" 
+                               placeholder="مثلاً: 20" 
+                               value="{{ offer.discount_percentage|default:'' }}" 
+                               required>
+                        <span class="input-group-text bg-light">%</span>
+                    </div>
+                </div>
+
+                <!-- مدة العرض -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold small">مدة العرض (بالأيام)</label>
+                    <input type="number" name="days" class="form-control" 
+                           min="1" 
+                           placeholder="مثلاً: 7" 
+                           value="7" 
                            required>
-                    <span class="input-group-text bg-light">%</span>
+                    <div class="form-text small text-muted">سيتم احتساب المدة بدءاً من اليوم.</div>
                 </div>
-            </div>
-
-            <!-- مدة العرض -->
-            <div class="mb-4">
-                <label class="form-label fw-bold small">مدة العرض (بالأيام)</label>
-                <input type="number" name="days" class="form-control" 
-                       min="1" 
-                       placeholder="مثلاً: 7" 
-                       value="7" 
-                       required>
-                <div class="form-text small text-muted">سيتم احتساب المدة بدءاً من اليوم.</div>
-            </div>
-            
-            <!-- تنبيه -->
-            <div class="alert alert-warning small d-flex align-items-center mb-4">
-                <i class="fas fa-info-circle fs-5 me-2"></i>
-                <div>
-                    تنبيه: هذا العرض سيخصم من أرباحك مباشرة، ولن يتم تعويضه من المنصة.
+                
+                <!-- تنبيه -->
+                <div class="alert alert-warning small d-flex align-items-center mb-4">
+                    <i class="fas fa-info-circle fs-5 me-2"></i>
+                    <div>
+                        تنبيه: هذا العرض سيخصم من أرباحك مباشرة، ولن يتم تعويضه من المنصة.
+                    </div>
                 </div>
-            </div>
 
-            <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold shadow-sm">
-                {% if offer %}تحديث العرض{% else %}تفعيل العرض{% endif %}
-            </button>
-        </form>
+                <div class="d-flex gap-2">
+                    <!-- زر الحفظ -->
+                    <button type="submit" class="btn btn-primary-app flex-grow-1 fw-bold py-2 shadow-sm">
+                        {% if offer %}تحديث العرض{% else %}تفعيل العرض{% endif %}
+                    </button>
+                    
+                    <!-- زر الإلغاء (يظهر فقط لو فيه عرض) -->
+                    {% if offer %}
+                    <a href="{% url 'merchant_cancel_offer' offer.id %}" class="btn btn-outline-danger fw-bold py-2" onclick="return confirm('هل أنت متأكد من إلغاء العرض؟')">
+                        إلغاء
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        {% endif %}
+        
     </div>
 </div>
 {% endblock %}

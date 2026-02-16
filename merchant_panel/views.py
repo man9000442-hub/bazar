@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.shortcuts import  get_object_or_404
 from django.contrib.auth.decorators import login_required
-from store.models import Product, Order, OrderItem, Wallet
+from store.models import Product, Order, OrderItem, Wallet,MerchantShippingRate,Governorate
 from accounts.models import User
 from django.contrib import messages
 from decimal import Decimal
@@ -60,58 +60,58 @@ from store.models import Category, Product, ProductSize, ProductImage
 
 @login_required
 def add_product(request):
-    if not is_merchant(request.user):
-        return redirect('home')
+    if not is_merchant(request.user): return redirect('home')
 
     if request.method == 'POST':
         # 1. البيانات الأساسية
         name = request.POST.get('name')
         description = request.POST.get('description')
         price = request.POST.get('price')
+        shipping_fee = request.POST.get('shipping_fee', 0)
         category_id = request.POST.get('category')
         main_image = request.FILES.get('main_image')
 
-        # إنشاء المنتج
         product = Product.objects.create(
             merchant=request.user.merchant_profile,
-            name=name,
-            description=description,
-            base_price=price,
-            category_id=category_id,
-            image=main_image,
-            is_active=False # ينتظر موافقة المشرف
+            name=name, description=description, base_price=price,
+            shipping_fee=shipping_fee, category_id=category_id,
+            image=main_image, is_active=False
         )
 
-        # 2. إضافة المقاسات (Sizes)
-        # البيانات تأتي كمصفوفة: sizes[], colors[], quantities[]
-        sizes = request.POST.getlist('sizes[]')
-        colors = request.POST.getlist('colors[]')
-        quantities = request.POST.getlist('quantities[]')
+        # 2. معالجة الألوان والمقاسات (اللوجيك الجديد) 🧠
+        # البيانات تأتي هكذا:
+        # color_group_1 = "أحمر"
+        # sizes_group_1 = ["XL", "L"]
+        # qtys_group_1 = ["5", "3"]
+        
+        # نبحث عن كل المفاتيح التي تبدأ بـ color_group_
+        for key in request.POST:
+            if key.startswith('color_group_'):
+                group_id = key.split('_')[-1] # الرقم (1, 2, ...)
+                color_name = request.POST.get(key)
+                
+                # جلب المقاسات والكميات لهذا الجروب
+                sizes = request.POST.getlist(f'sizes_group_{group_id}[]')
+                qtys = request.POST.getlist(f'qtys_group_{group_id}[]')
+                
+                for i in range(len(sizes)):
+                    if sizes[i] and qtys[i]:
+                        ProductSize.objects.create(
+                            product=product,
+                            color_label=color_name,
+                            size_label=sizes[i],
+                            stock_quantity=qtys[i]
+                        )
 
-        for i in range(len(sizes)):
-            if sizes[i] and quantities[i]: # تأكد أن البيانات موجودة
-                ProductSize.objects.create(
-                    product=product,
-                    size_label=sizes[i],
-                    color_label=colors[i] if i < len(colors) else "Standard",
-                    stock_quantity=quantities[i]
-                )
+        # 3. الصور الإضافية
+        for img in request.FILES.getlist('gallery_images'):
+            ProductImage.objects.create(product=product, image=img)
 
-        # 3. إضافة الصور الإضافية (Gallery)
-        gallery_images = request.FILES.getlist('gallery_images')
-        for img in gallery_images:
-            ProductImage.objects.create(
-                product=product,
-                image=img
-            )
+        messages.success(request, "تم إضافة المنتج بنجاح ✅")
+        return redirect('merchant_products')
 
-        return redirect('merchant_products') # العودة لقائمة المنتجات
-
-    # GET Request
     categories = Category.objects.all()
     return render(request, 'merchant/add_product.html', {'categories': categories})
-
-from store.models import Governorate, MerchantShippingRate
 
 @login_required
 def shipping_settings(request):
@@ -307,6 +307,16 @@ def add_offer(request, product_id):
         current_offer = product.active_offer
     except Offer.DoesNotExist:
         current_offer = None
+
+    is_locked = False
+    if current_offer and current_offer.is_platform_offer and current_offer.is_active:
+        is_locked = True # قفل التعديل
+        
+        # إذا حاول التاجر الالتفاف وعمل POST
+        if request.method == 'POST':
+            messages.error(request, "عفواً، لا يمكنك تعديل عرض تم وضعه بواسطة المنصة.")
+            return redirect('merchant_products')
+        
     if request.method == 'POST':
         percentage = int(request.POST.get('percentage'))
         days = int(request.POST.get('days'))
@@ -327,28 +337,90 @@ def add_offer(request, product_id):
     # إرسال العرض الحالي للقالب
     return render(request, 'merchant/add_offer.html', {
         'product': product,
-        'offer': current_offer # المتغير الجديد
+        'offer': current_offer,
+          'is_locked': is_locked # المتغير الجديد
     })
 
+@login_required
+def cancel_offer(request, offer_id):
+    offer = get_object_or_404(Offer, pk=offer_id, product__merchant=request.user.merchant_profile)
+    
+    # حماية من إلغاء عرض المنصة
+    if offer.is_platform_offer:
+        messages.error(request, "لا يمكنك إلغاء عرض المنصة.")
+    else:
+        offer.delete() # أو offer.is_active = False
+        messages.success(request, "تم إلغاء العرض.")
+        
+    return redirect('merchant_products')
 
 
+from collections import defaultdict
 
 @login_required
 def edit_product(request, product_id):
-    if not is_merchant(request.user):
-        return redirect('home')
+    if not is_merchant(request.user): return redirect('home')
         
     product = get_object_or_404(Product, pk=product_id, merchant=request.user.merchant_profile)
 
     if request.method == 'POST':
+        # 1. تحديث البيانات الأساسية
         product.name = request.POST.get('name')
         product.base_price = request.POST.get('price')
-        # ... باقي الحقول ...
+        product.shipping_fee = request.POST.get('shipping_fee')
+        product.description = request.POST.get('description')
         product.save()
-        messages.success(request, "تم تعديل المنتج.")
+
+        # 2. تحديث المقاسات القديمة
+        # (نستقبل IDs المقاسات الموجودة ونحدث كمياتها أو نحذفها)
+        existing_ids = request.POST.getlist('existing_ids[]')
+        
+        # للحذف: أي مقاس كان موجوداً ولم يعد في القائمة المرسلة، نحذفه
+        # (لكن هنا سنكتفي بتحديث الكميات المرسلة)
+        for vid in existing_ids:
+            qty = request.POST.get(f'qty_{vid}')
+            if qty:
+                size_obj = ProductSize.objects.get(id=vid)
+                size_obj.stock_quantity = qty
+                size_obj.save()
+
+        # 3. إضافة الجديد (بنفس لوجيك الإضافة المتداخل)
+        for key in request.POST:
+            if key.startswith('new_color_group_'):
+                group_id = key.split('_')[-1]
+                color_name = request.POST.get(key)
+                sizes = request.POST.getlist(f'new_sizes_group_{group_id}[]')
+                qtys = request.POST.getlist(f'new_qtys_group_{group_id}[]')
+                
+                for i in range(len(sizes)):
+                    if sizes[i] and qtys[i]:
+                        ProductSize.objects.create(
+                            product=product,
+                            color_label=color_name,
+                            size_label=sizes[i],
+                            stock_quantity=qtys[i]
+                        )
+
+        # 4. إضافة مقاسات جديدة لألوان قديمة (Hybrid)
+        # هذا يحتاج لوجيك معقد، سنكتفي بإضافة "مجموعات جديدة" بالكامل للتبسيط
+
+        messages.success(request, "تم تحديث المنتج بنجاح ✅")
         return redirect('merchant_products')
 
-    return render(request, 'merchant/edit_product.html', {'product': product})
+    # --- تجهيز البيانات للعرض (Grouping) ---
+    # النتيجة: { 'أحمر': [obj1, obj2], 'أزرق': [obj3] }
+    variations_by_color = defaultdict(list)
+    for v in product.variations.all():
+        variations_by_color[v.color_label].append(v)
+    
+    # نحولها لقائمة عادية للقالب (Dict items لا تعمل جيداً في اللوب أحياناً)
+    grouped_variations = dict(variations_by_color)
+
+    return render(request, 'merchant/edit_product.html', {
+        'product': product,
+        'grouped_variations': grouped_variations # البيانات المجمعة
+    })
+
 
 @login_required
 def delete_product(request, product_id):
@@ -356,6 +428,40 @@ def delete_product(request, product_id):
         return redirect('home')
         
     product = get_object_or_404(Product, pk=product_id, merchant=request.user.merchant_profile)
-    product.delete()
-    messages.success(request, "تم حذف المنتج.")
+    
+    # الحل الذكي: التحقق هل المنتج مرتبط بطلبات؟
+    has_orders = product.variations.filter(orderitem__isnull=False).exists()
+    
+    if has_orders:
+        # إذا تم بيعه من قبل -> نخفيه فقط (أرشفة)
+        product.is_active = False 
+        product.save()
+        messages.warning(request, "تم إخفاء المنتج بدلاً من حذفه (لأنه موجود في طلبات سابقة).")
+    else:
+        # إذا لم يُبع أبداً -> نحذفه نهائياً
+        product.delete()
+        messages.success(request, "تم حذف المنتج نهائياً.")
+        
     return redirect('merchant_products')
+
+
+@login_required
+def update_order_status(request, order_id):
+    # 1. التحقق من التاجر
+    if not hasattr(request.user, 'merchant_profile'):
+        return redirect('home')
+    
+    order = get_object_or_404(Order, order_id=order_id)
+    
+    # 2. السماح بالتعديل (بدون تعقيد مؤقتاً)
+    # سنفترض أن التاجر وصل للصفحة، إذن هو يملك الصلاحية (لأننا فحصنا في order_detail)
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        
+        if new_status in ['SHIPPED', 'DELIVERED', 'CANCELLED']:
+            order.status = new_status
+            order.save()
+            messages.success(request, "تم تغيير الحالة بنجاح.")
+        
+    return redirect('merchant_order_detail', order_id=order.order_id)

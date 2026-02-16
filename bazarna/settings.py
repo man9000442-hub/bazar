@@ -142,8 +142,11 @@ AUTH_USER_MODEL = 'accounts.User'
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend', # الدخول العادي
-    'allauth.account.auth_backends.AuthenticationBackend', # الدخول عبر allauth
+    # الباك إند الجديد الخاص بنا (الأهم)
+    'accounts.backends.EmailPhoneUsernameBackend', 
+    
+    # باك إند allauth (ضروري لتسجيل جوجل وغيره)
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 # إعدادات السلوك
@@ -151,7 +154,7 @@ LOGIN_REDIRECT_URL = '/'  # التوجيه بعد الدخول
 LOGOUT_REDIRECT_URL = '/accounts/login/' 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False # يمكن الدخول بالإيميل فقط
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_AUTHENTICATION_METHOD = 'username'
 ACCOUNT_EMAIL_VERIFICATION = 'none' # للتسهيل حالياً (يمكن تفعيلها لاحقاً)
 
 # إعدادات Google (مؤقتة حتى نحصل على المفاتيح الحقيقية)

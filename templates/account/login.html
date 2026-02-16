@@ -13,8 +13,11 @@
     <form class="login" method="POST" action="{% url 'account_login' %}">
         {% csrf_token %}
         
+        <!-- في حقل الـ login -->
         <div class="mb-3">
-            <input type="email" name="login" class="form-control form-control-lg bg-light border-0" placeholder="البريد الإلكتروني" required>
+            <!-- تغيير النص التوضيحي -->
+            <input type="text" name="login" class="form-control form-control-lg bg-light border-0" 
+                placeholder="رقم الهاتف / الإيميل / اسم المستخدم" required>
         </div>
         
         <div class="mb-4">

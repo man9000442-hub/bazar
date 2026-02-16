@@ -5,72 +5,80 @@
 <!-- Header -->
 <div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3 sticky-top">
     <a href="{% url 'merchant_orders' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <div>
-        <h5 class="m-0 fw-bold">تفاصيل الطلب #{{ order.order_id }}</h5>
-        <!-- Badge الحالة -->
-        {% if order.status == 'PENDING' %}
-            <span class="badge bg-warning text-dark border rounded-pill" style="font-size: 10px;">جديد</span>
-        {% elif order.status == 'APPROVED' %}
-            <span class="badge bg-info text-dark border rounded-pill" style="font-size: 10px;">مؤكد</span>
-        {% elif order.status == 'DELIVERED' %}
-            <span class="badge bg-success border rounded-pill" style="font-size: 10px;">تم التسليم</span>
-        {% else %}
-            <span class="badge bg-light text-dark border rounded-pill" style="font-size: 10px;">{{ order.get_status_display }}</span>
-        {% endif %}
+    <div class="flex-grow-1">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="m-0 fw-bold">طلب #{{ order.order_id }}</h5>
+            <small class="text-muted">{{ order.created_at|date:"d M, h:i A" }}</small>
+        </div>
+        
+        <!-- شريط التقدم للحالة -->
+        <div class="progress mt-2" style="height: 6px;">
+            {% if order.status == 'PENDING' %}
+                <div class="progress-bar bg-warning" style="width: 33%"></div>
+            {% elif order.status == 'SHIPPED' %}
+                <div class="progress-bar bg-info" style="width: 66%"></div>
+            {% elif order.status == 'DELIVERED' %}
+                <div class="progress-bar bg-success" style="width: 100%"></div>
+            {% elif order.status == 'CANCELLED' %}
+                <div class="progress-bar bg-danger" style="width: 100%"></div>
+            {% endif %}
+        </div>
+        <div class="d-flex justify-content-between mt-1 text-muted" style="font-size: 9px;">
+            <span>استلام</span>
+            <span>شحن</span>
+            <span>تسليم</span>
+        </div>
     </div>
 </div>
 
 <div class="container pb-5 mb-5">
     
-    <!-- 1. كارت بيانات العميل (Customer Info) -->
+    <!-- 1. كارت العميل -->
     <div class="card border-0 shadow-sm mb-3 p-3 bg-white">
         <h6 class="fw-bold mb-3 d-flex align-items-center text-primary">
             <i class="fas fa-user-circle me-2"></i> بيانات العميل
         </h6>
         
-        <!-- الاسم -->
-        <div class="d-flex align-items-center mb-2">
-            <div class="bg-light rounded-circle p-2 me-3" style="width: 35px; height: 35px; display: flex; justify-content: center; align-items: center;">
-                <i class="fas fa-user text-muted"></i>
-            </div>
+        <div class="d-flex align-items-center mb-3">
+            <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-user text-muted"></i></div>
             <div>
                 <small class="text-muted d-block" style="font-size: 10px;">الاسم</small>
                 <span class="fw-bold text-dark">{{ order.customer.first_name }} {{ order.customer.last_name }}</span>
             </div>
         </div>
 
-        <!-- الهاتف -->
-        <div class="d-flex align-items-center mb-2">
-            <div class="bg-light rounded-circle p-2 me-3" style="width: 35px; height: 35px; display: flex; justify-content: center; align-items: center;">
-                <i class="fas fa-phone text-muted"></i>
-            </div>
-            <div>
+        <div class="d-flex align-items-center mb-3">
+            <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-phone text-muted"></i></div>
+            <div class="flex-grow-1">
                 <small class="text-muted d-block" style="font-size: 10px;">رقم الهاتف</small>
                 <a href="tel:{{ order.shipping_phone }}" class="text-decoration-none fw-bold text-dark">{{ order.shipping_phone }}</a>
             </div>
+            <a href="https://wa.me/20{{ order.shipping_phone|slice:'1:' }}" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                <i class="fab fa-whatsapp"></i>
+            </a>
         </div>
 
-        <!-- العنوان -->
         <div class="d-flex align-items-start">
-            <div class="bg-light rounded-circle p-2 me-3" style="width: 35px; height: 35px; display: flex; justify-content: center; align-items: center;">
-                <i class="fas fa-map-marker-alt text-muted"></i>
-            </div>
-            <div>
+            <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-map-marker-alt text-muted"></i></div>
+            <div class="flex-grow-1">
                 <small class="text-muted d-block" style="font-size: 10px;">العنوان</small>
-                <span class="fw-bold small text-dark">
+                <span class="fw-bold small text-dark" id="address-text">
                     {{ order.governorate.name }} - {{ order.shipping_address }}
                 </span>
             </div>
+            <button class="btn btn-sm btn-light text-muted border" onclick="navigator.clipboard.writeText(document.getElementById('address-text').innerText)">
+                <i class="far fa-copy"></i>
+            </button>
         </div>
     </div>
 
-    <!-- 2. المنتجات المطلوبة من هذا التاجر -->
-    <h6 class="fw-bold mb-2 px-1 text-dark">المنتجات المطلوبة منك</h6>
+    <!-- 2. المنتجات -->
+    <h6 class="fw-bold mb-2 px-1 text-dark">المنتجات المطلوبة</h6>
     {% for item in items %}
     <div class="card border-0 shadow-sm mb-2 p-2 bg-white">
         <div class="d-flex align-items-center">
             <!-- صورة المنتج -->
-            <div class="me-3 border rounded overflow-hidden" style="width: 60px; height: 60px;">
+            <div class="me-3 border rounded overflow-hidden position-relative" style="width: 70px; height: 70px;">
                 {% if item.product_size.product.image %}
                     <img src="{{ item.product_size.product.image.url }}" class="w-100 h-100" style="object-fit: cover;">
                 {% else %}
@@ -78,39 +86,91 @@
                         <i class="fas fa-camera text-muted"></i>
                     </div>
                 {% endif %}
+                <span class="position-absolute bottom-0 end-0 bg-dark text-white px-1 small" style="font-size: 10px;">x{{ item.quantity }}</span>
             </div>
             
             <!-- التفاصيل -->
-            <div>
-                <h6 class="m-0 fw-bold small text-dark">{{ item.product_size.product.name }}</h6>
-                <p class="m-0 text-muted" style="font-size: 11px;">
-                    المقاس: {{ item.product_size.size_label }} | اللون: {{ item.product_size.color_label }}
-                </p>
+            <div class="flex-grow-1">
+                <h6 class="m-0 fw-bold text-dark mb-1">{{ item.product_size.product.name }}</h6>
+                <div class="d-flex gap-2 mb-1">
+                    <span class="badge bg-light text-dark border">{{ item.product_size.size_label }}</span>
+                    <span class="badge bg-light text-dark border">{{ item.product_size.color_label }}</span>
+                </div>
                 <span class="text-primary fw-bold small">{{ item.price_at_purchase }} ج.م</span>
-            </div>
-            
-            <!-- الكمية -->
-            <div class="ms-auto bg-light rounded px-3 py-2 fw-bold text-dark border">
-                x{{ item.quantity }}
             </div>
         </div>
     </div>
     {% endfor %}
 
-    <!-- 3. أزرار الإجراءات العائمة (Fixed Bottom) -->
-    <div class="fixed-bottom bg-white p-3 border-top shadow-lg d-flex gap-2" style="bottom: 0; z-index: 1000;">
-        <!-- زر واتساب -->
-        <a href="https://wa.me/20{{ order.shipping_phone|slice:'1:' }}" target="_blank" class="btn btn-success flex-grow-1 py-2 fw-bold shadow-sm">
-            <i class="fab fa-whatsapp me-2"></i> تواصل (واتساب)
-        </a>
-        <!-- زر اتصال -->
-        <a href="tel:{{ order.shipping_phone }}" class="btn btn-primary-app flex-grow-1 py-2 fw-bold shadow-sm">
-            <i class="fas fa-phone me-2"></i> اتصال
-        </a>
+    <!-- 3. تفاصيل الدفع -->
+    <div class="card border-0 shadow-sm mt-3 p-3 bg-white">
+        <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">المجموع</span>
+            <span>{{ order.total_products_price }} ج.م</span>
+        </div>
+        <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">الشحن</span>
+            <span>{{ order.shipping_cost }} ج.م</span>
+        </div>
+        <hr class="my-2">
+        <div class="d-flex justify-content-between fw-bold text-dark">
+            <span>الإجمالي (COD)</span>
+            <span>{{ order.final_total }} ج.م</span>
+        </div>
     </div>
+
 </div>
 
-<!-- مسافة إضافية عشان الأزرار العائمة متغطيش المحتوى -->
-<div style="height: 80px;"></div>
+<!-- 4. شريط التحكم السفلي (Fixed Bottom Actions) -->
+<div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 0; z-index: 1000; border-radius: 20px 20px 0 0;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-muted small">الحالة الحالية</span>
+        <span class="fw-bold text-dark badge bg-light border">{{ order.get_status_display }}</span>
+    </div>
+
+    <!-- الفورم يبدأ هنا -->
+    <form method="POST" action="{% url 'merchant_update_order' order.order_id %}">
+        {% csrf_token %}
+        
+        <div class="d-grid gap-2">
+            
+            <!-- الحالة: انتظار (PENDING) -->
+            {% if order.status == 'PENDING' %}
+                <button type="submit" name="status" value="SHIPPED" class="btn btn-primary-app fw-bold py-2 shadow-sm">
+                    <i class="fas fa-truck me-2"></i> بدء الشحن
+                </button>
+                <button type="submit" name="status" value="CANCELLED" class="btn btn-outline-danger py-2" onclick="return confirm('هل أنت متأكد من إلغاء الطلب؟')">
+                    إلغاء الطلب
+                </button>
+
+            <!-- الحالة: تم الشحن (SHIPPED) -->
+            {% elif order.status == 'SHIPPED' %}
+                <button type="submit" name="status" value="DELIVERED" class="btn btn-success fw-bold py-2 shadow-sm">
+                    <i class="fas fa-check-circle me-2"></i> تأكيد التسليم
+                </button>
+                <div class="alert alert-info small mb-0 py-2 text-center mt-2">
+                    <i class="fas fa-info-circle"></i> تأكيد التسليم سيضيف الأرباح لمحفظتك.
+                </div>
+
+            <!-- الحالة: تم التسليم (DELIVERED) -->
+            {% elif order.status == 'DELIVERED' %}
+                <div class="btn btn-light text-success fw-bold py-2 disabled border-success bg-success-subtle">
+                    <i class="fas fa-check-double me-2"></i> تم التسليم بنجاح
+                </div>
+
+            <!-- الحالة: ملغي (CANCELLED) -->
+            {% elif order.status == 'CANCELLED' %}
+                <div class="btn btn-light text-danger fw-bold py-2 disabled border-danger bg-danger-subtle">
+                    <i class="fas fa-times-circle me-2"></i> تم إلغاء الطلب
+                </div>
+            {% endif %}
+            
+        </div>
+    </form>
+</div>
+
+<!-- مساحة إضافية في الأسفل -->
+<div style="height: 160px;"></div>
 
 {% endblock %}

@@ -12,8 +12,8 @@
     <form method="POST" enctype="multipart/form-data" class="card p-4 shadow-sm border-0">
         {% csrf_token %}
 
-        <!-- البيانات الأساسية -->
-        <h6 class="fw-bold text-gold mb-3">1. تفاصيل المنتج</h6>
+        <!-- 1. تفاصيل المنتج -->
+        <h6 class="fw-bold text-primary mb-3">1. تفاصيل المنتج</h6>
         
         <div class="mb-3">
             <label class="form-label small text-muted">اسم المنتج</label>
@@ -21,14 +21,19 @@
         </div>
 
         <div class="row">
-            <div class="col-6 mb-3">
+            <div class="col-4 mb-3">
                 <label class="form-label small text-muted">السعر (ج.م)</label>
                 <input type="number" name="price" class="form-control" step="0.5" required>
             </div>
-            <div class="col-6 mb-3">
+            {% comment %} <div class="col-4 mb-3">
+                <label class="form-label small text-muted">شحن إضافي (للأحجام الكبيرة)</label>
+                <input type="number" name="shipping_fee" class="form-control" value="0" step="1">
+                <div class="form-text small" style="font-size: 9px;">يضاف فوق سعر شحن المحافظة.</div>
+            </div> {% endcomment %}
+            <div class="col-4 mb-3">
                 <label class="form-label small text-muted">القسم</label>
                 <select name="category" class="form-select" required>
-                    <option value="">اختر القسم...</option>
+                    <option value="">اختر...</option>
                     {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.name }}</option>
                     {% endfor %}
@@ -46,67 +51,87 @@
             <input type="file" name="main_image" class="form-control" accept="image/*" required>
         </div>
 
-        <!-- المقاسات والألوان -->
-        <h6 class="fw-bold text-gold mb-3 d-flex justify-content-between">
-            <span>2. المخزون (الألوان والمقاسات)</span>
-            <button type="button" class="btn btn-sm btn-outline-warning" onclick="addSizeRow()">
-                <i class="fas fa-plus"></i> إضافة سطر
-            </button>
-        </h6>
-
-        <div id="sizes-container">
-            <!-- السطر الأول (إجباري) -->
-            <div class="row g-2 mb-2 size-row">
-                <div class="col-4">
-                    <input type="text" name="sizes[]" class="form-control form-control-sm" placeholder="المقاس (XL)" required>
-                </div>
-                <div class="col-4">
-                    <input type="text" name="colors[]" class="form-control form-control-sm" placeholder="اللون (أحمر)" required>
-                </div>
-                <div class="col-3">
-                    <input type="number" name="quantities[]" class="form-control form-control-sm" placeholder="الكمية" required>
-                </div>
-                <div class="col-1 text-center">
-                    <!-- زر الحذف (مخفي للسطر الأول) -->
-                </div>
-            </div>
+        <!-- 2. المخزون (النظام الجديد المتداخل) -->
+        <h6 class="fw-bold text-primary mb-3">2. المخزون (الألوان والمقاسات)</h6>
+        
+        <div id="variants-wrapper">
+            <!-- هنا تظهر الكروت -->
         </div>
-        <p class="form-text text-muted small mb-4">اضغط "إضافة سطر" لإضافة المزيد من الألوان والمقاسات.</p>
 
-        <!-- صور المعرض -->
-        <h6 class="fw-bold text-gold mb-3">3. صور إضافية (اختياري)</h6>
+        <button type="button" class="btn btn-outline-primary w-100 mb-4 dashed-border" onclick="addColorGroup()">
+            <i class="fas fa-plus-circle me-1"></i> إضافة لون جديد
+        </button>
+
+        <!-- 3. صور إضافية -->
+        <h6 class="fw-bold text-primary mb-3">3. صور المعرض (اختياري)</h6>
         <div class="mb-4">
             <input type="file" name="gallery_images" class="form-control" multiple accept="image/*">
-            <div class="form-text">يمكنك اختيار أكثر من صورة مرة واحدة.</div>
         </div>
 
-        <button type="submit" class="btn btn-gold w-100 fw-bold py-2 shadow-sm">حفظ المنتج</button>
+        <button type="submit" class="btn btn-primary-app w-100 fw-bold py-3 shadow-sm">حفظ المنتج</button>
     </form>
 </div>
 
-<!-- JavaScript لإضافة السطور ديناميكياً -->
+<style>
+    .dashed-border { border: 2px dashed #cfe2ff; background: #f8f9fa; color: #0d6efd; }
+    .dashed-border:hover { background: #e7f1ff; }
+</style>
+
 <script>
-function addSizeRow() {
-    const container = document.getElementById('sizes-container');
-    const newRow = document.createElement('div');
-    newRow.className = 'row g-2 mb-2 size-row';
-    newRow.innerHTML = `
-        <div class="col-4">
-            <input type="text" name="sizes[]" class="form-control form-control-sm" placeholder="المقاس">
+let groupCounter = 0;
+
+function addColorGroup() {
+    groupCounter++;
+    const wrapper = document.getElementById('variants-wrapper');
+    
+    const card = document.createElement('div');
+    card.className = 'card border-0 shadow-sm mb-3 bg-light';
+    
+    card.innerHTML = `
+        <div class="card-header bg-white border-bottom-0 d-flex justify-content-between align-items-center pt-3">
+            <div class="d-flex align-items-center flex-grow-1 me-3">
+                <span class="badge bg-primary rounded-circle me-2">${groupCounter}</span>
+                <input type="text" name="color_group_${groupCounter}" class="form-control form-control-sm border fw-bold" placeholder="اكتب اسم اللون (مثلاً: أحمر)" required>
+            </div>
+            <button type="button" class="btn btn-sm text-danger" onclick="this.closest('.card').remove()"><i class="fas fa-trash-alt"></i></button>
         </div>
-        <div class="col-4">
-            <input type="text" name="colors[]" class="form-control form-control-sm" placeholder="اللون">
-        </div>
-        <div class="col-3">
-            <input type="number" name="quantities[]" class="form-control form-control-sm" placeholder="الكمية">
-        </div>
-        <div class="col-1 text-center">
-            <button type="button" class="btn btn-sm text-danger p-0 mt-1" onclick="this.parentElement.parentElement.remove()">
-                <i class="fas fa-times"></i>
+        
+        <div class="card-body pt-0">
+            <hr class="text-muted opacity-25 mt-0 mb-3">
+            <div id="sizes-container-${groupCounter}"></div>
+            
+            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 mt-2" onclick="addSizeRow(${groupCounter})">
+                <i class="fas fa-plus"></i> أضف مقاساً لهذا اللون
             </button>
         </div>
     `;
-    container.appendChild(newRow);
+    
+    wrapper.appendChild(card);
+    addSizeRow(groupCounter);
 }
+
+function addSizeRow(groupId) {
+    const container = document.getElementById(`sizes-container-${groupId}`);
+    const row = document.createElement('div');
+    row.className = 'row g-2 mb-2 align-items-center';
+    
+    row.innerHTML = `
+        <div class="col-5">
+            <input type="text" name="sizes_group_${groupId}[]" class="form-control form-control-sm" placeholder="المقاس (XL)" required>
+        </div>
+        <div class="col-5">
+            <input type="number" name="qtys_group_${groupId}[]" class="form-control form-control-sm" placeholder="الكمية" required>
+        </div>
+        <div class="col-2 text-center">
+            <i class="fas fa-times text-muted cursor-pointer" onclick="this.closest('.row').remove()"></i>
+        </div>
+    `;
+    container.appendChild(row);
+}
+
+// تشغيل أول لون تلقائياً
+document.addEventListener('DOMContentLoaded', function() {
+    addColorGroup();
+});
 </script>
 {% endblock %}

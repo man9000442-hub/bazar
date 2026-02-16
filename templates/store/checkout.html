@@ -4,8 +4,8 @@
 
 <!-- Header -->
 <div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
-    <a href="javascript:history.back()" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <h5 class="m-0 fw-bold">الشحن والدفع</h5>
+    <a href="{% url 'cart_view' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
+    <h5 class="m-0 fw-bold">إتمام الطلب</h5>
 </div>
 
 <div class="container pb-5 mb-5">
@@ -14,14 +14,12 @@
         
         <!-- 1. عنوان التوصيل -->
         <div class="card border-0 shadow-sm mb-3 p-3">
-            <h6 class="fw-bold mb-3 d-flex align-items-center">
-                <div class="bg-light rounded-circle p-2 me-2"><i class="fas fa-map-marker-alt text-primary"></i></div>
-                عنوان التوصيل
+            <h6 class="fw-bold mb-3 d-flex align-items-center text-primary">
+                <i class="fas fa-map-marker-alt me-2"></i> بيانات الشحن
             </h6>
             
             <div class="mb-3">
                 <label class="form-label text-muted small">المحافظة</label>
-                <!-- لاحظ: onchange يستدعي الدالة -->
                 <select name="city" id="city-select" class="form-select bg-light border-0" onchange="updateShipping()" required>
                     <option value="">اختر المحافظة...</option>
                     {% for gov in governorates %}
@@ -31,7 +29,7 @@
             </div>
             
             <div class="mb-3">
-                <label class="form-label text-muted small">العنوان التفصيلي</label>
+                <label class="form-label text-muted small">العنوان بالتفصيل</label>
                 <textarea name="address" class="form-control bg-light border-0" rows="2" placeholder="اسم الشارع، رقم العمارة..." required></textarea>
             </div>
 
@@ -41,38 +39,64 @@
             </div>
         </div>
 
-        <!-- 2. ملخص الدفع -->
+        <!-- 2. تفاصيل الفاتورة (مقسمة حسب التاجر) -->
         <div class="card border-0 shadow-sm mb-3 p-3 bg-white">
-            <h6 class="fw-bold mb-3">ملخص الدفع</h6>
+            <h6 class="fw-bold mb-3 text-primary">تفاصيل الطلب</h6>
             
-            <div class="d-flex justify-content-between mb-2 small">
-                <span class="text-muted">قيمة المنتجات</span>
-                <span class="fw-bold">{{ order.total_products_price }} ج.م</span>
+            {% for group in cart_structure %}
+            <div class="mb-3 pb-3 border-bottom last-no-border">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-store text-warning me-2"></i>
+                    <h6 class="fw-bold text-dark mb-0">{{ group.merchant.user.first_name }}</h6>
+                </div>
+                
+                <!-- المنتجات -->
+                <div class="ps-4 border-start border-2 ms-1">
+                    {% for item in group.items %}
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>{{ item.product_size.product.name }} (x{{ item.quantity }})</span>
+                        <span>{{ item.total_price }} ج.م</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- الشحن الخاص بهذا التاجر -->
+                <div class="d-flex justify-content-between align-items-center mt-2 ps-4 small bg-light p-2 rounded">
+                    <span class="text-muted">تكلفة الشحن:</span>
+                    <!-- سنستخدم ID مميز لتحديثه بالـ JS -->
+                    <span class="fw-bold text-dark shipping-val" id="shipping-merch-{{ group.merchant.id }}">--</span>
+                </div>
             </div>
-            
-            <div class="d-flex justify-content-between mb-2 small">
-                <span class="text-muted">رسوم الشحن</span>
-                <!-- هذا العنصر سيتم تحديثه بالجافاسكربت -->
-                <span id="shipping-cost" class="fw-bold text-dark">-- ج.م</span>
-            </div>
-            
-            <!-- رسوم الخدمة (اختياري) -->
-            <div class="d-flex justify-content-between mb-2 small">
-                <span class="text-muted">رسوم الخدمة</span>
-                <span>{{ order.platform_fees }} ج.م</span>
-            </div>
+            {% endfor %}
 
-            <hr class="my-2">
-            
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="fw-bold">الإجمالي الكلي</span>
-                <!-- الإجمالي النهائي -->
-                <span id="final-total" class="fw-bold text-primary fs-5">-- ج.م</span>
+            <!-- الملخص النهائي -->
+            <div class="mt-3">
+                <div class="d-flex justify-content-between mb-1 small text-muted">
+                    <span>إجمالي المنتجات</span>
+                    <span>{{ cart_total }} ج.م</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1 small text-muted">
+                    <span>إجمالي الشحن</span>
+                    <span id="total-shipping-display">--</span>
+                </div>
+                {% if platform_fees > 0 %}
+                <div class="d-flex justify-content-between mb-1 small text-muted">
+                    <span>رسوم خدمة</span>
+                    <span>{{ platform_fees }} ج.م</span>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5">الإجمالي للدفع</span>
+                    <span id="grand-total-display" class="fw-bold text-gold fs-4">-- ج.م</span>
+                </div>
             </div>
         </div>
 
         <!-- زر التأكيد العائم -->
-        <div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 70px;">
+        <div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 70px; z-index: 990;">
             <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold shadow-sm" id="confirm-btn" disabled>
                 تأكيد الطلب (دفع عند الاستلام)
             </button>
@@ -81,52 +105,63 @@
     </form>
 </div>
 
-<!-- JavaScript لحساب الشحن تلقائياً -->
+<style>
+    .last-no-border:last-child { border-bottom: none !important; }
+</style>
+
+<!-- JavaScript -->
 <script>
 function updateShipping() {
     const govId = document.getElementById('city-select').value;
-    const shippingEl = document.getElementById('shipping-cost');
-    const totalEl = document.getElementById('final-total');
     const confirmBtn = document.getElementById('confirm-btn');
     const msgEl = document.getElementById('select-city-msg');
+    
+    // العناصر العامة
+    const totalShippingEl = document.getElementById('total-shipping-display');
+    const grandTotalEl = document.getElementById('grand-total-display');
 
-    // إذا لم يتم اختيار محافظة
     if (!govId) {
-        shippingEl.innerText = "-- ج.م";
-        totalEl.innerText = "-- ج.م";
         confirmBtn.disabled = true;
         msgEl.style.display = 'block';
         return;
     }
 
-    // إظهار حالة التحميل
-    shippingEl.innerText = "...";
-    totalEl.innerText = "...";
+    // حالة التحميل
     confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحساب...';
 
-    // استدعاء API الباك إند
+    // استدعاء API
     fetch(`/api/calc-shipping/?gov_id=${govId}`)
-        .then(response => {
-            if (!response.ok) { throw new Error('Network response was not ok'); }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            // تحديث الأرقام
-            shippingEl.innerText = data.shipping.toFixed(2) + " ج.م";
-            totalEl.innerText = data.total.toFixed(2) + " ج.م";
-            
-            // تفعيل الزر
+            // 1. تحديث شحن كل تاجر
+            data.shipping_details.forEach(detail => {
+                const el = document.getElementById(`shipping-merch-${detail.merchant_id}`);
+                if (el) {
+                    if (detail.cost == 0) {
+                        el.innerHTML = '<span class="text-success">مجاني (أول طلب)</span>';
+                    } else {
+                        el.innerText = detail.cost + " ج.م";
+                    }
+                }
+            });
+
+            // 2. تحديث الإجماليات
+            totalShippingEl.innerText = data.total_shipping + " ج.م";
+            grandTotalEl.innerText = data.grand_total + " ج.م";
+
+            // 3. تفعيل الزر
             confirmBtn.disabled = false;
+            confirmBtn.innerText = "تأكيد الطلب (دفع عند الاستلام)";
             msgEl.style.display = 'none';
         })
-        .catch(error => {
-            console.error('Error:', error);
-            shippingEl.innerText = "خطأ";
-            totalEl.innerText = "خطأ";
+        .catch(err => {
+            console.error(err);
+            confirmBtn.innerText = "حدث خطأ";
         });
 }
 
-// تشغيل الدالة فوراً عند تحميل الصفحة (إذا كان هناك قيمة محفوظة للمحافظة)
+// تشغيل عند التحميل (في حالة العودة للصفحة)
 document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('city-select').value) {
         updateShipping();

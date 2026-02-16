@@ -42,7 +42,7 @@ class Product(models.Model):
     description = models.TextField(verbose_name="وصف المنتج")
     base_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="السعر الأساسي")
     image = models.ImageField(upload_to='products/', verbose_name="صورة المنتج الرئيسية")
-    
+    shipping_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="مصاريف الشحن")
     is_active = models.BooleanField(default=False, verbose_name="مفعل (موافقة المشرف)")
     created_at = models.DateTimeField(auto_now_add=True)
     admin_commission = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="عمولة المنصة")
@@ -72,7 +72,7 @@ class Wallet(models.Model):
     merchant = models.OneToOneField(MerchantProfile, on_delete=models.CASCADE, related_name='wallet')
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="الرصيد الحالي")
     updated_at = models.DateTimeField(auto_now=True)
-
+    pending_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="رصيد معلق")
     def __str__(self):
         return f"محفظة: {self.merchant.user.username} - {self.balance} ج.م"
 
@@ -80,6 +80,7 @@ class Wallet(models.Model):
 class WalletTransaction(models.Model):
     class TxType(models.TextChoices):
         SALE = "SALE", "ربح مبيعات"
+        PENDING = "PENDING", "ربح معلق"
         COMPENSATION = "COMPENSATION", "تعويض (شحن/خصم)"
         WITHDRAWAL = "WITHDRAWAL", "سحب أرباح"
         REFUND_DEDUCTION = "REFUND", "خصم مرتجع"
@@ -94,7 +95,7 @@ class WalletTransaction(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     balance_after = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="الرصيد بعد العملية")
-
+    is_released = models.BooleanField(default=False, verbose_name="تم تحرير الرصيد") # <--- أضفه هنا
     def __str__(self):
         return f"{self.get_transaction_type_display()} - {self.amount}"
     
@@ -132,8 +133,10 @@ class Order(models.Model):
     order_id = models.CharField(max_length=20, unique=True, editable=False, verbose_name="رقم الطلب")
     
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='orders', verbose_name="العميل")
-    
-    # تفاصيل العنوان (يتم حفظها كنص لضمان عدم تغيرها في السجلات التاريخية)
+    is_confirmed_by_customer = models.BooleanField(null=True, blank=True, verbose_name="تأكيد العميل")
+    rejection_reason = models.TextField(blank=True, null=True, verbose_name="سبب الرفض")
+    rating = models.PositiveIntegerField(default=0, verbose_name="التقييم (1-5)")   
+    merchant = models.ForeignKey(MerchantProfile, on_delete=models.PROTECT, null=True, blank=True, related_name='merchant_orders')    # تفاصيل العنوان (يتم حفظها كنص لضمان عدم تغيرها في السجلات التاريخية)
     shipping_address = models.TextField(verbose_name="عنوان الشحن")
     shipping_phone = models.CharField(max_length=15, verbose_name="رقم التواصل")
     
