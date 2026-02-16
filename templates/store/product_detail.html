@@ -2,21 +2,23 @@
 
 {% block content %}
 
-<!-- زر الرجوع ومشاركة (في الأعلى) -->
+<!-- 1. Top Bar -->
 <div class="d-flex justify-content-between align-items-center p-3 sticky-top bg-white border-bottom shadow-sm">
     <a href="javascript:history.back()" class="text-dark">
         <i class="fas fa-arrow-right fs-5"></i>
     </a>
     <div class="d-flex gap-3">
-        <i class="far fa-heart fs-5 text-muted"></i>
+        <!-- زر المفضلة (Ajax) -->
+        <button onclick="toggleFavDetail('{{ product.id }}')" class="btn border-0 bg-transparent p-0">
+            <i class="{% if is_fav %}fas text-danger{% else %}far text-muted{% endif %} fa-heart fs-5" id="fav-icon"></i>
+        </button>
         <i class="fas fa-share-alt fs-5 text-muted"></i>
     </div>
 </div>
 
-<!-- صور المنتج (سلايدر كامل العرض) -->
+<!-- 2. Images Slider -->
 <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-inner">
-        <!-- الصورة الرئيسية -->
         <div class="carousel-item active">
             {% if product.image %}
                 <img src="{{ product.image.url }}" class="d-block w-100" style="height: 350px; object-fit: cover;">
@@ -26,8 +28,6 @@
                 </div>
             {% endif %}
         </div>
-        
-        <!-- الصور الإضافية -->
         {% for img in product.images.all %}
         <div class="carousel-item">
             <img src="{{ img.image.url }}" class="d-block w-100" style="height: 350px; object-fit: cover;">
@@ -35,7 +35,6 @@
         {% endfor %}
     </div>
     
-    <!-- مؤشرات السلايدر -->
     {% if product.images.exists %}
     <div class="carousel-indicators">
         <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active"></button>
@@ -46,10 +45,9 @@
     {% endif %}
 </div>
 
-<!-- تفاصيل المنتج -->
+<!-- 3. Product Info -->
 <div class="container bg-white rounded-top-4 p-4 position-relative" style="margin-top: -20px; z-index: 10;">
     
-    <!-- القسم والتقييم -->
     <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-light text-primary border border-primary rounded-pill px-3 py-1">
             {{ product.category.name }}
@@ -59,11 +57,22 @@
         </div>
     </div>
 
-    <!-- الاسم والسعر -->
     <h5 class="fw-bold mb-2">{{ product.name }}</h5>
+    
+    <!-- السعر (مع العرض إن وجد) -->
     <div class="d-flex align-items-center mb-3">
-        <h3 class="text-primary fw-bold mb-0 me-2">{{ product.base_price }}</h3>
-        <span class="text-muted small">ج.م</span>
+        {% if product.active_offer and product.active_offer.is_active %}
+            <!-- السعر الجديد -->
+            <h3 class="text-danger fw-bold mb-0 me-2">{{ product.active_offer.discounted_price|floatformat:0 }}</h3>
+            <span class="text-danger small fw-bold me-2">ج.م</span>
+            <!-- السعر القديم مشطوب -->
+            <span class="text-muted text-decoration-line-through small me-2">{{ product.base_price }}</span>
+            <span class="badge bg-danger rounded-pill">-{{ product.active_offer.discount_percentage }}%</span>
+        {% else %}
+            <!-- السعر العادي -->
+            <h3 class="text-primary fw-bold mb-0 me-2">{{ product.base_price }}</h3>
+            <span class="text-muted small">ج.م</span>
+        {% endif %}
         
         {% if product.shipping_fee == 0 %}
             <span class="badge bg-success ms-auto">شحن مجاني</span>
@@ -74,17 +83,15 @@
 
     <hr class="text-muted opacity-25">
 
-    <!-- الوصف -->
     <h6 class="fw-bold mb-2">الوصف</h6>
     <p class="text-muted small mb-4" style="line-height: 1.6;">
         {{ product.description|linebreaksbr }}
     </p>
 
-    <!-- فورم الإضافة للسلة -->
+    <!-- 4. Form (Add to Cart) -->
     <form method="POST" action="{% url 'add_to_cart' product.pk %}" class="pb-5 mb-5">
         {% csrf_token %}
         
-        <!-- اختيار المقاس/اللون -->
         <h6 class="fw-bold mb-3">اختر المقاس واللون</h6>
         <div class="d-flex flex-wrap gap-2 mb-4">
             {% for size in sizes %}
@@ -100,16 +107,37 @@
             {% endfor %}
         </div>
 
-        <!-- الشريط السفلي العائم (الإضافة للسلة) -->
-        <div class="fixed-bottom bg-white p-3 border-top shadow-lg d-flex align-items-center gap-3" style="z-index: 1000;">
-            <!-- الكمية -->
+        <!-- 5. Similar Products -->
+        {% if similar_products %}
+        <h6 class="fw-bold mb-3 mt-4">منتجات مشابهة</h6>
+        <div class="d-flex overflow-auto pb-2" style="gap: 10px;">
+            {% for sim in similar_products %}
+            <a href="{% url 'product_detail' sim.pk %}" class="text-decoration-none text-dark">
+                <div class="card border-0 shadow-sm" style="width: 120px;">
+                    <div style="height: 100px; overflow: hidden; border-radius: 12px 12px 0 0;">
+                        {% if sim.image %}
+                            <img src="{{ sim.image.url }}" class="w-100 h-100" style="object-fit: cover;">
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-2">
+                        <h6 class="text-truncate small fw-bold mb-1">{{ sim.name }}</h6>
+                        <span class="text-primary small fw-bold">{{ sim.base_price }} ج.م</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <hr class="text-muted opacity-25 my-4">
+        {% endif %}
+
+        <!-- 6. Floating Action Bar -->
+        <div class="fixed-bottom bg-white p-3 border-top shadow-lg d-flex align-items-center gap-3" style="bottom: 70px; z-index: 1000;">
             <div class="bg-light rounded-pill d-flex align-items-center px-2 py-1 border" style="width: 120px; justify-content: space-between;">
                 <button type="button" class="btn btn-sm text-muted" onclick="this.nextElementSibling.stepDown()"><i class="fas fa-minus"></i></button>
                 <input type="number" name="quantity" class="form-control form-control-sm border-0 bg-transparent text-center p-0 fw-bold" value="1" min="1" max="10" style="width: 40px;">
                 <button type="button" class="btn btn-sm text-primary" onclick="this.previousElementSibling.stepUp()"><i class="fas fa-plus"></i></button>
             </div>
 
-            <!-- زر الإضافة -->
             <button type="submit" class="btn btn-primary-app w-100 py-2 fw-bold shadow-sm" {% if not sizes %}disabled{% endif %}>
                 إضافة للسلة <i class="fas fa-shopping-bag ms-2"></i>
             </button>
@@ -118,12 +146,28 @@
 </div>
 
 <style>
-    /* تخصيص زر الراديو المختار */
     .btn-check:checked + label {
         background-color: var(--primary-blue);
         color: white;
         border-color: var(--primary-blue);
     }
 </style>
+
+<script>
+function toggleFavDetail(productId) {
+    fetch(`/wishlist/toggle/${productId}/`)
+        .then(response => response.json())
+        .then(data => {
+            const icon = document.getElementById('fav-icon');
+            if (data.added) {
+                icon.classList.remove('far', 'text-muted');
+                icon.classList.add('fas', 'text-danger');
+            } else {
+                icon.classList.remove('fas', 'text-danger');
+                icon.classList.add('far', 'text-muted');
+            }
+        });
+}
+</script>
 
 {% endblock %}

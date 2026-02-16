@@ -5,27 +5,34 @@
 <!-- Header Profile -->
 <div class="bg-primary text-white p-4 pt-5 pb-5 text-center position-relative" style="border-radius: 0 0 30px 30px;">
     <div class="bg-white rounded-circle d-inline-flex p-1 mb-2 shadow-sm">
-        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=random" 
+        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=random&size=128" 
              class="rounded-circle" width="80">
     </div>
     <h5 class="fw-bold mb-0">{{ request.user.first_name }} {{ request.user.last_name }}</h5>
     <p class="small opacity-75 mb-0">{{ request.user.phone_primary }}</p>
     
     {% if request.user.role == 'MERCHANT' %}
-        <span class="badge bg-warning text-dark rounded-pill mt-2 px-3">تاجر</span>
+        <span class="badge bg-warning text-dark rounded-pill mt-2 px-3 fw-bold">تاجر</span>
     {% endif %}
 </div>
 
 <!-- القائمة -->
 <div class="container py-4" style="margin-top: -30px;">
-    <div class="card border-0 shadow-sm overflow-hidden">
+    <div class="card border-0 shadow-sm overflow-hidden mb-3">
         <div class="list-group list-group-flush">
             
             <!-- لوحة التاجر (تظهر فقط للتجار) -->
             {% if request.user.role == 'MERCHANT' and request.user.merchant_profile.is_approved %}
-            <a href="{% url 'merchant_dashboard' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
-                <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-store text-warning"></i></div>
+            <a href="{% url 'merchant_dashboard' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center bg-warning-subtle">
+                <div class="bg-white rounded-circle p-2 me-3 shadow-sm"><i class="fas fa-store text-warning"></i></div>
                 <div class="flex-grow-1 fw-bold text-dark">لوحة التاجر</div>
+                <i class="fas fa-chevron-left text-muted small"></i>
+            </a>
+            {% endif %}
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or request.user.role == 'ADMIN_LVL2' or request.user.role == 'ADMIN_LVL3' %}
+            <a href="{% url 'supervisor_dashboard' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center bg-dark-subtle">
+                <div class="bg-white rounded-circle p-2 me-3 shadow-sm"><i class="fas fa-user-shield text-dark"></i></div>
+                <div class="flex-grow-1 fw-bold text-dark">لوحة الإشراف</div>
                 <i class="fas fa-chevron-left text-muted small"></i>
             </a>
             {% endif %}
@@ -36,7 +43,7 @@
                 <i class="fas fa-chevron-left text-muted small"></i>
             </a>
             
-            <a href="#" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
+            <a href="{% url 'wishlist' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
                 <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-heart text-danger"></i></div>
                 <div class="flex-grow-1">المفضلة</div>
                 <i class="fas fa-chevron-left text-muted small"></i>
@@ -55,8 +62,8 @@
         </div>
     </div>
     
-    <div class="text-center mt-4 text-muted small">
-        نسخة التطبيق 1.0.0
+    <div class="text-center mt-4 text-muted small opacity-50">
+        Elbazaar App v1.0
     </div>
 </div>
 

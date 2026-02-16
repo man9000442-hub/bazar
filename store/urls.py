@@ -13,4 +13,7 @@ urlpatterns = [
     path('api/calc-shipping/', views.calculate_shipping_api, name='calc_shipping_api'),
     path('categories/', views.categories_page, name='categories_page'),
     path('my-orders/', views.my_orders, name='my_orders'),
+    path('wishlist/', views.wishlist_view, name='wishlist'),
+    path('wishlist/toggle/<int:product_id>/', views.toggle_favorite, name='toggle_favorite'),
+    path('notifications/', views.notifications_view, name='notifications'),
 ]

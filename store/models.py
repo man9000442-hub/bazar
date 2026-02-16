@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
-
+from decimal import Decimal
 
 # 1. بروفايل التاجر (بيانات التوثيق KYC)
 class MerchantProfile(models.Model):
@@ -45,7 +45,7 @@ class Product(models.Model):
     
     is_active = models.BooleanField(default=False, verbose_name="مفعل (موافقة المشرف)")
     created_at = models.DateTimeField(auto_now_add=True)
-
+    admin_commission = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="عمولة المنصة")
     def __str__(self):
         return self.name
 
@@ -213,5 +213,88 @@ class PaymobTransaction(models.Model):
 
     def __str__(self):
         return f"{self.merchant} - {self.paymob_order_id}"
+    
+
+class Favorite(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorites')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product') # لمنع تكرار نفس المنتج في المفضلة
+
+
+# أضف هذا الكلاس (أو عدله إذا كان موجوداً)
+class Offer(models.Model):
+    product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name='active_offer')
+    discount_percentage = models.PositiveIntegerField(verbose_name="نسبة الخصم %")
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    
+    # حقول جديدة للتمييز
+    is_platform_offer = models.BooleanField(default=False, verbose_name="عرض من المنصة (يوجد تعويض)")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        type_str = "Platform" if self.is_platform_offer else "Merchant"
+        return f"{self.discount_percentage}% off - {self.product.name} ({type_str})"
+    
+    @property
+    def discounted_price(self):
+        # التحويل لـ Decimal قبل الضرب
+        percentage = Decimal(self.discount_percentage)
+        factor = Decimal(1) - (percentage / Decimal(100))
+        return self.product.base_price * factor
+
+
+# نموذج طلب شحن الرصيد (يدوي عبر فودافون كاش مثلاً)
+class DepositRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "قيد المراجعة"
+        APPROVED = "APPROVED", "تمت الموافقة"
+        REJECTED = "REJECTED", "مرفوض"
+
+    merchant = models.ForeignKey(MerchantProfile, on_delete=models.CASCADE, related_name='deposit_requests')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="المبلغ")
+    proof_image = models.ImageField(upload_to='deposits/', verbose_name="صورة التحويل")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.merchant.user.username} - {self.amount}"
+    
+
+class Notification(models.Model):
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=100)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    # رابط اختياري للتوجيه (مثلاً لصفحة الطلب)
+    link = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"To {self.recipient}: {self.title}"
+    
+
+
+# إعدادات الموقع العامة (Singleton Model - صف واحد فقط)
+class SiteSetting(models.Model):
+    site_name = models.CharField(max_length=100, default="Elbazaar", verbose_name="اسم الموقع")
+    platform_fee_fixed = models.DecimalField(max_digits=5, decimal_places=2, default=3.00, verbose_name="رسوم ثابتة (ج.م)")
+    platform_fee_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=2.75, verbose_name="نسبة العمولة (%)")
+    
+    # صور البانر (يمكن زيادتها)
+    banner_image = models.ImageField(upload_to='banners/', blank=True, null=True, verbose_name="صورة البانر الرئيسي")
+    
+    def __str__(self):
+        return "إعدادات الموقع"
+
+    # دالة للتأكد من وجود صف واحد فقط
+    def save(self, *args, **kwargs):
+        if not self.pk and SiteSetting.objects.exists():
+            return # منع إنشاء أكثر من إعداد
+        super().save(*args, **kwargs)
     
 

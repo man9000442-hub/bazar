@@ -1,77 +1,84 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-12 col-md-6">
-        <div class="card shadow p-4 border-0">
-            <h3 class="text-center mb-4" style="color: var(--text-coffee);">مرحباً بك! 👋</h3>
-            <p class="text-center text-muted">أكمل البيانات لتخصيص تجربتك</p>
-
-            <form method="POST">
-                {% csrf_token %}
-                
-                <!-- 1. اختيار الدور (أزرار الراديو بتصميم أنيق) -->
-                <div class="mb-4 text-center">
-                    <label class="form-label fw-bold d-block mb-3">أريد التسجيل كـ:</label>
-                    
-                    <div class="d-flex justify-content-center gap-3">
-                        {% for radio in form.role %}
-                            <!-- نخفي الراديو الحقيقي ونظهر الليبل فقط -->
-                            <input type="radio" name="{{ radio.data.name }}" value="{{ radio.data.value }}" 
-                                   class="btn-check" id="{{ radio.id_for_label }}" 
-                                   {% if radio.data.selected %}checked{% endif %} required>
-                            
-                            <label class="btn btn-outline-warning text-dark px-4 py-2 rounded-pill border-2 w-50" 
-                                   for="{{ radio.id_for_label }}">
-                                {{ radio.choice_label }}
-                            </label>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <!-- 2. الاسم -->
-                <div class="row">
-                    <div class="col-6 mb-3">
-                        <label class="form-label text-muted small">الاسم الأول</label>
-                        {{ form.first_name }}
-                    </div>
-                    <div class="col-6 mb-3">
-                        <label class="form-label text-muted small">اسم العائلة</label>
-                        {{ form.last_name }}
-                    </div>
-                </div>
-
-                <!-- 3. الهاتف -->
-                <div class="mb-3">
-                    <label class="form-label text-muted small">رقم الهاتف الأساسي (واتساب)</label>
-                    {{ form.phone_primary }}
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label text-muted small">رقم هاتف احتياطي (اختياري)</label>
-                    {{ form.phone_secondary }}
-                </div>
-
-                <button type="submit" class="btn btn-gold w-100 py-2 fw-bold mt-3 shadow-sm">حفظ ومتابعة</button>
-            </form>
-        </div>
+<div class="container d-flex flex-column justify-content-center py-5" style="min-height: 85vh;">
+    
+    <div class="text-center mb-4">
+        <h3 class="fw-bold text-primary mb-1">خطوة أخيرة! 👋</h3>
+        <p class="text-muted small">أكمل بياناتك لنخصص تجربتك</p>
     </div>
+
+    <form method="POST" class="card border-0 shadow-sm p-4">
+        {% csrf_token %}
+        
+        <!-- اختيار الدور (أزرار كبيرة) -->
+        <div class="mb-4 text-center">
+            <label class="form-label fw-bold d-block mb-3 text-muted small">أريد التسجيل كـ:</label>
+            
+            <div class="d-flex justify-content-center gap-2 w-100">
+                {% for radio in form.role %}
+                    <!-- Radio Button مخفي -->
+                    <input type="radio" name="{{ radio.data.name }}" value="{{ radio.data.value }}" 
+                           class="btn-check" id="{{ radio.id_for_label }}" 
+                           {% if radio.data.selected %}checked{% endif %} required>
+                    
+                    <!-- Label كزر -->
+                    <label class="btn btn-outline-primary w-50 py-3 rounded-3 d-flex flex-column align-items-center justify-content-center" 
+                           for="{{ radio.id_for_label }}">
+                        {% if radio.data.value == 'CUSTOMER' %}
+                            <i class="fas fa-shopping-bag fs-4 mb-2"></i>
+                        {% else %}
+                            <i class="fas fa-store fs-4 mb-2"></i>
+                        {% endif %}
+                        <span class="fw-bold small">{{ radio.choice_label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="row g-2">
+            <div class="col-6 mb-3">
+                <label class="form-label text-muted small">الاسم الأول</label>
+                {{ form.first_name }}
+            </div>
+            <div class="col-6 mb-3">
+                <label class="form-label text-muted small">اسم العائلة</label>
+                {{ form.last_name }}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted small">رقم الهاتف الأساسي (واتساب)</label>
+            {{ form.phone_primary }}
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label text-muted small">رقم هاتف احتياطي (اختياري)</label>
+            {{ form.phone_secondary }}
+        </div>
+
+        <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold mt-2 shadow-sm">حفظ ومتابعة</button>
+    </form>
 </div>
 
-<!-- CSS خاص بهذه الصفحة فقط -->
 <style>
-    /* عند اختيار زر الراديو، يتغير لونه للذهبي */
-    .btn-check:checked + label {
-        background-color: var(--primary-gold);
-        color: white !important;
-        border-color: var(--primary-gold);
+    /* تنسيق الحقول */
+    input[type="text"], input[type="tel"] {
+        background-color: #f8f9fa;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
     }
-    
-    /* عند المرور على الزر */
-    .btn-outline-warning:hover {
-        background-color: #fdf5e6; /* بيج فاتح جداً */
-        color: var(--text-coffee);
-        border-color: var(--primary-gold);
+    input:focus {
+        background-color: #fff;
+        box-shadow: 0 0 0 2px var(--primary-blue);
+    }
+    /* عند اختيار الدور */
+    .btn-check:checked + label {
+        background-color: var(--primary-blue);
+        color: white !important;
+        border-color: var(--primary-blue);
+        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
     }
 </style>
 

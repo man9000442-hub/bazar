@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3 sticky-top">
+    <a href="{% url 'supervisor_dashboard' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
+    <h5 class="m-0 fw-bold">مراجعة المنتجات ({{ products.count }})</h5>
+</div>
+
+<div class="container pb-5">
+    {% for product in products %}
+    <div class="card border-0 shadow-sm mb-3 overflow-hidden">
+        <div class="row g-0">
+            <!-- صورة المنتج -->
+            <div class="col-3 bg-light d-flex align-items-center justify-content-center">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" style="width: 100%; height: 100px; object-fit: cover;">
+                {% else %}
+                    <i class="fas fa-camera text-muted opacity-50"></i>
+                {% endif %}
+            </div>
+            
+            <!-- تفاصيل المنتج -->
+            <div class="col-9">
+                <div class="card-body p-2 h-100 d-flex flex-column justify-content-center">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 150px;">{{ product.name }}</h6>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill" style="font-size: 9px;">
+                            {{ product.category.name }}
+                        </span>
+                    </div>
+                    
+                    <p class="text-muted small mb-1">
+                        التاجر: <span class="fw-bold text-dark">{{ product.merchant.user.first_name }}</span>
+                    </p>
+                    
+                    <div class="d-flex justify-content-between align-items-end mt-auto">
+                        <span class="text-primary fw-bold">{{ product.base_price }} ج.م</span>
+                        
+                        <!-- زر المراجعة -->
+                        <a href="{% url 'super_product_review' product.pk %}" class="btn btn-sm btn-dark px-3 rounded-pill fw-bold shadow-sm">
+                            مراجعة <i class="fas fa-eye ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5 mt-4">
+        <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+            <i class="fas fa-check-circle fa-3x text-success opacity-50"></i>
+        </div>
+        <h6 class="fw-bold text-muted">رائع! لا توجد منتجات معلقة.</h6>
+        <p class="small text-muted">كل المنتجات تم مراجعتها.</p>
+        <a href="{% url 'supervisor_dashboard' %}" class="btn btn-outline-dark px-4 mt-2 rounded-pill">عودة للوحة</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

@@ -11,4 +11,7 @@ urlpatterns = [
     path('wallet/', views.merchant_wallet, name='merchant_wallet'),
     path('deposit/paymob/', views.paymob_deposit, name='paymob_deposit'),
     path('deposit/callback/', views.paymob_callback, name='paymob_callback'),
+    path('products/offer/<int:product_id>/', views.add_offer, name='merchant_add_offer'),
+    path('products/edit/<int:product_id>/', views.edit_product, name='merchant_edit_product'),
+path('products/delete/<int:product_id>/', views.delete_product, name='merchant_delete_product'),
 ]

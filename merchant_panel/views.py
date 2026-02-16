@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from store.models import Product, Order, OrderItem, Wallet
 from accounts.models import User
 from django.contrib import messages
+from decimal import Decimal
 # دالة مساعدة للتحقق من التاجر
 def is_merchant(user):
     return user.role == User.Role.MERCHANT and hasattr(user, 'merchant_profile') and user.merchant_profile.is_approved
@@ -290,3 +291,71 @@ def paymob_callback(request):
     else:
         messages.error(request, "عملية الدفع فشلت أو تم إلغاؤها.")
         return redirect('merchant_wallet')
+    
+
+
+from store.models import Offer
+from django.utils import timezone
+
+@login_required
+def add_offer(request, product_id):
+    if not is_merchant(request.user):
+        return redirect('home')
+    
+    product = get_object_or_404(Product, pk=product_id, merchant=request.user.merchant_profile)
+    try:
+        current_offer = product.active_offer
+    except Offer.DoesNotExist:
+        current_offer = None
+    if request.method == 'POST':
+        percentage = int(request.POST.get('percentage'))
+        days = int(request.POST.get('days'))
+        
+        Offer.objects.update_or_create(
+            product=product,
+            defaults={
+                'discount_percentage': percentage,
+                'start_date': timezone.now(),
+                'end_date': timezone.now() + timezone.timedelta(days=days),
+                'is_active': True,
+                'is_platform_offer': False
+            }
+        )
+        messages.success(request, "تم حفظ العرض ✅")
+        return redirect('merchant_products')
+
+    # إرسال العرض الحالي للقالب
+    return render(request, 'merchant/add_offer.html', {
+        'product': product,
+        'offer': current_offer # المتغير الجديد
+    })
+
+
+
+
+@login_required
+def edit_product(request, product_id):
+    if not is_merchant(request.user):
+        return redirect('home')
+        
+    product = get_object_or_404(Product, pk=product_id, merchant=request.user.merchant_profile)
+
+    if request.method == 'POST':
+        product.name = request.POST.get('name')
+        product.base_price = request.POST.get('price')
+        # ... باقي الحقول ...
+        product.save()
+        messages.success(request, "تم تعديل المنتج.")
+        return redirect('merchant_products')
+
+    return render(request, 'merchant/edit_product.html', {'product': product})
+
+@login_required
+def delete_product(request, product_id):
+    if not is_merchant(request.user):
+        return redirect('home')
+        
+    product = get_object_or_404(Product, pk=product_id, merchant=request.user.merchant_profile)
+    product.delete()
+    messages.success(request, "تم حذف المنتج.")
+    return redirect('merchant_products')

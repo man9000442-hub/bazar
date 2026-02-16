@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
+<!-- Header -->
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3 sticky-top">
     <a href="{% url 'merchant_dashboard' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
     <h5 class="m-0 fw-bold">الطلبات الواردة</h5>
 </div>
@@ -12,7 +13,15 @@
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-white border-0 d-flex justify-content-between pt-3 pb-0">
                 <span class="fw-bold text-primary small">#{{ item.order.order_id }}</span>
-                <span class="badge bg-light text-dark border rounded-pill" style="font-size: 10px;">{{ item.order.get_status_display }}</span>
+                
+                <!-- Badge الحالة -->
+                {% if item.order.status == 'PENDING' %}
+                    <span class="badge bg-warning text-dark border rounded-pill">جديد</span>
+                {% elif item.order.status == 'APPROVED' %}
+                    <span class="badge bg-info text-dark border rounded-pill">تم التأكيد</span>
+                {% else %}
+                    <span class="badge bg-light text-dark border rounded-pill">{{ item.order.get_status_display }}</span>
+                {% endif %}
             </div>
             
             <div class="card-body">
@@ -21,7 +30,9 @@
                     <i class="fas fa-user-circle text-muted me-2"></i>
                     <div>
                         <span class="d-block fw-bold small">{{ item.order.customer.first_name }} {{ item.order.customer.last_name }}</span>
-                        <span class="d-block text-muted" style="font-size: 10px;">{{ item.order.governorate.name }}</span>
+                        <span class="d-block text-muted" style="font-size: 10px;">
+                            {{ item.order.governorate.name }} - {{ item.order.shipping_address|truncatechars:20 }}
+                        </span>
                     </div>
                 </div>
 
@@ -30,13 +41,14 @@
                     <img src="{{ item.product_size.product.image.url }}" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
                     <div>
                         <p class="mb-0 small fw-bold">{{ item.product_size.product.name }}</p>
-                        <small class="text-muted">الكمية: {{ item.quantity }}</small>
+                        <small class="text-muted">الكمية: {{ item.quantity }} | المقاس: {{ item.product_size.size_label }}</small>
                     </div>
                 </div>
             </div>
             
-            <div class="card-footer bg-white border-0 pt-0 pb-3">
+            <div class="card-footer bg-white border-0 pt-0 pb-3 d-flex justify-content-between">
                 <small class="text-muted" style="font-size: 10px;">{{ item.order.created_at|date:"d M Y, h:i A" }}</small>
+                <small class="fw-bold text-success">التفاصيل <i class="fas fa-chevron-left ms-1"></i></small>
             </div>
         </div>
     </a>

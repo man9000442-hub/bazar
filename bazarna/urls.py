@@ -9,6 +9,7 @@ urlpatterns = [
     path('user/', include('accounts.urls')), # مساراتنا الخاصة (مثل إكمال البروفايل)
     path('', include('store.urls')),
     path('merchant/', include('merchant_panel.urls')),
+    path('super/', include('supervisor.urls')), 
 ]
 
 # لكي تظهر الصور أثناء التطوير

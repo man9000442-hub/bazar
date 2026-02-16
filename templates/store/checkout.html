@@ -21,6 +21,7 @@
             
             <div class="mb-3">
                 <label class="form-label text-muted small">المحافظة</label>
+                <!-- لاحظ: onchange يستدعي الدالة -->
                 <select name="city" id="city-select" class="form-select bg-light border-0" onchange="updateShipping()" required>
                     <option value="">اختر المحافظة...</option>
                     {% for gov in governorates %}
@@ -51,13 +52,21 @@
             
             <div class="d-flex justify-content-between mb-2 small">
                 <span class="text-muted">رسوم الشحن</span>
+                <!-- هذا العنصر سيتم تحديثه بالجافاسكربت -->
                 <span id="shipping-cost" class="fw-bold text-dark">-- ج.م</span>
             </div>
             
+            <!-- رسوم الخدمة (اختياري) -->
+            <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-muted">رسوم الخدمة</span>
+                <span>{{ order.platform_fees }} ج.م</span>
+            </div>
+
             <hr class="my-2">
             
             <div class="d-flex justify-content-between align-items-center">
                 <span class="fw-bold">الإجمالي الكلي</span>
+                <!-- الإجمالي النهائي -->
                 <span id="final-total" class="fw-bold text-primary fs-5">-- ج.م</span>
             </div>
         </div>
@@ -67,6 +76,7 @@
             <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold shadow-sm" id="confirm-btn" disabled>
                 تأكيد الطلب (دفع عند الاستلام)
             </button>
+            <div id="select-city-msg" class="text-center small text-muted mt-2">يرجى اختيار المحافظة لحساب الشحن</div>
         </div>
     </form>
 </div>
@@ -77,7 +87,6 @@ function updateShipping() {
     const govId = document.getElementById('city-select').value;
     const shippingEl = document.getElementById('shipping-cost');
     const totalEl = document.getElementById('final-total');
-    const loadingEl = document.getElementById('shipping-loading');
     const confirmBtn = document.getElementById('confirm-btn');
     const msgEl = document.getElementById('select-city-msg');
 
@@ -90,11 +99,10 @@ function updateShipping() {
         return;
     }
 
-    // إظهار اللودينج
-    loadingEl.style.display = 'block';
+    // إظهار حالة التحميل
     shippingEl.innerText = "...";
     totalEl.innerText = "...";
-    confirmBtn.disabled = true; // تعطيل الزر حتى ينتهي الحساب
+    confirmBtn.disabled = true;
 
     // استدعاء API الباك إند
     fetch(`/api/calc-shipping/?gov_id=${govId}`)
@@ -103,25 +111,27 @@ function updateShipping() {
             return response.json();
         })
         .then(data => {
-            // تحديث الأرقام في الصفحة
+            // تحديث الأرقام
             shippingEl.innerText = data.shipping.toFixed(2) + " ج.م";
             totalEl.innerText = data.total.toFixed(2) + " ج.م";
             
-            // تفعيل زر التأكيد وإخفاء اللودينج
-            loadingEl.style.display = 'none';
+            // تفعيل الزر
             confirmBtn.disabled = false;
             msgEl.style.display = 'none';
         })
         .catch(error => {
-            console.error('Error fetching shipping cost:', error);
+            console.error('Error:', error);
             shippingEl.innerText = "خطأ";
             totalEl.innerText = "خطأ";
-            loadingEl.style.display = 'none';
-            alert("حدث خطأ أثناء حساب الشحن. يرجى المحاولة مرة أخرى.");
         });
 }
+
+// تشغيل الدالة فوراً عند تحميل الصفحة (إذا كان هناك قيمة محفوظة للمحافظة)
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('city-select').value) {
+        updateShipping();
+    }
+});
 </script>
-
-
 
 {% endblock %}

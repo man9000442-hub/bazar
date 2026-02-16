@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
+    <a href="{% url 'merchant_products' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
+    <h5 class="m-0 fw-bold">إضافة / تعديل عرض</h5>
+</div>
+
+<div class="container mt-4">
+    <div class="card p-4 shadow-sm border-0 bg-white">
+        
+        <!-- تفاصيل المنتج -->
+        <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" class="rounded me-3" width="60" height="60" style="object-fit: cover;">
+            {% endif %}
+            <div>
+                <h6 class="fw-bold text-primary mb-1">{{ product.name }}</h6>
+                <p class="small text-muted mb-0">السعر الأصلي: {{ product.base_price }} ج.م</p>
+            </div>
+        </div>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <!-- نسبة الخصم -->
+            <div class="mb-3">
+                <label class="form-label fw-bold small">نسبة الخصم (%)</label>
+                <div class="input-group">
+                    <input type="number" name="percentage" class="form-control" 
+                           min="1" max="99" 
+                           placeholder="مثلاً: 20" 
+                           value="{{ offer.discount_percentage|default:'' }}" 
+                           required>
+                    <span class="input-group-text bg-light">%</span>
+                </div>
+            </div>
+
+            <!-- مدة العرض -->
+            <div class="mb-4">
+                <label class="form-label fw-bold small">مدة العرض (بالأيام)</label>
+                <input type="number" name="days" class="form-control" 
+                       min="1" 
+                       placeholder="مثلاً: 7" 
+                       value="7" 
+                       required>
+                <div class="form-text small text-muted">سيتم احتساب المدة بدءاً من اليوم.</div>
+            </div>
+            
+            <!-- تنبيه -->
+            <div class="alert alert-warning small d-flex align-items-center mb-4">
+                <i class="fas fa-info-circle fs-5 me-2"></i>
+                <div>
+                    تنبيه: هذا العرض سيخصم من أرباحك مباشرة، ولن يتم تعويضه من المنصة.
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold shadow-sm">
+                {% if offer %}تحديث العرض{% else %}تفعيل العرض{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

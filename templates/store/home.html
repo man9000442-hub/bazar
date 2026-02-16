@@ -2,36 +2,40 @@
 
 {% block content %}
 
-<!-- 1. Header & Search (تطابق الصورة 3) -->
+<!-- 1. Header & Search -->
 <div class="bg-white pb-3 pt-3 px-3 shadow-sm sticky-top" style="z-index: 900;">
     
     <!-- اللوجو والترحيب -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <!-- مكان اللوجو (استبدل الرابط برابط الصورة الحقيقي) -->
         <div class="d-flex align-items-center">
-            <!-- يمكنك وضع صورة اللوجو هنا -->
-            <!-- <img src="/static/logo.png" width="40" class="me-2"> -->
             <h5 class="m-0 fw-bold" style="color: var(--primary-blue); font-family: 'Tajawal', sans-serif; font-weight: 800;">
                 Elbazaar <span class="text-warning">.</span>
             </h5>
         </div>
-        <i class="far fa-bell fs-5 text-muted"></i>
+        
+        <!-- زر الجرس (الإشعارات) -->
+        <a href="{% url 'notifications' %}" class="text-decoration-none position-relative text-dark">
+            <i class="far fa-bell fs-5"></i>
+            {% if unread_notifications_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 10px; height: 10px;">
+                <span class="visually-hidden">New alerts</span>
+            </span>
+            {% endif %}
+        </a>
     </div>
 
-    <!-- شريط البحث (مثل الصورة 3) -->
-    <div class="position-relative">
-        <form action="{% url 'home' %}" method="GET" class="position-relative">
-            <input type="text" name="q" value="{{ search_query|default:'' }}" 
-                class="form-control rounded-pill bg-light border-0 py-2 ps-5" 
-                placeholder="عايز تشتري إيه؟">
-            <button type="submit" class="btn position-absolute top-50 start-0 translate-middle-y ms-1 border-0">
-                <i class="fas fa-search text-muted"></i>
-            </button>
-        </form>    
-    </div>
+    <!-- شريط البحث -->
+    <form action="{% url 'home' %}" method="GET" class="position-relative">
+        <input type="text" name="q" value="{{ search_query|default:'' }}" 
+               class="form-control rounded-pill bg-light border-0 py-2 ps-5" 
+               placeholder="عايز تشتري إيه؟" style="font-size: 14px;">
+        <button type="submit" class="btn position-absolute top-50 start-0 translate-middle-y ms-1 border-0">
+            <i class="fas fa-search text-muted"></i>
+        </button>
+    </form>
 </div>
 
-<!-- 2. Categories Tabs (مثل الصورة 3 - الأسفل) -->
+<!-- 2. Categories Tabs (الأقسام) -->
 <div class="bg-white border-bottom mb-3">
     <div class="d-flex overflow-auto px-3 py-2" style="gap: 20px; white-space: nowrap;">
         <!-- زر الكل -->
@@ -51,53 +55,64 @@
 
 <div class="container-fluid px-3">
 
-    <!-- 3. Offers Slider (مثل الصورة 1) -->
-    <!-- كروت أفقية تتحرك باللمس -->
+    <!-- 3. Dynamic Offers Slider (عروض حقيقية) -->
+    {% if offers %}
+    <h6 class="fw-bold mb-3 text-dark">عروض مميزة 🔥</h6>
     <div class="d-flex overflow-auto mb-4" style="gap: 10px; padding-bottom: 5px;">
         
-        <!-- كارت 1: عرض أزرق (إلكترونيات) -->
-        <div class="card border-0 text-white flex-shrink-0 position-relative overflow-hidden" 
-             style="width: 140px; height: 180px; background: linear-gradient(135deg, #0d6efd, #0dcaf0); border-radius: 12px;">
-            <div class="card-body p-2 d-flex flex-column">
-                <span class="badge bg-warning text-dark align-self-start mb-2">خصم 40%</span>
-                <h6 class="fw-bold mb-0" style="font-size: 13px;">عروض الإلكترونيات</h6>
-                <img src="https://via.placeholder.com/80" class="position-absolute bottom-0 end-0 mb-2 me-2 opacity-75" style="width: 60px;">
-            </div>
-        </div>
+        {% for product in offers %}
+        <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none">
+            <div class="card border-0 text-white flex-shrink-0 position-relative overflow-hidden shadow-sm" 
+                 style="width: 140px; height: 180px; border-radius: 12px;">
+                
+                <!-- صورة الخلفية -->
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" class="position-absolute w-100 h-100" style="object-fit: cover; filter: brightness(0.7);">
+                {% else %}
+                    <div class="position-absolute w-100 h-100 bg-secondary"></div>
+                {% endif %}
 
-        <!-- كارت 2: عرض رمضان (وردي مثل الصورة) -->
-        <div class="card border-0 text-white flex-shrink-0 position-relative overflow-hidden" 
-             style="width: 140px; height: 180px; background: linear-gradient(135deg, #d63384, #e91e63); border-radius: 12px;">
-            <div class="card-body p-2 d-flex flex-column">
-                <span class="badge bg-light text-dark align-self-start mb-2">من 199ج</span>
-                <h6 class="fw-bold mb-0" style="font-size: 13px;">مستلزمات رمضان</h6>
-                <!-- أيقونة فانوس تقريبية -->
-                <i class="fas fa-mosque position-absolute bottom-0 end-0 mb-2 me-2 fa-3x opacity-50"></i>
+                <div class="card-body p-2 d-flex flex-column position-relative z-1 h-100">
+                    <!-- شارة الخصم -->
+                    <span class="badge bg-danger align-self-start mb-auto">
+                        -{{ product.active_offer.discount_percentage }}%
+                    </span>
+                    
+                    <!-- التفاصيل -->
+                    <h6 class="fw-bold mb-0 text-white text-truncate" style="font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+                        {{ product.name }}
+                    </h6>
+                    <div class="d-flex align-items-center mt-1">
+                        <span class="fw-bold text-warning me-2">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
+                        <span class="text-white-50 text-decoration-line-through small">{{ product.base_price }}</span>
+                    </div>
+                </div>
             </div>
-        </div>
-
-        <!-- كارت 3: عرض بيج (عروض لك) -->
-        <div class="card border-0 text-dark flex-shrink-0 position-relative overflow-hidden" 
-             style="width: 140px; height: 180px; background-color: #f8f5f2; border-radius: 12px;">
-            <div class="card-body p-2 d-flex flex-column">
-                <h6 class="fw-bold mb-0" style="font-size: 13px;">صفقات مختارة لك</h6>
-                <img src="https://via.placeholder.com/80" class="mt-auto align-self-center" style="mix-blend-mode: multiply;">
-            </div>
-        </div>
+        </a>
+        {% endfor %}
 
     </div>
+    {% endif %}
 
-    <!-- 4. Products Grid -->
+    <!-- 4. Products Grid (المنتجات) -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold m-0 text-dark">وصل حديثاً 🔥</h6>
+        <h6 class="fw-bold m-0 text-dark">وصل حديثاً ✨</h6>
         <a href="#" class="text-decoration-none small text-primary fw-bold">عرض الكل</a>
     </div>
 
-    <div class="row g-2"> <!-- g-2 لتقليل المسافة بين المنتجات -->
+    <div class="row g-2 mb-5"> <!-- g-2 لتقليل المسافة -->
         {% for product in products %}
-        <div class="col-6 col-md-4"> <!-- col-6 للموبايل (منتجين جنب بعض) -->
+        <div class="col-6 col-md-4">
             <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none text-dark">
-                <div class="card h-100 position-relative">
+                <div class="card h-100 position-relative border-0 shadow-sm">
+                    
+                    <!-- شارة الخصم (إن وجد) -->
+                    {% if product.active_offer and product.active_offer.is_active %}
+                        <span class="badge bg-danger position-absolute top-0 end-0 m-2 shadow-sm" style="font-size: 9px;">
+                            خصم {{ product.active_offer.discount_percentage }}%
+                        </span>
+                    {% endif %}
+
                     <!-- صورة المنتج -->
                     <div style="height: 140px; overflow: hidden; border-radius: 16px 16px 0 0; background-color: #fff; display: flex; align-items: center; justify-content: center;">
                         {% if product.image %}
@@ -108,10 +123,9 @@
                     </div>
 
                     <!-- زر الإضافة السريع -->
-                    <!-- الزر العائم فوق صورة المنتج -->
                     <a href="{% url 'product_detail' product.pk %}" 
-                    class="btn btn-primary-app rounded-circle position-absolute d-flex align-items-center justify-content-center" 
-                    style="width: 30px; height: 30px; bottom: 80px; left: 10px; padding: 0;">
+                       class="btn btn-primary-app rounded-circle position-absolute d-flex align-items-center justify-content-center shadow-sm" 
+                       style="width: 30px; height: 30px; bottom: 80px; left: 10px; padding: 0;">
                         <i class="fas fa-plus small text-white"></i>
                     </a>
                     
@@ -126,8 +140,14 @@
                         
                         <!-- السعر -->
                         <div class="d-flex align-items-center">
-                            <span class="text-primary fw-bold" style="font-size: 14px;">{{ product.base_price }}</span>
-                            <span class="small ms-1" style="font-size: 10px;">ج.م</span>
+                            {% if product.active_offer and product.active_offer.is_active %}
+                                <span class="text-danger fw-bold" style="font-size: 14px;">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
+                                <span class="small ms-1 text-danger" style="font-size: 10px;">ج.م</span>
+                                <span class="ms-2 text-muted text-decoration-line-through" style="font-size: 9px;">{{ product.base_price }}</span>
+                            {% else %}
+                                <span class="text-primary fw-bold" style="font-size: 14px;">{{ product.base_price }}</span>
+                                <span class="small ms-1" style="font-size: 10px;">ج.م</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -135,7 +155,11 @@
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <p class="text-muted small">لا توجد منتجات حالياً.</p>
+            <div class="bg-white rounded-circle d-inline-flex p-4 shadow-sm mb-3">
+                <i class="fas fa-search fa-2x text-muted opacity-50"></i>
+            </div>
+            <p class="text-muted small">لا توجد منتجات مطابقة للبحث.</p>
+            <a href="{% url 'home' %}" class="btn btn-sm btn-outline-primary rounded-pill px-4">عرض الكل</a>
         </div>
         {% endfor %}
     </div>

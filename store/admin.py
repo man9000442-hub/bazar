@@ -1,10 +1,15 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import (
     MerchantProfile, Product, ProductSize, ProductImage, 
-    Wallet, WalletTransaction, Order, OrderItem,Category
+    Wallet, WalletTransaction, Order, OrderItem, 
+    Category, Governorate, MerchantShippingRate,
+    Offer, Favorite, DepositRequest, PaymobTransaction, Notification,SiteSetting
 )
 
-# 1. Inlines للمنتج (صور + مقاسات)
+# ----------------------------------------
+# 1. Product Admin (المنتجات)
+# ----------------------------------------
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 1
@@ -12,41 +17,121 @@ class ProductImageInline(admin.TabularInline):
 class ProductSizeInline(admin.TabularInline):
     model = ProductSize
     extra = 1
-    fields = ('size_label', 'color_label', 'stock_quantity')
 
-# 2. إعدادات أدمن المنتج
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    inlines = [ProductSizeInline, ProductImageInline] # الـ Inlines توضع هنا فقط
-    list_display = ('name', 'merchant', 'base_price', 'is_active')
-    list_filter = ('is_active',)
+    inlines = [ProductSizeInline, ProductImageInline]
+    list_display = ('name', 'merchant', 'base_price', 'category', 'is_active_colored')
+    list_filter = ('is_active', 'category', 'merchant')
+    search_fields = ('name', 'merchant__user__username')
+    actions = ['approve_products', 'deactivate_products']
 
-# 3. إعدادات أدمن التاجر
-@admin.register(MerchantProfile)
-class MerchantAdmin(admin.ModelAdmin):
-    list_display = ('user', 'national_id', 'is_approved')
-    list_filter = ('is_approved',)
-    # لا تضع Inlines هنا إلا إذا كانت مرتبطة بالتاجر مباشرة
+    @admin.action(description='تفعيل المنتجات المختارة')
+    def approve_products(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f"تم تفعيل {updated} منتج.")
 
-# 4. Inlines للطلب
+    @admin.action(description='تعطيل المنتجات المختارة')
+    def deactivate_products(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f"تم تعطيل {updated} منتج.")
+
+    def is_active_colored(self, obj):
+        return obj.is_active
+    is_active_colored.boolean = True
+    is_active_colored.short_description = "نشط"
+
+
+# ----------------------------------------
+# 2. Order Admin (الطلبات)
+# ----------------------------------------
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    fields = ('product_size', 'quantity', 'price_at_purchase', 'commission', 'merchant')
-    readonly_fields = ('price_at_purchase', 'merchant')
+    # نجعل الحقول للقراءة فقط لمنع التلاعب بالتاريخ، إلا إذا كنت تريد تعديلها يدوياً
+    readonly_fields = ('product_size', 'quantity', 'price_at_purchase', 'merchant')
+    can_delete = False
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id', 'customer', 'final_total', 'status', 'created_at')
-    list_filter = ('status', 'created_at')
-    search_fields = ('order_id', 'customer__username', 'shipping_phone')
+    list_display = ('order_id', 'customer_name', 'phone', 'final_total', 'status_colored', 'created_at')
+    list_filter = ('status', 'created_at', 'governorate')
+    search_fields = ('order_id', 'shipping_phone', 'customer__username', 'customer__phone_primary')
+    readonly_fields = ('order_id', 'created_at', 'shipping_cost', 'platform_fees', 'total_products_price', 'final_total')
     inlines = [OrderItemInline]
-    readonly_fields = ('order_id', 'created_at')
 
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'created_at')
-    
-# 5. تسجيل باقي الموديلات
-admin.site.register(Wallet)
-admin.site.register(WalletTransaction)
+    def customer_name(self, obj):
+        return f"{obj.customer.first_name} {obj.customer.last_name}"
+    customer_name.short_description = "العميل"
+
+    def phone(self, obj):
+        return obj.shipping_phone
+    phone.short_description = "الهاتف"
+
+    def status_colored(self, obj):
+        colors = {
+            'PENDING': 'orange',
+            'APPROVED': 'blue',
+            'SHIPPED': 'purple',
+            'DELIVERED': 'green',
+            'CANCELLED': 'red',
+            'RETURNED': 'red',
+            'CART': 'gray',
+        }
+        color = colors.get(obj.status, 'black')
+        return format_html(f'<span style="color: {color}; font-weight: bold;">{obj.get_status_display()}</span>')
+    status_colored.short_description = "الحالة"
+
+
+# ----------------------------------------
+# 3. Merchant & Wallet Admin (التجار والمحفظة)
+# ----------------------------------------
+@admin.register(MerchantProfile)
+class MerchantAdmin(admin.ModelAdmin):
+    list_display = ('user', 'national_id', 'is_approved', 'minimum_balance_required')
+    list_filter = ('is_approved',)
+    search_fields = ('user__username', 'national_id')
+
+@admin.register(Wallet)
+class WalletAdmin(admin.ModelAdmin):
+    list_display = ('merchant', 'balance', 'updated_at')
+    search_fields = ('merchant__user__username',)
+
+@admin.register(WalletTransaction)
+class WalletTransactionAdmin(admin.ModelAdmin):
+    list_display = ('wallet', 'amount', 'transaction_type', 'related_order_id', 'created_at')
+    list_filter = ('transaction_type', 'created_at')
+    search_fields = ('related_order_id', 'wallet__merchant__user__username')
+
+
+# ----------------------------------------
+# 4. Deposit Requests (طلبات الشحن)
+# ----------------------------------------
+@admin.register(DepositRequest)
+class DepositRequestAdmin(admin.ModelAdmin):
+    list_display = ('merchant', 'amount', 'status', 'created_at')
+    list_filter = ('status',)
+    actions = ['approve_deposits']
+
+    @admin.action(description='الموافقة على الطلبات المختارة')
+    def approve_deposits(self, request, queryset):
+        # ملاحظة: الـ Signal سيعمل تلقائياً عند الحفظ، لذا نستخدم save() في Loop
+        # update() لا تطلق Signals
+        for req in queryset:
+            if req.status != 'APPROVED':
+                req.status = 'APPROVED'
+                req.save()
+        self.message_user(request, "تمت الموافقة وتحديث الأرصدة.")
+
+
+# ----------------------------------------
+# 5. Other Models (باقي الجداول)
+# ----------------------------------------
+admin.site.register(Category)
+admin.site.register(Governorate)
+admin.site.register(MerchantShippingRate)
+admin.site.register(Offer)
+admin.site.register(Favorite)
+admin.site.register(PaymobTransaction)
+admin.site.register(Notification)
+admin.site.register(SiteSetting)

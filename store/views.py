@@ -29,12 +29,23 @@ def home(request):
     
     products = products.order_by('-created_at')
     categories = Category.objects.all()
+    offers = Product.objects.filter(
+        active_offer__is_active=True,
+        active_offer__end_date__gte=timezone.now(),
+        is_active=True # المنتج نفسه لازم يكون مفعل
+    ).order_by('-active_offer__discount_percentage')[:5] # نأخذ أقوى 5 عروض
+
+    unread_count = 0
+    if request.user.is_authenticated:
+        unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
 
     return render(request, 'store/home.html', {
         'products': products,
         'categories': categories,
         'selected_category': int(category_id) if category_id else None,
-        'search_query': query # لإبقائها في مربع البحث
+        'search_query': query,
+        'offers': offers,
+        'unread_notifications_count': unread_count # لإبقائها في مربع البحث
     })
 
 # تفاصيل المنتج
@@ -52,20 +63,40 @@ def add_to_cart(request, pk):
         size_id = request.POST.get('size_id')
         quantity = request.POST.get('quantity', 1)
         
-        print(f"--- 2. Data received: Size ID={size_id}, Qty={quantity}") 
-        
+        # التحقق من اختيار المقاس
         if not size_id:
-            messages.error(request, "الرجاء اختيار المقاس.")
+            messages.error(request, "الرجاء اختيار المقاس واللون.")
             return redirect('product_detail', pk=pk)
 
         product_size = get_object_or_404(ProductSize, pk=size_id)
+        product = product_size.product # المنتج الأصلي
         quantity = int(quantity)
 
+        # التحقق من المخزون
         if quantity > product_size.stock_quantity:
-            messages.error(request, "الكمية غير متوفرة.")
+            messages.error(request, "الكمية المطلوبة غير متوفرة.")
             return redirect('product_detail', pk=pk)
 
-        # البحث عن أو إنشاء الطلب (حالة CART)
+        # ==========================================
+        # 1. تحديد السعر (هل يوجد عرض نشط؟)
+        # ==========================================
+        final_price = product.base_price # السعر الافتراضي
+
+        try:
+            # نحاول الوصول للعرض المرتبط بالمنتج
+            offer = product.active_offer
+            # الشرط: العرض موجود + مفعل + تاريخه ساري
+            if offer and offer.is_active:
+                from django.utils import timezone
+                if offer.end_date >= timezone.now():
+                    final_price = offer.discounted_price
+                    print(f"--- Offer Applied: New Price is {final_price} ---")
+        except:
+            pass # لا يوجد عرض أو حدث خطأ بسيط
+
+        # ==========================================
+        # 2. إنشاء أو جلب الطلب (Sart)
+        # ==========================================
         order, created = Order.objects.get_or_create(
             customer=request.user,
             status=Order.Status.CART, 
@@ -76,26 +107,28 @@ def add_to_cart(request, pk):
                 'shipping_phone': request.user.phone_primary
             }
         )
-        print(f"--- 4. Order Info: ID={order.id}, Status={order.status}, Created={created}")
 
-        # إضافة المنتج
+        # ==========================================
+        # 3. إضافة المنتج للسلة بالسعر الصحيح
+        # ==========================================
         order_item, item_created = OrderItem.objects.get_or_create(
             order=order,
             product_size=product_size,
             defaults={
                 'quantity': quantity,
-                'price_at_purchase': product_size.product.base_price,
-                'merchant': product_size.product.merchant
+                'price_at_purchase': final_price, # <--- السعر النهائي (مخفض أو أصلي)
+                'merchant': product.merchant
             }
         )
-        print(f"--- 5. Item Info: Created={item_created}")
 
         if not item_created:
+            # لو المنتج كان موجوداً، نحدث الكمية والسعر (لأن العرض قد يكون تغير)
             order_item.quantity += quantity
+            order_item.price_at_purchase = final_price 
             order_item.save()
-            print("--- 6. Quantity Updated ---")
+            print("--- Quantity & Price Updated ---")
         
-        # مهم: نقوم بعمل save للطلب لتفعيل الـ Signal وتحديث الأسعار
+        # حفظ الطلب لتفعيل الـ Signal وتحديث الإجمالي
         order.save()
 
         messages.success(request, "تمت الإضافة للسلة بنجاح! 🛍️")
@@ -247,3 +280,67 @@ def my_orders(request):
     # نستبعد حالة السلة (CART)
     orders = Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).order_by('-created_at')
     return render(request, 'store/my_orders.html', {'orders': orders})
+
+
+
+from django.http import JsonResponse
+from .models import Favorite
+
+# 1. زر التبديل (أضف/احذف) باستخدام AJAX لكي لا يعيد تحميل الصفحة
+@login_required
+def toggle_favorite(request, product_id):
+    product = get_object_or_404(Product, pk=product_id)
+    favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
+    
+    if not created:
+        # إذا كان موجوداً بالفعل -> احذفه
+        favorite.delete()
+        added = False
+    else:
+        # تم إنشاؤه -> يعني تمت الإضافة
+        added = True
+    
+    return JsonResponse({'added': added, 'count': request.user.favorites.count()})
+
+# 2. صفحة عرض المفضلة
+@login_required
+def wishlist_view(request):
+    favorites = Favorite.objects.filter(user=request.user).select_related('product')
+    return render(request, 'store/wishlist.html', {'favorites': favorites})
+
+
+
+def product_detail(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    sizes = product.variations.filter(stock_quantity__gt=0)
+    
+    # جلب منتجات مشابهة (نفس القسم، باستثناء المنتج الحالي)
+    similar_products = Product.objects.filter(
+        category=product.category, 
+        is_active=True
+    ).exclude(pk=pk).order_by('?')[:4] # نختار 4 عشوائياً
+
+    # التحقق هل المنتج في المفضلة؟
+    is_fav = False
+    if request.user.is_authenticated:
+        is_fav = Favorite.objects.filter(user=request.user, product=product).exists()
+
+    return render(request, 'store/product_detail.html', {
+        'product': product,
+        'sizes': sizes,
+        'similar_products': similar_products,
+        'is_fav': is_fav
+    })
+
+from .models import Notification
+
+@login_required
+def notifications_view(request):
+    # جلب إشعارات المستخدم (الأحدث أولاً)
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
+    
+    # عند فتح الصفحة، نجعل كل الإشعارات "مقروءة"
+    # (أو يمكنك جعلها مقروءة عند الضغط على رابط الإشعار - سنفعل الأسهل الآن)
+    notifications.filter(is_read=False).update(is_read=True)
+    
+    return render(request, 'store/notifications.html', {'notifications': notifications})

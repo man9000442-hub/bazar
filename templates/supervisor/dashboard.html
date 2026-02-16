@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- Header Supervisor -->
+<div class="bg-dark text-white p-4 pt-5 pb-5 text-center position-relative shadow-sm" style="border-radius: 0 0 30px 30px; background: linear-gradient(135deg, #212529, #343a40);">
+    <div class="bg-white rounded-circle d-inline-flex p-1 mb-2 shadow-sm">
+        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=ffc107&color=212529&size=128" 
+             class="rounded-circle" width="80">
+    </div>
+    <h4 class="fw-bold mb-1">لوحة الإشراف 🛡️</h4>
+    <p class="small opacity-75 mb-0">أهلاً، {{ request.user.first_name }}</p>
+    <span class="badge bg-warning text-dark mt-2 fw-bold rounded-pill px-3">{{ request.user.get_role_display }}</span>
+</div>
+
+<div class="container py-4" style="margin-top: -40px;">
+    
+    <!-- المهام المعلقة (Pending Tasks) -->
+    <div class="row g-2 mb-4">
+        
+        <!-- منتجات للمراجعة -->
+        <div class="col-4">
+            <a href="{% url 'super_pending_products' %}" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 hover-up position-relative">
+                <div class="mx-auto bg-light rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                    <i class="fas fa-tags text-warning fs-5"></i>
+                    {% if pending_products > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+                        {{ pending_products }}
+                    </span>
+                    {% endif %}
+                </div>
+                <small class="d-block text-dark fw-bold" style="font-size: 11px;">مراجعة المنتجات</small>
+            </a>
+        </div>
+
+        <!-- طلبات (للمتابعة) -->
+        <div class="col-4">
+            <!-- يمكنك ربط هذا بقائمة طلبات عامة أو فلتر خاص -->
+            <a href="#" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 hover-up position-relative">
+                <div class="mx-auto bg-light rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                    <i class="fas fa-box text-primary fs-5"></i>
+                    {% if pending_orders > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+                        {{ pending_orders }}
+                    </span>
+                    {% endif %}
+                </div>
+                <small class="d-block text-dark fw-bold" style="font-size: 11px;">الطلبات</small>
+            </a>
+        </div>
+
+        <!-- شحن رصيد (إيداعات) -->
+        <div class="col-4">
+            <a href="#" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 hover-up position-relative">
+                <div class="mx-auto bg-light rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                    <i class="fas fa-wallet text-success fs-5"></i>
+                    {% if pending_deposits > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+                        {{ pending_deposits }}
+                    </span>
+                    {% endif %}
+                </div>
+                <small class="d-block text-dark fw-bold" style="font-size: 11px;">الإيداعات</small>
+            </a>
+        </div>
+    </div>
+
+    <!-- أدوات التحكم (Control Tools) -->
+    <h6 class="fw-bold mb-3 text-dark px-1">أدوات التحكم</h6>
+    <div class="list-group shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+        
+        <!-- تفعيل التجار -->
+        <a href="{% url 'super_pending_merchants' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
+            <div class="bg-primary-subtle rounded-circle p-2 me-3 text-primary"><i class="fas fa-users-cog"></i></div>
+            <div class="flex-grow-1">تفعيل التجار الجدد</div>
+            <i class="fas fa-chevron-left text-muted small"></i>
+        </a>
+
+        <!-- عروض المنصة -->
+        <a href="{% url 'super_create_offer' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
+            <div class="bg-warning-subtle rounded-circle p-2 me-3 text-warning-emphasis"><i class="fas fa-percent"></i></div>
+            <div class="flex-grow-1">إنشاء عرض منصة (تعويض)</div>
+            <i class="fas fa-chevron-left text-muted small"></i>
+        </a>
+
+        <!-- الشكاوى -->
+        <a href="#" class="list-group-item list-group-item-action py-3 d-flex align-items-center">
+            <div class="bg-danger-subtle rounded-circle p-2 me-3 text-danger"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="flex-grow-1">الشكاوى والمرتجعات</div>
+            <i class="fas fa-chevron-left text-muted small"></i>
+        </a>
+    </div>
+
+    <!-- إحصائيات سريعة (Stats) -->
+    <div class="card border-0 shadow-sm p-3 bg-white">
+        <h6 class="fw-bold mb-3">نظرة عامة (اليوم)</h6>
+        <div class="d-flex justify-content-between text-center">
+            <div>
+                <h5 class="fw-bold mb-0 text-success">--</h5>
+                <small class="text-muted" style="font-size: 10px;">مبيعات</small>
+            </div>
+            <div class="vr opacity-25"></div>
+            <div>
+                <h5 class="fw-bold mb-0 text-primary">--</h5>
+                <small class="text-muted" style="font-size: 10px;">طلبات</small>
+            </div>
+            <div class="vr opacity-25"></div>
+            <div>
+                <h5 class="fw-bold mb-0 text-warning">--</h5>
+                <small class="text-muted" style="font-size: 10px;">تجار جدد</small>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .hover-up { transition: transform 0.2s; }
+    .hover-up:hover { transform: translateY(-3px); }
+</style>
+
+{% endblock %}

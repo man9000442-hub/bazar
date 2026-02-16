@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow p-4">
+        <h5 class="fw-bold mb-3">مراجعة المنتج</h5>
+        
+        <div class="row">
+            <div class="col-md-4">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="img-fluid rounded">
+                {% endif %}
+            </div>
+            <div class="col-md-8">
+                <h4>{{ product.name }}</h4>
+                <p class="text-muted">{{ product.description }}</p>
+                <h5 class="text-primary">{{ product.base_price }} ج.م</h5>
+                <hr>
+                <p><strong>التاجر:</strong> {{ product.merchant.user.first_name }} ({{ product.merchant.user.phone_primary }})</p>
+                
+                <form method="POST" class="mt-4 p-3 bg-light rounded border">
+                    {% csrf_token %}
+                    <label class="form-label fw-bold">حدد عمولة المنصة لهذا المنتج (ج.م)</label>
+                    <input type="number" name="commission" class="form-control mb-3" placeholder="مثلاً: 20" required>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="action" value="approve" class="btn btn-success flex-grow-1">
+                            <i class="fas fa-check"></i> موافقة ونشر
+                        </button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> رفض
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

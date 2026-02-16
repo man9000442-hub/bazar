@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
+    <a href="{% url 'profile' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
+    <h5 class="m-0 fw-bold">المفضلة ❤️</h5>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-2">
+        {% for item in favorites %}
+        <div class="col-6 col-md-4" id="fav-card-{{ item.product.id }}">
+            <div class="card h-100 border-0 shadow-sm">
+                <!-- زر الحذف -->
+                <button onclick="toggleFav('{{ item.product.id }}')" class="btn btn-light rounded-circle position-absolute top-0 end-0 m-2 shadow-sm text-danger" style="width: 30px; height: 30px; padding: 0;">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none text-dark">
+                    <div style="height: 140px; overflow: hidden; border-radius: 16px 16px 0 0; background-color: #fff; display: flex; align-items: center; justify-content: center;">
+                        {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" class="w-100 h-100" style="object-fit: cover;">
+                        {% else %}
+                            <i class="fas fa-camera text-muted"></i>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-2">
+                        <h6 class="text-truncate fw-bold mb-1" style="font-size: 12px;">{{ item.product.name }}</h6>
+                        <span class="text-primary fw-bold" style="font-size: 14px;">{{ item.product.base_price }} ج.م</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="far fa-heart fa-3x text-muted opacity-25 mb-3"></i>
+            <p class="text-muted">قائمة المفضلة فارغة.</p>
+            <a href="{% url 'home' %}" class="btn btn-primary-app px-4">تصفح المنتجات</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function toggleFav(productId) {
+    fetch(`/wishlist/toggle/${productId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // في صفحة المفضلة، إذا ضغطنا على الزر نحذف الكارت
+            if (!data.added) {
+                document.getElementById(`fav-card-${productId}`).remove();
+            }
+        });
+}
+</script>
+{% endblock %}
