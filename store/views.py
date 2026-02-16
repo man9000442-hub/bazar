@@ -25,24 +25,22 @@ def check_pending_confirmations(user):
     return pending
 
 # صفحة التأكيد الإجبارية
+# صفحة تأكيد الاستلام (Blocker)
 @login_required
 def confirm_delivery_view(request, order_id):
     order = get_object_or_404(Order, pk=order_id, customer=request.user)
     
     if request.method == 'POST':
-        action = request.POST.get('action') # confirm or reject
+        action = request.POST.get('action')
         
         if action == 'confirm':
             order.is_confirmed_by_customer = True
-            order.rating = int(request.POST.get('rating', 5))
-            messages.success(request, "شكراً لتقييمك! يمكنك الآن التسوق من جديد.")
-            
+            # order.rating = ...
+            messages.success(request, "شكراً لتأكيدك!")
         elif action == 'reject':
             order.is_confirmed_by_customer = False
-            order.rejection_reason = request.POST.get('reason')
-            # هنا ممكن نغير حالة الطلب لـ RETURNED أو نرسل إشعار للأدمن
-            order.status = Order.Status.RETURNED # أو حالة خاصة "نزاع"
-            messages.warning(request, "تم تسجيل رفضك وسيتم مراجعة الإدارة.")
+            order.status = Order.Status.RETURNED # أو نزاع
+            messages.warning(request, "تم تسجيل الشكوى.")
             
         order.save()
         return redirect('home')

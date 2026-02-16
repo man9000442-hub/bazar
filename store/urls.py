@@ -16,4 +16,5 @@ urlpatterns = [
     path('wishlist/', views.wishlist_view, name='wishlist'),
     path('wishlist/toggle/<int:product_id>/', views.toggle_favorite, name='toggle_favorite'),
     path('notifications/', views.notifications_view, name='notifications'),
+    path('confirm-delivery/<int:order_id>/', views.confirm_delivery_view, name='confirm_delivery_view'),
 ]
