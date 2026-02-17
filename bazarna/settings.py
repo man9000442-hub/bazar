@@ -27,7 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['bazar-production-f1e0.up.railway.app','127.0.0.1','elbazaare.com']
 CSRF_TRUSTED_ORIGINS = [
-    'https://bazar-production-f1e0.up.railway.app','http://127.0.0.1:8000/'
+    'https://bazar-production-f1e0.up.railway.app','http://127.0.0.1:8000/','https://elbazaare.com'
 ]
 
 # Application definition
