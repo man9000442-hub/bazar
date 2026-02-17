@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 from django.db.models import Avg
+
+
 # 1. بروفايل التاجر (بيانات التوثيق KYC)
 class MerchantProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='merchant_profile')
@@ -17,7 +19,9 @@ class MerchantProfile(models.Model):
     )
     is_approved = models.BooleanField(default=False, verbose_name="تمت الموافقة من المشرف")
     created_at = models.DateTimeField(auto_now_add=True)
+    tax_register = models.FileField(upload_to='merchant_docs/', blank=True, null=True, verbose_name="السجل الضريبي")
 
+    business_description = models.TextField(verbose_name="وصف النشاط والبضاعة (أنواع، أعداد، أسعار)")    
     def __str__(self):
         return f"متجر: {self.user.username}"
     

@@ -1,8 +1,30 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import CompleteProfileForm, MerchantOnboardingForm
+from .forms import CompleteProfileForm, MerchantOnboardingForm,MerchantProfile,MerchantSignupForm,MySocialSignupForm,CustomerSignupForm
 from store.models import MerchantProfile
 
+from django.contrib import messages
+
+from django.contrib.auth import login
+from .forms import UnifiedSignupForm
+
+def signup_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        form = UnifiedSignupForm(request.POST, request.FILES)
+        if form.is_valid():
+            user = form.save()
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            
+            if user.role == 'MERCHANT':
+                return redirect('merchant_onboarding') # لرفع البطاقة
+            return redirect('home')
+    else:
+        form = UnifiedSignupForm()
+
+    return render(request, 'account/signup_unified.html', {'form': form})
 # 1. إكمال البيانات الأساسية واختيار الدور
 @login_required
 def complete_profile(request):
@@ -60,3 +82,31 @@ def merchant_onboarding(request):
 @login_required
 def profile_view(request):
     return render(request, 'account/profile.html')
+
+
+
+def signup_choice(request):
+    return render(request, 'account/signup_choice.html')
+
+def customer_signup(request):
+    if request.method == 'POST':
+        form = CustomerSignupForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            return redirect('home')
+    else:
+        form = CustomerSignupForm()
+    return render(request, 'account/signup_customer.html', {'form': form})
+
+def merchant_signup(request):
+    if request.method == 'POST':
+        form = MerchantSignupForm(request.POST, request.FILES)
+        if form.is_valid():
+            user = form.save()
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            messages.success(request, "تم تسجيل حساب التاجر بنجاح! بانتظار التفعيل.")
+            return redirect('merchant_dashboard') # أو صفحة انتظار
+    else:
+        form = MerchantSignupForm()
+    return render(request, 'account/signup_merchant.html', {'form': form})

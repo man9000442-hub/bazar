@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -148,21 +149,22 @@ AUTHENTICATION_BACKENDS = [
     # باك إند allauth (ضروري لتسجيل جوجل وغيره)
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
-
-# إعدادات السلوك
+SOCIALACCOUNT_AUTO_SIGNUP = True # إنشاء الحساب فوراً
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_LOGIN_ON_GET = True
 LOGIN_REDIRECT_URL = '/'  # التوجيه بعد الدخول
 LOGOUT_REDIRECT_URL = '/accounts/login/' 
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False # يمكن الدخول بالإيميل فقط
-ACCOUNT_AUTHENTICATION_METHOD = 'username'
-ACCOUNT_EMAIL_VERIFICATION = 'none' # للتسهيل حالياً (يمكن تفعيلها لاحقاً)
+ACCOUNT_USERNAME_REQUIRED = False  # <--- مهم جداً: لا تطلب اسم مستخدم
+ACCOUNT_AUTHENTICATION_METHOD = 'email' # أو 'username_email'
+ACCOUNT_EMAIL_VERIFICATION = 'none' # لا ترسل إيميل تفعيل
 
 # إعدادات Google (مؤقتة حتى نحصل على المفاتيح الحقيقية)
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': '123',  # مفتاح وهمي للتجربة
-            'secret': '456',     # مفتاح وهمي
+            'client_id': '162436305938-dgm742mia7glvb61q0hha93bv94bf9cl.apps.googleusercontent.com',  # مفتاح وهمي للتجربة
+            'secret': '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',     # مفتاح وهمي
             'key': ''
         },
         'SCOPE': [
@@ -171,9 +173,16 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
-        }
+        },
+        'VERIFIED_EMAIL': True
     }
 }
+
+SOCIALACCOUNT_FORMS = {
+    'signup': 'accounts.forms.MySocialSignupForm',
+}
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.MySocialAccountAdapter'
+# ACCOUNT_ADAPTER = 'allauth.account.adapter.DefaultAccountAdapter' # الافتراضي
 
 # Paymob Configuration
 PAYMOB_API_KEY = "ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmpiR0Z6Y3lJNklrMWxjbU5vWVc1MElpd2ljSEp2Wm1sc1pWOXdheUk2TVRFeE9EWXdNQ3dpYm1GdFpTSTZJbWx1YVhScFlXd2lmUS5BX0o3bGZPa2wwdmJtU3VpcWZ1aEhNUHNiQ1A4blNEbzI3dFY4Mm5wVUhYTlhLSFZaZUJlNEw2eHpmQXB0SWJEdWstTHlISnNlVlYteXBTNDBwU0pBdw=="

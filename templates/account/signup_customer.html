@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container d-flex flex-column justify-content-center py-5" style="min-height: 80vh;">
+    
+    <div class="text-center mb-4">
+        <h3 class="fw-bold text-primary mb-1">تسجيل عميل جديد 👋</h3>
+        <p class="text-muted small">أنشئ حسابك وابدأ التسوق فوراً</p>
+    </div>
+
+    <form method="POST" class="card p-4 border-0 shadow-sm mx-auto" style="max-width: 400px; width: 100%;">
+        {% csrf_token %}
+        
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label small text-muted">الاسم الأول</label>
+                {{ form.first_name }}
+            </div>
+            <div class="col-6">
+                <label class="form-label small text-muted">العائلة</label>
+                {{ form.last_name }}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small text-muted">رقم الهاتف (اسم الدخول)</label>
+            {{ form.phone_primary }}
+            {% if form.phone_primary.errors %}
+                <div class="text-danger small mt-1">{{ form.phone_primary.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label small text-muted">كلمة المرور</label>
+            {{ form.password }}
+        </div>
+
+        <button type="submit" class="btn btn-primary-app w-100 fw-bold py-3 shadow-sm">إنشاء الحساب</button>
+    </form>
+    
+    <div class="text-center mt-3">
+        <a href="{% url 'account_login' %}" class="text-decoration-none small">لديك حساب بالفعل؟ <span class="fw-bold">سجل دخول</span></a>
+    </div>
+</div>
+{% endblock %}

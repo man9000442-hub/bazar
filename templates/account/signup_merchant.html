@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <h4 class="fw-bold text-center mb-4">تسجيل تاجر جديد 🏪</h4>
+    
+    <form method="POST" enctype="multipart/form-data" class="card p-4 shadow-sm border-0">
+        {% csrf_token %}
+        
+        <h6 class="text-primary mb-3">البيانات الشخصية</h6>
+        <div class="row g-3 mb-3">
+            <div class="col-6">{{ form.first_name }}</div>
+            <div class="col-6">{{ form.last_name }}</div>
+            <div class="col-12">{{ form.phone_primary }}</div>
+            <div class="col-12">{{ form.password }}</div>
+        </div>
+
+        <h6 class="text-primary mb-3 mt-4">بيانات النشاط والتوثيق</h6>
+        <div class="mb-3">
+            <label class="form-label small">الرقم القومي</label>
+            {{ form.national_id }}
+        </div>
+        
+        <div class="row g-3 mb-3">
+            <div class="col-6">
+                <label class="form-label small">صورة البطاقة (أمام)</label>
+                {{ form.id_card_front }}
+            </div>
+            <div class="col-6">
+                <label class="form-label small">صورة البطاقة (خلف)</label>
+                {{ form.id_card_back }}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small">صورة المتجر/اللوجو</label>
+            {{ form.shop_image }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small">السجل الضريبي (اختياري)</label>
+            {{ form.tax_register }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small">وصف البضاعة</label>
+            {{ form.business_description }}
+        </div>
+
+        <button type="submit" class="btn btn-primary-app w-100 fw-bold py-3 mt-3">إرسال طلب التسجيل</button>
+    </form>
+</div>
+{% endblock %}

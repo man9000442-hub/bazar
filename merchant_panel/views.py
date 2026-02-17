@@ -44,7 +44,11 @@ def dashboard(request):
         balance = 0
 
     # آخر الطلبات (التي تحتوي منتجات التاجر)
-    recent_items = OrderItem.objects.filter(product_size__product__merchant=merchant).order_by('-id')[:5]
+    recent_items = OrderItem.objects.filter(
+        product_size__product__merchant=request.user.merchant_profile
+    ).exclude(
+        order__status__in=['CART', 'WAITING_PAYMENT'] # نكتب النصوص مباشرة أو Order.Status.CART
+    ).order_by('-order__created_at')
 
     return render(request, 'merchant/dashboard.html', {
         'total_products': total_products,
@@ -62,11 +66,17 @@ def my_products(request):
 
 @login_required
 def merchant_orders(request):
-    if not is_merchant(request.user):
-        return redirect('home')
-        
-    # جلب العناصر المطلوبة من هذا التاجر فقط
-    items = OrderItem.objects.filter(product_size__product__merchant=request.user.merchant_profile).order_by('-id')
+    if not is_merchant(request.user): return redirect('home')
+    
+    # استبعاد السلة وانتظار الدفع
+    excluded_statuses = [Order.Status.CART, Order.Status.WAITING_PAYMENT]
+    
+    items = OrderItem.objects.filter(
+        product_size__product__merchant=request.user.merchant_profile
+    ).exclude(
+        order__status__in=excluded_statuses
+    ).order_by('-order__created_at')
+
     return render(request, 'merchant/orders.html', {'items': items})
 
 # (سنضيف add_product لاحقاً لأنها تحتاج فورم معقد)
@@ -490,7 +500,9 @@ def update_order_status(request, order_id):
     
     # 2. السماح بالتعديل (بدون تعقيد مؤقتاً)
     # سنفترض أن التاجر وصل للصفحة، إذن هو يملك الصلاحية (لأننا فحصنا في order_detail)
-    
+    if order.status in [Order.Status.CART, Order.Status.WAITING_PAYMENT]:
+        messages.error(request, "هذا الطلب لم يكتمل بعد.")
+        return redirect('merchant_orders')
     if request.method == 'POST':
         new_status = request.POST.get('status')
         

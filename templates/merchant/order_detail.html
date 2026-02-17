@@ -105,16 +105,19 @@
     <!-- 3. تفاصيل الدفع -->
     <div class="card border-0 shadow-sm mt-3 p-3 bg-white">
         <div class="d-flex justify-content-between small mb-1">
-            <span class="text-muted">المجموع</span>
-            <span>{{ order.total_products_price }} ج.م</span>
-        </div>
-        <div class="d-flex justify-content-between small mb-1">
             <span class="text-muted">الشحن</span>
-            <span>{{ order.shipping_cost }} ج.م</span>
+            
+            <!-- إذا كان الشحن 0 (مجاني)، نوضح للتاجر أن المنصة ستعوضه -->
+            {% if order.shipping_cost == 0 and order.is_first_order %}
+                <span class="text-success fw-bold">مجاني (تعويض من المنصة)</span>
+            {% else %}
+                <span>{{ order.shipping_cost }} ج.م</span>
+            {% endif %}
         </div>
+        
         <hr class="my-2">
         <div class="d-flex justify-content-between fw-bold text-dark">
-            <span>الإجمالي (COD)</span>
+            <span>المطلوب تحصيله من العميل (COD)</span>
             <span>{{ order.final_total }} ج.م</span>
         </div>
     </div>

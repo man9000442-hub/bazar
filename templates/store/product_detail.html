@@ -11,7 +11,22 @@
         <button onclick="toggleFavDetail('{{ product.id }}')" class="btn border-0 bg-transparent p-0">
             <i class="{% if is_fav %}fas text-danger{% else %}far text-muted{% endif %} fa-heart fs-5" id="fav-icon"></i>
         </button>
-        <i class="fas fa-share-alt fs-5 text-muted"></i>
+        <!-- زر المشاركة -->
+        <button onclick="shareProduct()" class="btn border-0 bg-transparent p-0">
+            <i class="fas fa-share-alt fs-5 text-muted"></i>
+        </button>
+
+        <!-- Toast (رسالة منبثقة صغيرة للنسخ) -->
+        <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" style="z-index: 2000;">
+            <div id="shareToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        تم نسخ الرابط بنجاح! 📋
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -87,7 +102,29 @@
             <span class="text-muted small ms-auto">+ {{ product.shipping_fee }} ج.م شحن</span>
         {% endif %}
     </div>
-
+    <!-- Merchant Info Card -->
+    <a href="{% url 'merchant_shop' product.merchant.pk %}" class="text-decoration-none">
+        <div class="d-flex align-items-center bg-light p-2 rounded-3 mb-3 border border-light shadow-sm">
+            <div class="me-2">
+                {% if product.merchant.shop_image %}
+                    <img src="{{ product.merchant.shop_image.url }}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center border" style="width: 40px; height: 40px;">
+                        <i class="fas fa-store text-muted small"></i>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="flex-grow-1">
+                <small class="text-muted d-block" style="font-size: 10px;">بواسطة التاجر</small>
+                <h6 class="fw-bold text-dark mb-0" style="font-size: 13px;">
+                    {{ product.merchant.user.first_name }} {{ product.merchant.user.last_name }}
+                </h6>
+            </div>
+            
+            <i class="fas fa-chevron-left text-muted small"></i>
+        </div>
+    </a>
     <hr class="text-muted opacity-25">
 
     <h6 class="fw-bold mb-2">الوصف</h6>
@@ -228,5 +265,30 @@
             });
     }
 </script>
+<script>
+function shareProduct() {
+    const shareData = {
+        title: '{{ product.name }}',
+        text: 'انظر لهذا المنتج الرائع على Elbazaar!',
+        url: window.location.href
+    };
 
+    // 1. محاولة استخدام Web Share API (للموبايل)
+    if (navigator.share) {
+        navigator.share(shareData)
+            .then(() => console.log('Shared successfully'))
+            .catch((err) => console.error('Error sharing:', err));
+    } else {
+        // 2. البديل: نسخ الرابط للحافظة (للكمبيوتر)
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            // إظهار رسالة النجاح
+            const toastEl = document.getElementById('shareToast');
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    }
+}
+</script>
 {% endblock %}

@@ -687,3 +687,22 @@ def notifications_view(request):
     notifications.filter(is_read=False).update(is_read=True)
     
     return render(request, 'store/notifications.html', {'notifications': notifications})
+
+
+
+
+def merchant_shop(request, merchant_id):
+    # 1. جلب التاجر
+    merchant = get_object_or_404(MerchantProfile, pk=merchant_id)
+    
+    # 2. جلب منتجاته المفعلة فقط
+    products = Product.objects.filter(merchant=merchant, is_active=True).order_by('-created_at')
+    
+    # 3. حساب عدد المبيعات (اختياري كنوع من الإحصائيات للعميل)
+    # sales_count = OrderItem.objects.filter(product_size__product__merchant=merchant).count()
+
+    return render(request, 'store/merchant_shop.html', {
+        'merchant': merchant,
+        'products': products,
+        # 'sales_count': sales_count
+    })

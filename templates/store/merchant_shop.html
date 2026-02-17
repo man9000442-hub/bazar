@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- Merchant Header / Banner -->
+<div class="bg-primary text-white pt-5 pb-5 text-center position-relative" 
+     style="border-radius: 0 0 30px 30px; background: linear-gradient(135deg, var(--primary-blue), #0a58ca);">
+    
+    <div class="position-absolute top-0 start-0 p-3">
+        <a href="javascript:history.back()" class="text-white"><i class="fas fa-arrow-right fs-5"></i></a>
+    </div>
+
+    <!-- صورة المتجر -->
+    <div class="bg-white p-1 rounded-circle d-inline-block shadow-sm mb-2">
+        {% if merchant.shop_image %}
+            <img src="{{ merchant.shop_image.url }}" class="rounded-circle" width="80" height="80" style="object-fit: cover;">
+        {% else %}
+            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                <i class="fas fa-store fa-2x text-muted"></i>
+            </div>
+        {% endif %}
+    </div>
+
+    <h4 class="fw-bold mb-0">{{ merchant.user.first_name }} {{ merchant.user.last_name }}</h4>
+    <p class="opacity-75 small mb-2">تاجر موثوق ✅</p>
+    
+    <div class="d-flex justify-content-center gap-3 mt-3">
+        <div class="bg-white bg-opacity-25 rounded px-3 py-1">
+            <span class="fw-bold">{{ products.count }}</span> <span class="small">منتج</span>
+        </div>
+        <div class="bg-white bg-opacity-25 rounded px-3 py-1">
+            <span class="fw-bold">4.8</span> <span class="small"><i class="fas fa-star text-warning"></i></span>
+        </div>
+    </div>
+</div>
+
+<!-- Products Grid -->
+<div class="container py-4 mb-5">
+    <h6 class="fw-bold mb-3 text-dark border-start border-4 border-primary ps-2">منتجات المتجر</h6>
+    
+    <div class="row g-2">
+        {% for product in products %}
+        <div class="col-6 col-md-4">
+            <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none text-dark">
+                <div class="card h-100 position-relative border-0 shadow-sm">
+                    
+                    {% if product.active_offer and product.active_offer.is_active %}
+                        <span class="badge bg-danger position-absolute top-0 end-0 m-2 shadow-sm" style="font-size: 9px;">
+                            -{{ product.active_offer.discount_percentage }}%
+                        </span>
+                    {% endif %}
+
+                    <div style="height: 140px; overflow: hidden; border-radius: 16px 16px 0 0; background-color: #fff; display: flex; align-items: center; justify-content: center;">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="w-100 h-100" style="object-fit: cover;">
+                        {% else %}
+                            <i class="fas fa-camera text-muted fa-2x opacity-25"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-body p-2">
+                        <h6 class="card-title text-truncate fw-bold mb-1" style="font-size: 12px;">{{ product.name }}</h6>
+                        
+                        <div class="d-flex align-items-center">
+                            {% if product.active_offer and product.active_offer.is_active %}
+                                <span class="text-danger fw-bold" style="font-size: 14px;">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
+                                <span class="small ms-1 text-danger">ج.م</span>
+                            {% else %}
+                                <span class="text-primary fw-bold" style="font-size: 14px;">{{ product.base_price }}</span>
+                                <span class="small ms-1">ج.م</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">لا توجد منتجات لهذا التاجر حالياً.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
