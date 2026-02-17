@@ -1,10 +1,28 @@
-from django.shortcuts import render, redirect
-from django.shortcuts import  get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from store.models import Product, Order, OrderItem, Wallet,MerchantShippingRate,Governorate
-from accounts.models import User
 from django.contrib import messages
+from django.utils import timezone
+from django.db import transaction
+from django.db.models import Sum
 from decimal import Decimal
+from django.conf import settings
+from collections import defaultdict
+
+# الموديلات (نستوردها من store لأنها معرفة هناك)
+from store.models import (
+    Product, ProductSize, ProductImage, Order, OrderItem, 
+    Wallet, WalletTransaction, MerchantProfile, Governorate, 
+    MerchantShippingRate, DepositRequest, WithdrawalRequest, 
+    Offer, PaymobTransaction
+)
+from accounts.models import User
+
+# دوال مساعدة
+from store.paymob_utils import PaymobManager
+
+# دالة التحقق (Helper Function)
+def is_merchant(user):
+    return user.role == User.Role.MERCHANT and hasattr(user, 'merchant_profile') and user.merchant_profile.is_approved
 # دالة مساعدة للتحقق من التاجر
 def is_merchant(user):
     return user.role == User.Role.MERCHANT and hasattr(user, 'merchant_profile') and user.merchant_profile.is_approved
@@ -207,47 +225,64 @@ from store.models import PaymobTransaction, WalletTransaction, Wallet
 from django.conf import settings
 
 # 1. صفحة طلب الشحن (يختار المبلغ وطريقة الدفع)
+from store.paymob_utils import PaymobManager
+from store.models import PaymobTransaction
+from django.conf import settings
+
 @login_required
 def paymob_deposit(request):
     if not is_merchant(request.user):
         return redirect('home')
 
     if request.method == 'POST':
-        amount = float(request.POST.get('amount'))
-        amount_cents = int(amount * 100) # Paymob يتعامل بالقروش
-        
-        # بيانات وهمية للفوترة (مطلوبة من Paymob)
-        user = request.user
-        billing_data = {
-            "first_name": user.first_name or "Merchant",
-            "last_name": user.last_name or "User",
-            "email": user.email,
-            "phone_number": user.phone_primary,
-            "apartment": "NA", "email": user.email, "floor": "NA", 
-            "street": "NA", "building": "NA", "shipping_method": "NA", 
-            "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
-        }
+        try:
+            amount = float(request.POST.get('amount'))
+            if amount < 10: # حد أدنى
+                messages.error(request, "الحد الأدنى للشحن 10 ج.م")
+                return redirect('paymob_deposit')
 
-        # --- بدء التعامل مع Paymob ---
-        paymob = PaymobManager()
-        token = paymob.get_token()
-        order_id = paymob.create_order(token, amount_cents)
-        
-        # تسجيل المعاملة في الداتابيز عندنا
-        PaymobTransaction.objects.create(
-            merchant=request.user.merchant_profile,
-            paymob_order_id=order_id,
-            amount_cents=amount_cents
-        )
+            amount_cents = int(amount * 100) # Paymob يتعامل بالقروش
+            
+            # --- 1. Paymob Setup ---
+            paymob = PaymobManager()
+            token = paymob.get_token()
+            
+            # إنشاء الطلب في Paymob
+            pm_order_id = paymob.create_order(token, amount_cents)
+            
+            # --- 2. تسجيل المعاملة محلياً (مهم جداً للـ Callback) ---
+            # نحفظ رقم الطلب (pm_order_id) لنعرف لاحقاً أن هذا شحن
+            PaymobTransaction.objects.create(
+                merchant=request.user.merchant_profile,
+                paymob_order_id=str(pm_order_id), # تأكد أنه string
+                amount_cents=amount_cents,
+                is_paid=False
+            )
 
-        # الحصول على Payment Key (للكروت حالياً كمثال)
-        # يمكنك إضافة شرط لو اختار محفظة تستخدم Integration ID آخر
-        integration_id = settings.PAYMOB_INTEGRATION_ID_CARD 
-        payment_key = paymob.get_payment_key(token, order_id, amount_cents, integration_id, billing_data)
+            # --- 3. بيانات الفوترة ---
+            user = request.user
+            billing_data = {
+                "first_name": user.first_name or "Merchant",
+                "last_name": user.last_name or "User",
+                "email": user.email or "merchant@bazarna.com",
+                "phone_number": user.phone_primary,
+                "apartment": "NA", "floor": "NA", "street": "NA", "building": "NA", 
+                "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
+            }
 
-        # التوجيه لصفحة الدفع (Iframe)
-        iframe_id = settings.PAYMOB_IFRAME_ID
-        return redirect(f"https://accept.paymob.com/api/acceptance/iframes/{iframe_id}?payment_token={payment_key}")
+            # --- 4. الحصول على مفتاح الدفع ---
+            payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
+
+            # --- 5. عرض الـ Iframe ---
+            iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+            
+            # نستخدم نفس قالب الـ Iframe المستخدم في الشراء
+            return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
+
+        except Exception as e:
+            print(f"Deposit Error: {e}")
+            messages.error(request, "حدث خطأ أثناء الاتصال ببوابة الدفع.")
+            return redirect('merchant_wallet')
 
     return render(request, 'merchant/paymob_deposit.html')
 
@@ -465,3 +500,47 @@ def update_order_status(request, order_id):
             messages.success(request, "تم تغيير الحالة بنجاح.")
         
     return redirect('merchant_order_detail', order_id=order.order_id)
+
+
+
+from store.models import WithdrawalRequest
+
+@login_required
+def request_withdrawal(request):
+    if not is_merchant(request.user): return redirect('home')
+    
+    wallet = request.user.merchant_profile.wallet
+
+    if request.method == 'POST':
+        amount = Decimal(request.POST.get('amount'))
+        phone = request.POST.get('phone')
+        
+        # 1. التحقق من الرصيد المتاح
+        if amount > wallet.balance:
+            messages.error(request, "رصيدك غير كافٍ للسحب.")
+        elif amount < 50: # حد أدنى للسحب
+            messages.error(request, "الحد الأدنى للسحب 50 ج.م")
+        else:
+            # 2. إنشاء الطلب
+            WithdrawalRequest.objects.create(
+                merchant=request.user.merchant_profile,
+                amount=amount,
+                phone_number=phone
+            )
+            # (اختياري: يمكننا خصم الرصيد فوراً وحجزه، أو الانتظار للموافقة)
+            # الأفضل: خصمه فوراً لمنع سحبه مرتين
+            with transaction.atomic():
+                wallet.balance -= amount
+                wallet.save()
+                
+                # نسجل العملية كـ "سحب قيد الانتظار"
+                WalletTransaction.objects.create(
+                    wallet=wallet, amount=-amount, 
+                    transaction_type=WalletTransaction.TxType.WITHDRAWAL,
+                    description="طلب سحب (قيد الانتظار)", balance_after=wallet.balance
+                )
+
+            messages.success(request, "تم تقديم طلب السحب بنجاح.")
+            return redirect('merchant_wallet')
+
+    return render(request, 'merchant/withdraw.html', {'wallet': wallet})

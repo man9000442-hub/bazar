@@ -28,14 +28,15 @@
     <!-- الأزرار -->
     <div class="row g-2 mb-4">
         <div class="col-6">
-            <a href="#" class="btn btn-success w-100 py-3 shadow-sm border-0 bg-opacity-75">
+            <a href="{% url 'paymob_deposit' %}" class="btn btn-success w-100 py-3 shadow-sm border-0 bg-opacity-75">
                 <i class="fas fa-plus-circle mb-1 d-block fs-5"></i> إيداع
             </a>
         </div>
         <div class="col-6">
-            <button class="btn btn-white w-100 py-3 shadow-sm border text-muted">
-                <i class="fas fa-hand-holding-usd mb-1 d-block fs-5"></i> سحب
-            </button>
+                <!-- الكود الصحيح للزر -->
+                <a href="{% url 'merchant_request_withdrawal' %}" class="btn btn-white w-100 py-3 shadow-sm border text-muted">
+                    <i class="fas fa-hand-holding-usd mb-1 d-block fs-5"></i> سحب
+                </a>
         </div>
     </div>
     

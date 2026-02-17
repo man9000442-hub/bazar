@@ -5,13 +5,18 @@
 <!-- Header -->
 <div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
     <a href="{% url 'cart_view' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <h5 class="m-0 fw-bold">إتمام الطلب</h5>
+    <h5 class="m-0 fw-bold">تأكيد الطلب والدفع</h5>
 </div>
 
 <div class="container pb-5 mb-5">
     <form method="POST">
         {% csrf_token %}
         
+        <!-- حقول مخفية للمنتجات المختارة -->
+        {% for item_id in selected_ids %}
+            <input type="hidden" name="selected_items" value="{{ item_id }}">
+        {% endfor %}
+
         <!-- 1. عنوان التوصيل -->
         <div class="card border-0 shadow-sm mb-3 p-3">
             <h6 class="fw-bold mb-3 d-flex align-items-center text-primary">
@@ -39,7 +44,7 @@
             </div>
         </div>
 
-        <!-- 2. تفاصيل الفاتورة (مقسمة حسب التاجر) -->
+        <!-- 2. تفاصيل الفاتورة -->
         <div class="card border-0 shadow-sm mb-3 p-3 bg-white">
             <h6 class="fw-bold mb-3 text-primary">تفاصيل الطلب</h6>
             
@@ -50,20 +55,17 @@
                     <h6 class="fw-bold text-dark mb-0">{{ group.merchant.user.first_name }}</h6>
                 </div>
                 
-                <!-- المنتجات -->
                 <div class="ps-4 border-start border-2 ms-1">
                     {% for item in group.items %}
                     <div class="d-flex justify-content-between small text-muted mb-1">
                         <span>{{ item.product_size.product.name }} (x{{ item.quantity }})</span>
-                        <span>{{ item.total_price }} ج.م</span>
+                        <span>{{ item.price_at_purchase }} ج.م</span>
                     </div>
                     {% endfor %}
                 </div>
                 
-                <!-- الشحن الخاص بهذا التاجر -->
                 <div class="d-flex justify-content-between align-items-center mt-2 ps-4 small bg-light p-2 rounded">
                     <span class="text-muted">تكلفة الشحن:</span>
-                    <!-- سنستخدم ID مميز لتحديثه بالـ JS -->
                     <span class="fw-bold text-dark shipping-val" id="shipping-merch-{{ group.merchant.id }}">--</span>
                 </div>
             </div>
@@ -79,12 +81,12 @@
                     <span>إجمالي الشحن</span>
                     <span id="total-shipping-display">--</span>
                 </div>
-                {% if platform_fees > 0 %}
-                <div class="d-flex justify-content-between mb-1 small text-muted">
-                    <span>رسوم خدمة</span>
-                    <span>{{ platform_fees }} ج.م</span>
+                
+                <!-- رسوم الأونلاين (مخفية افتراضياً) -->
+                <div class="d-flex justify-content-between mb-1 small text-muted" id="online-fees-row" style="display: none;">
+                    <span>رسوم دفع إلكتروني</span>
+                    <span id="online-fees-display">0.00 ج.م</span>
                 </div>
-                {% endif %}
                 
                 <hr>
                 
@@ -95,10 +97,29 @@
             </div>
         </div>
 
+        <!-- 3. خيارات الدفع -->
+        <div class="card border-0 shadow-sm mb-5 p-3 bg-white">
+            <h6 class="fw-bold mb-3 text-primary">طريقة الدفع</h6>
+            
+            <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="payment_method" id="pay_cod" value="COD" checked onchange="togglePaymentMethod()">
+                <label class="btn btn-outline-secondary py-3" for="pay_cod">
+                    <i class="fas fa-money-bill-wave d-block mb-1 fs-4"></i>
+                    كاش
+                </label>
+
+                <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE" onchange="togglePaymentMethod()">
+                <label class="btn btn-outline-primary py-3" for="pay_online">
+                    <i class="fas fa-credit-card d-block mb-1 fs-4"></i>
+                    أونلاين
+                </label>
+            </div>
+        </div>
+
         <!-- زر التأكيد العائم -->
         <div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 70px; z-index: 990;">
             <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold shadow-sm" id="confirm-btn" disabled>
-                تأكيد الطلب (دفع عند الاستلام)
+                <span id="btn-text">تأكيد الطلب (دفع عند الاستلام)</span>
             </button>
             <div id="select-city-msg" class="text-center small text-muted mt-2">يرجى اختيار المحافظة لحساب الشحن</div>
         </div>
@@ -109,64 +130,110 @@
     .last-no-border:last-child { border-bottom: none !important; }
 </style>
 
-<!-- JavaScript -->
+<!-- JavaScript Logic -->
 <script>
-function updateShipping() {
-    const govId = document.getElementById('city-select').value;
-    const confirmBtn = document.getElementById('confirm-btn');
-    const msgEl = document.getElementById('select-city-msg');
+    // استقبال متغيرات الرسوم من البايثون
+    const feeFixed = {{ fee_fixed|default:0 }};
+    const feePercent = {{ fee_percent|default:0 }};
     
-    // العناصر العامة
-    const totalShippingEl = document.getElementById('total-shipping-display');
-    const grandTotalEl = document.getElementById('grand-total-display');
+    // متغير لحفظ الإجمالي "الخام" (منتجات + شحن) بدون رسوم
+    let rawGrandTotal = 0;
 
-    if (!govId) {
+    function updateShipping() {
+        const govId = document.getElementById('city-select').value;
+        const confirmBtn = document.getElementById('confirm-btn');
+        const msgEl = document.getElementById('select-city-msg');
+        
+        const totalShippingEl = document.getElementById('total-shipping-display');
+        const grandTotalEl = document.getElementById('grand-total-display');
+
+        if (!govId) {
+            confirmBtn.disabled = true;
+            msgEl.style.display = 'block';
+            return;
+        }
+
+        // Loading
         confirmBtn.disabled = true;
-        msgEl.style.display = 'block';
-        return;
-    }
-
-    // حالة التحميل
-    confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحساب...';
-
-    // استدعاء API
-    fetch(`/api/calc-shipping/?gov_id=${govId}`)
-        .then(response => response.json())
-        .then(data => {
-            // 1. تحديث شحن كل تاجر
-            data.shipping_details.forEach(detail => {
-                const el = document.getElementById(`shipping-merch-${detail.merchant_id}`);
-                if (el) {
-                    if (detail.cost == 0) {
-                        el.innerHTML = '<span class="text-success">مجاني (أول طلب)</span>';
-                    } else {
-                        el.innerText = detail.cost + " ج.م";
+        
+        // استدعاء API (مع تمرير المنتجات المختارة)
+        const selectedIds = Array.from(document.querySelectorAll('input[name="selected_items"]')).map(i => i.value).join(',');
+        
+        fetch(`/api/calc-shipping/?gov_id=${govId}&items=${selectedIds}`)
+            .then(response => response.json())
+            .then(data => {
+                // 1. تحديث شحن كل تاجر
+                data.shipping_details.forEach(detail => {
+                    const el = document.getElementById(`shipping-merch-${detail.merchant_id}`);
+                    if (el) {
+                        el.innerHTML = detail.cost == 0 ? '<span class="text-success">مجاني</span>' : detail.cost + " ج.م";
                     }
-                }
+                });
+
+                // 2. تحديث الإجماليات
+                totalShippingEl.innerText = data.total_shipping + " ج.م";
+                
+                // حفظ الرقم الخام
+                rawGrandTotal = data.grand_total;
+                
+                // تحديث العرض بناءً على طريقة الدفع المختارة حالياً
+                togglePaymentMethod();
+
+                // 3. تفعيل الزر
+                confirmBtn.disabled = false;
+                msgEl.style.display = 'none';
+            })
+            .catch(err => {
+                console.error(err);
+                confirmBtn.innerText = "حدث خطأ";
             });
-
-            // 2. تحديث الإجماليات
-            totalShippingEl.innerText = data.total_shipping + " ج.م";
-            grandTotalEl.innerText = data.grand_total + " ج.م";
-
-            // 3. تفعيل الزر
-            confirmBtn.disabled = false;
-            confirmBtn.innerText = "تأكيد الطلب (دفع عند الاستلام)";
-            msgEl.style.display = 'none';
-        })
-        .catch(err => {
-            console.error(err);
-            confirmBtn.innerText = "حدث خطأ";
-        });
-}
-
-// تشغيل عند التحميل (في حالة العودة للصفحة)
-document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('city-select').value) {
-        updateShipping();
     }
-});
+
+    function togglePaymentMethod() {
+        const isOnline = document.getElementById('pay_online').checked;
+        const feesRow = document.getElementById('online-fees-row');
+        const feesValue = document.getElementById('online-fees-display');
+        const grandTotalEl = document.getElementById('grand-total-display');
+        const btnText = document.getElementById('btn-text');
+        const confirmBtn = document.getElementById('confirm-btn');
+
+        if (rawGrandTotal === 0) return; // لم يتم الحساب بعد
+
+        let finalTotal = rawGrandTotal;
+
+        if (isOnline) {
+            // حساب الرسوم: ثابت + نسبة
+            let fees = feeFixed + (rawGrandTotal * feePercent / 100);
+            finalTotal += fees;
+
+            // عرض الرسوم
+            feesRow.style.display = 'flex';
+            feesValue.innerText = fees.toFixed(2) + " ج.م";
+            
+            // تغيير الزر
+            btnText.innerText = "الانتقال للدفع الآمن 🔒";
+            confirmBtn.classList.remove('btn-primary-app');
+            confirmBtn.classList.add('btn-success');
+        } else {
+            // إخفاء الرسوم
+            feesRow.style.display = 'none';
+            
+            // تغيير الزر
+            btnText.innerText = "تأكيد الطلب (دفع عند الاستلام)";
+            confirmBtn.classList.remove('btn-success');
+            confirmBtn.classList.add('btn-primary-app');
+        }
+
+        // تحديث الإجمالي النهائي
+        grandTotalEl.innerText = finalTotal.toFixed(2) + " ج.م";
+    }
+
+    // تشغيل عند التحميل
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('city-select').value) {
+            updateShipping();
+        }
+    });
 </script>
 
 {% endblock %}

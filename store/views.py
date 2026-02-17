@@ -2,11 +2,23 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from .models import Product, Category, Order, OrderItem, ProductSize, Governorate,MerchantShippingRate
-from django.db.models import F
-from django.db.models import Q
-import json
-from .models import Notification
+from django.db import transaction
+from django.db.models import F, Q
+from django.http import JsonResponse
+from collections import defaultdict
+from decimal import Decimal
+
+# الموديلات
+from .models import (
+    Product, Category, Order, OrderItem, ProductSize, 
+    Wallet, WalletTransaction, MerchantProfile, Governorate, 
+    MerchantShippingRate, SiteSetting, Favorite, Offer, 
+    PaymobTransaction, Notification # تأكد أنك أنشأت Notification
+)
+
+# دوال مساعدة (إذا كانت في ملف منفصل)
+from .paymob_utils import PaymobManager
+from django.conf import settings
 
 
 def check_pending_confirmations(user):
@@ -25,22 +37,24 @@ def check_pending_confirmations(user):
     return pending
 
 # صفحة التأكيد الإجبارية
-# صفحة تأكيد الاستلام (Blocker)
 @login_required
 def confirm_delivery_view(request, order_id):
     order = get_object_or_404(Order, pk=order_id, customer=request.user)
     
     if request.method == 'POST':
-        action = request.POST.get('action')
+        action = request.POST.get('action') # confirm or reject
         
         if action == 'confirm':
             order.is_confirmed_by_customer = True
-            # order.rating = ...
-            messages.success(request, "شكراً لتأكيدك!")
+            order.rating = int(request.POST.get('rating', 5))
+            messages.success(request, "شكراً لتقييمك! يمكنك الآن التسوق من جديد.")
+            
         elif action == 'reject':
             order.is_confirmed_by_customer = False
-            order.status = Order.Status.RETURNED # أو نزاع
-            messages.warning(request, "تم تسجيل الشكوى.")
+            order.rejection_reason = request.POST.get('reason')
+            # هنا ممكن نغير حالة الطلب لـ RETURNED أو نرسل إشعار للأدمن
+            order.status = Order.Status.RETURNED # أو حالة خاصة "نزاع"
+            messages.warning(request, "تم تسجيل رفضك وسيتم مراجعة الإدارة.")
             
         order.save()
         return redirect('home')
@@ -79,7 +93,8 @@ def home(request):
     offers = Product.objects.filter(
         active_offer__is_active=True,
         active_offer__end_date__gte=timezone.now(),
-        is_active=True # المنتج نفسه لازم يكون مفعل
+        is_active=True,
+        merchant__wallet__balance__gte=F('merchant__minimum_balance_required') # المنتج نفسه لازم يكون مفعل
     ).order_by('-active_offer__discount_percentage')[:5] # نأخذ أقوى 5 عروض
 
     unread_count = 0
@@ -217,124 +232,346 @@ from collections import defaultdict
 
 @login_required
 def checkout(request):
-    # ... (فحص المانع أولاً) ...
+    # 1. المانع
     pending_conf = check_pending_confirmations(request.user)
     if pending_conf: return redirect('confirm_delivery_view', order_id=pending_conf.id)
 
-    # جلب السلة
+    # 2. استقبال المنتجات
+    selected_ids = request.GET.getlist('selected_items')
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('selected_items')
+
     cart = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
-    if not cart or not cart.items.exists():
-        return redirect('home')
+    if not cart: return redirect('home')
+
+    if selected_ids:
+        cart_items = cart.items.filter(id__in=selected_ids)
+    else:
+        cart_items = cart.items.all()
+
+    if not cart_items.exists():
+        messages.warning(request, "لا توجد منتجات.")
+        return redirect('cart_view')
 
     governorates = Governorate.objects.all()
 
-    # --- تجهيز البيانات للعرض (Grouping by Merchant) ---
+    # --- تجهيز العرض ---
     grouped_items = defaultdict(list)
-    merchant_totals = defaultdict(int) # لحساب مجموع منتجات كل تاجر
+    merchant_totals = defaultdict(int)
     
-    for item in cart.items.all():
+    for item in cart_items:
         merch = item.product_size.product.merchant
         grouped_items[merch].append(item)
-        merchant_totals[merch] += item.total_price # تأكد أن OrderItem لديه property total_price
+        merchant_totals[merch] += item.price_at_purchase * item.quantity
 
-    # تحويلها لقائمة ليسهل عرضها في التمبلت
     cart_structure = []
+    cart_total_display = 0
     for merch, items in grouped_items.items():
-        cart_structure.append({
-            'merchant': merch,
-            'items': items,
-            'subtotal': merchant_totals[merch]
-        })
+        subtotal = merchant_totals[merch]
+        cart_structure.append({'merchant': merch, 'items': items, 'subtotal': subtotal})
+        cart_total_display += subtotal
 
-    # --- معالجة الـ POST (إنشاء الطلبات الحقيقية) ---
+    # ==========================================
+    # معالجة الشراء (POST)
+    # ==========================================
     if request.method == 'POST':
         address = request.POST.get('address')
         gov_id = request.POST.get('city')
         phone = request.POST.get('phone')
+        payment_method = request.POST.get('payment_method')
         
+        if not (address and gov_id and phone):
+            messages.error(request, "البيانات غير مكتملة.")
+            return redirect('checkout')
+
         gov = get_object_or_404(Governorate, pk=gov_id)
         
-        # 1. هل هذا أول طلب للعميل؟ (للشحن المجاني)
-        is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).exists()
-        free_shipping_used = False # عشان نطبق المجاني مرة واحدة بس
-
-        # 2. اللوب الجهنمية (إنشاء طلب لكل تاجر) 🔥
-        for group in cart_structure:
-            merchant = group['merchant']
-            items = group['items']
-            
-            # أ. حساب شحن هذا التاجر لهذه المحافظة
-            shipping_rate = MerchantShippingRate.objects.filter(merchant=merchant, governorate=gov).first()
-            shipping_cost = shipping_rate.rate if shipping_rate else 50 # افتراضي
-            
-            # ب. تطبيق الشحن المجاني (لأول تاجر فقط في اللوب)
-            if is_first_order and not free_shipping_used:
-                shipping_cost = 0
-                free_shipping_used = True
-                # (هنا ممكن نسجل في Log إن التاجر ده ليه تعويض شحن عند الإدارة)
-
-            # ج. إنشاء الطلب الجديد الخاص بالتاجر
-            new_order = Order.objects.create(
-                customer=request.user,
-                merchant=merchant, # ربطنا الطلب بالتاجر
-                shipping_address=f"{gov.name} - {address}",
-                governorate=gov,
-                shipping_phone=phone,
-                status=Order.Status.PENDING,
-                # الأرقام سيتم حسابها بالـ Signal لما ننقل المنتجات
-                shipping_cost=shipping_cost,
-                is_first_order=(shipping_cost == 0) # علامة إن الشحن مجاني
-            )
-            
-            # د. نقل المنتجات من السلة للطلب الجديد
-            for item in items:
-                item.order = new_order # تغيير الأب
-                item.save() # الـ Signal هيشتغل ويحسب مجاميع الطلب الجديد
-            
-            # هـ. الـ Signal في OrderItem هيحدث new_order
-            new_order.save() 
-
-        # 3. حذف السلة القديمة (لأنها فضيت خلاص)
-        cart.delete()
+        created_orders = []
+        grand_total_with_shipping = 0
         
-        messages.success(request, "تم تقسيم الطلبات وإرسالها للتجار بنجاح! 🎉")
-        return redirect('my_orders') # نوديه لصفحة طلباتي يشوفهم
+        # فحص الشحن المجاني
+        is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).exists()
+        free_shipping_used = False
+
+        try:
+            with transaction.atomic():
+                for group in cart_structure:
+                    merchant = group['merchant']
+                    items = group['items']
+                    
+                    # حساب الشحن
+                    rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=gov).first()
+                    base_shipping = rate_obj.rate if rate_obj else 50
+                    extra_shipping = sum(i.product_size.product.shipping_fee * i.quantity for i in items)
+                    shipping_cost = base_shipping + extra_shipping
+
+                    if is_first_order and not free_shipping_used:
+                        shipping_cost = 0
+                        free_shipping_used = True
+
+                    # الحالة المبدئية
+                    initial_status = Order.Status.WAITING_PAYMENT if payment_method == 'ONLINE' else Order.Status.PENDING
+
+                    new_order = Order.objects.create(
+                        customer=request.user,
+                        merchant=merchant,
+                        shipping_address=f"{gov.name} - {address}",
+                        governorate=gov,
+                        shipping_phone=phone,
+                        status=initial_status,
+                        shipping_cost=shipping_cost,
+                        is_first_order=(shipping_cost == 0)
+                    )
+                    
+                    for item in items:
+                        item.order = new_order
+                        item.save()
+                    
+                    new_order.save()
+                    created_orders.append(new_order)
+                    grand_total_with_shipping += new_order.final_total
+
+                if not cart.items.exists():
+                    cart.delete()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            messages.error(request, "حدث خطأ.")
+            return redirect('checkout')
+
+        # --- الدفع ---
+        if payment_method == 'ONLINE':
+            try:
+                # 1. حساب رسوم الخدمة (Platform Fees)
+                settings_obj = SiteSetting.objects.first()
+                online_fees = 0
+                
+                if settings_obj:
+                    # معادلة: ثابت + (نسبة * الإجمالي)
+                    fixed = float(settings_obj.platform_fee_fixed)
+                    percent = float(settings_obj.platform_fee_percentage) / 100
+                    online_fees = fixed + (float(grand_total_with_shipping) * percent)
+
+                # 2. المبلغ الكلي لـ Paymob (شامل الرسوم)
+                total_to_pay = float(grand_total_with_shipping) + online_fees
+                amount_cents = int(total_to_pay * 100)
+                
+                # 3. Paymob
+                paymob = PaymobManager()
+                token = paymob.get_token()
+                pm_order_id = paymob.create_order(token, amount_cents)
+                
+                billing_data = {
+                    "first_name": request.user.first_name or "G", "last_name": request.user.last_name or "U",
+                    "email": request.user.email or "no@mail.com", "phone_number": phone,
+                    "apartment": "NA", "floor": "NA", "street": "NA", "building": "NA", 
+                    "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
+                }
+
+                payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
+                
+                # يمكنك حفظ الرسوم في أول طلب كمرجع (اختياري)
+                # created_orders[0].platform_fees = online_fees
+                # created_orders[0].save()
+
+                iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+                return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
+
+            except Exception as e:
+                print(f"Paymob Error: {e}")
+                messages.error(request, "فشل الاتصال بالبنك.")
+                return redirect('my_orders')
+        
+        else:
+            messages.success(request, "تم استلام طلبك بنجاح!")
+            return redirect('order_success')
+
+    # --- GET: حساب الرسوم التقريبية للعرض ---
+    settings_obj = SiteSetting.objects.first()
+    online_fees_display = 0
+    if settings_obj:
+        # نحتاج لتقدير الإجمالي (منتجات + شحن تقريبي) للعرض فقط
+        # الشحن سيتغير بالـ JS، لذا سنرسل "معاملات" الرسوم للـ JS يحسبها هو
+        fee_fixed = float(settings_obj.platform_fee_fixed)
+        fee_percent = float(settings_obj.platform_fee_percentage)
+    else:
+        fee_fixed = 0
+        fee_percent = 0
 
     return render(request, 'store/checkout.html', {
-        'cart_structure': cart_structure, # الهيكل المقسم
+        'cart_structure': cart_structure,
         'governorates': governorates,
-        'cart_total': cart.total_products_price, # مجرد رقم للعرض
-        'platform_fees': cart.platform_fees
+        'cart_total': cart_total_display,
+        'selected_ids': selected_ids,
+        'fee_fixed': fee_fixed,
+        'fee_percent': fee_percent
     })
 
 
-from django.http import JsonResponse # مهم
+@login_required
+def retry_payment(request, order_id):
+    # نأخذ طلباً واحداً (أو مجموعة طلبات معلقة) ونعيد توجيهها للدفع
+    order = get_object_or_404(Order, pk=order_id, customer=request.user, status=Order.Status.WAITING_PAYMENT)
+    
+    # نعيد حساب المبلغ (منتجات + شحن + رسوم مخزنة أو نحسبها من جديد)
+    # للتبسيط سنعيد العملية بالكامل كما في Checkout
+    
+    try:
+        from .paymob_utils import PaymobManager
+        paymob = PaymobManager()
+        token = paymob.get_token()
+        
+        # المبلغ (يفضل أن يكون محفوظاً، أو نحسبه)
+        # هنا سنفترض أن final_total محفوظ في الطلب وشامل الرسوم والشحن
+        # (ملاحظة: إذا لم تكن الرسوم مضافة، أضفها هنا)
+        settings_obj = SiteSetting.objects.first()
+        platform_fees = 0
+        if settings_obj:
+             fixed = float(settings_obj.platform_fee_fixed)
+             percent = float(settings_obj.platform_fee_percentage) / 100
+             # حساب عكسي تقريبي أو إضافة جديدة (الأفضل أن تكون محفوظة في الموديل)
+             # سنفترض أنها محفوظة في platform_fees
+        
+        amount_cents = int(order.final_total * 100)
+        
+        pm_order_id = paymob.create_order(token, amount_cents)
+        
+        billing_data = {
+            "first_name": request.user.first_name, "last_name": request.user.last_name,
+            "email": request.user.email or "test@test.com", "phone_number": order.shipping_phone,
+            "city": "Cairo", "country": "EG", "state": "NA", "street": "NA", "building": "NA", "floor": "NA", "apartment": "NA", "postal_code": "NA", "shipping_method": "NA"
+        }
+
+        payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
+        
+        iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+        return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
+
+    except Exception as e:
+        messages.error(request, "فشل إنشاء رابط الدفع.")
+        return redirect('my_orders')
+
+@login_required
+def customer_order_detail(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, customer=request.user)
+    return render(request, 'store/customer_order_detail.html', {'order': order})
+
+# استقبال رد Paymob بعد الدفع
+def payment_callback(request):
+    success = request.GET.get('success')
+    pm_order_id = request.GET.get('order') # رقم الطلب عند Paymob
+    
+    if success == "true":
+        # 1. هل هذه عملية شحن رصيد؟ (نبحث في جدول PaymobTransaction)
+        try:
+            deposit_tx = PaymobTransaction.objects.get(paymob_order_id=pm_order_id, is_paid=False)
+            
+            # --- معالجة الشحن ---
+            deposit_tx.is_paid = True
+            deposit_tx.save()
+            
+            wallet = deposit_tx.merchant.wallet
+            amount = Decimal(deposit_tx.amount_cents) / 100
+            
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=amount,
+                transaction_type=WalletTransaction.TxType.COMPENSATION,
+                description=f"شحن رصيد (Paymob) #{deposit_tx.id}",
+                balance_after=wallet.balance + amount
+            )
+            wallet.balance += amount
+            wallet.save()
+            
+            messages.success(request, "تم شحن الرصيد بنجاح! 💰")
+            return redirect('merchant_wallet') # توجيه للمحفظة
+            
+        except PaymobTransaction.DoesNotExist:
+            # 2. إذن هي عملية شراء منتجات
+            # (نبحث عن طلبات المستخدم المعلقة)
+            # ملاحظة: هذا الافتراض خطير لو المستخدم فاتح شحن وشراء في نفس الوقت
+            # الأفضل: البحث عن الطلب المرتبط بـ pm_order_id لو كنا حفظناه
+            
+            pending_orders = Order.objects.filter(customer=request.user, status=Order.Status.WAITING_PAYMENT)
+            
+            if pending_orders.exists():
+                for order in pending_orders:
+                    order.status = Order.Status.PENDING
+                    order.save()
+                
+                messages.success(request, "تم دفع الطلب بنجاح! 🎉")
+                return redirect('my_orders') # توجيه للطلبات
+            else:
+                # حالة غريبة: الدفع نجح بس مفيش طلبات ولا شحن!
+                messages.warning(request, "تم الدفع، ولكن لم نجد الطلب المرتبط. يرجى التواصل مع الدعم.")
+                return redirect('home')
+
+    else:
+        messages.error(request, "فشلت العملية.")
+        return redirect('home')# مهم
+
+from django.http import JsonResponse
 
 @login_required
 def calculate_shipping_api(request):
     gov_id = request.GET.get('gov_id')
-    if not gov_id: return JsonResponse({'error': 'No ID'}, status=400)
+    items_ids_str = request.GET.get('items', '') # IDs مفصولة بفاصلة
+    
+    if not gov_id:
+        return JsonResponse({'error': 'No Governorate ID'}, status=400)
 
+    # 1. جلب السلة
     cart = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
-    if not cart: return JsonResponse({'shipping_details': [], 'total_shipping': 0, 'grand_total': 0})
+    if not cart:
+        return JsonResponse({'shipping_details': [], 'total_shipping': 0, 'grand_total': 0})
+
+    # 2. تحديد العناصر المطلوبة فقط
+    if items_ids_str:
+        try:
+            # تحويل النص "1,2,3" لقائمة [1, 2, 3]
+            items_ids = [int(i) for i in items_ids_str.split(',') if i.isdigit()]
+            cart_items = cart.items.filter(id__in=items_ids)
+        except:
+            cart_items = cart.items.none()
+    else:
+        # إذا لم يرسل IDs (حالة نادرة)، نحسب للكل
+        cart_items = cart.items.all()
+
+    if not cart_items.exists():
+        return JsonResponse({'shipping_details': [], 'total_shipping': 0, 'grand_total': 0})
 
     governorate = get_object_or_404(Governorate, pk=gov_id)
     
-    # 1. تجميع التجار
-    merchants = set(item.product_size.product.merchant for item in cart.items.all())
-    
+    # 3. حساب الشحن
     shipping_details = []
     total_shipping = 0
+    total_products_price = 0
     
-    # 2. فحص الشحن المجاني (أول مرة)
+    # تجميع العناصر حسب التاجر
+    items_by_merchant = {}
+    for item in cart_items:
+        merch = item.product_size.product.merchant
+        if merch not in items_by_merchant:
+            items_by_merchant[merch] = []
+        items_by_merchant[merch].append(item)
+        
+        # حساب مجموع المنتجات (لنعرض الإجمالي الصحيح)
+        total_products_price += item.price_at_purchase * item.quantity
+
+    # فحص الشحن المجاني (أول طلب)
     is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).exists()
     free_shipping_used = False
 
-    for merchant in merchants:
+    for merchant, items in items_by_merchant.items():
+        # أ. الشحن الأساسي للمحافظة
         rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=governorate).first()
-        cost = rate_obj.rate if rate_obj else 50
+        base_shipping = rate_obj.rate if rate_obj else 50 # الافتراضي
         
-        # تطبيق المجاني
+        # ب. الشحن الإضافي (وزن)
+        extra_shipping = sum(i.product_size.product.shipping_fee * i.quantity for i in items)
+        
+        cost = base_shipping + extra_shipping
+        
+        # تطبيق المجاني (لأول تاجر فقط)
         if is_first_order and not free_shipping_used:
             cost = 0
             free_shipping_used = True
@@ -345,15 +582,15 @@ def calculate_shipping_api(request):
             'cost': float(cost)
         })
 
-    # الإجمالي النهائي المتوقع
-    grand_total = float(cart.total_products_price + cart.platform_fees) + float(total_shipping)
+    # الإجمالي النهائي (منتجات مختارة + شحن)
+    # (لا نضيف رسوم المنصة هنا لأنها تعتمد على الدفع، ويمكن إضافتها لاحقاً في الفرونت إند)
+    grand_total = float(total_products_price) + float(total_shipping)
 
     return JsonResponse({
-        'shipping_details': shipping_details, # قائمة {تاجر: سعر}
+        'shipping_details': shipping_details,
         'total_shipping': float(total_shipping),
         'grand_total': grand_total
     })
-
 # صفحة النجاح (تظهر بعد إتمام الطلب)
 def order_success(request):
     return render(request, 'store/order_success.html')

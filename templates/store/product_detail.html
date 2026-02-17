@@ -52,7 +52,19 @@
             {{ product.category.name }}
         </span>
         <div class="text-warning small">
-            <i class="fas fa-star"></i> 4.5
+            <!-- عرض النجوم -->
+            {% with ''|center:5 as range %}
+            {% for _ in range %}
+                {% if forloop.counter <= product.average_rating %}
+                    <i class="fas fa-star"></i>
+                {% else %}
+                    <i class="far fa-star"></i>
+                {% endif %}
+            {% endfor %}
+            {% endwith %}
+            
+            <span class="text-muted ms-1">({{ product.average_rating }})</span>
+            <span class="text-muted small"> • {{ product.reviews_count }} تقييم</span>
         </div>
     </div>
 
@@ -71,7 +83,6 @@
         {% endif %}
         
         {% if product.shipping_fee == 0 %}
-            <span class="badge bg-success ms-auto">شحن مجاني</span>
         {% else %}
             <span class="text-muted small ms-auto">+ {{ product.shipping_fee }} ج.م شحن</span>
         {% endif %}

@@ -2,9 +2,18 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.db.models import Count, Sum
+
+# الموديلات
 from accounts.models import User
-from store.models import Product, MerchantProfile, Offer, Category
-from store.models import Order, Product, MerchantProfile, DepositRequest
+from store.models import (
+    Product, Order, MerchantProfile, DepositRequest, 
+    WithdrawalRequest, Offer, Category
+)
+
+# دالة التحقق
+def is_supervisor(user):
+    return user.is_superuser or user.role in [User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3, User.Role.OWNER]
 def is_supervisor(user):
     return user.is_superuser or user.role in [User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3, User.Role.OWNER]
 

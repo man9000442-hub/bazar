@@ -3,7 +3,7 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from decimal import Decimal
-
+from django.db.models import Avg
 # 1. بروفايل التاجر (بيانات التوثيق KYC)
 class MerchantProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='merchant_profile')
@@ -48,6 +48,15 @@ class Product(models.Model):
     admin_commission = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="عمولة المنصة")
     def __str__(self):
         return self.name
+    
+    @property
+    def average_rating(self):
+        avg = self.reviews.aggregate(Avg('rating'))['rating__avg']
+        return round(avg, 1) if avg else 0
+        
+    @property
+    def reviews_count(self):
+        return self.reviews.count()
 
 # موديل الصور الإضافية
 class ProductImage(models.Model):
@@ -122,6 +131,7 @@ class MerchantShippingRate(models.Model):
 class Order(models.Model):
     class Status(models.TextChoices):
         CART = "CART",
+        WAITING_PAYMENT = "WAITING_PAYMENT", "بانتظار الدفع" # <--- جديد
         PENDING = "PENDING", "قيد الانتظار"
         APPROVED = "APPROVED", "تم التأكيد"
         SHIPPED = "SHIPPED", "تم الشحن"
@@ -301,3 +311,27 @@ class SiteSetting(models.Model):
         super().save(*args, **kwargs)
     
 
+class WithdrawalRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "قيد المراجعة"
+        APPROVED = "APPROVED", "تم التحويل"
+        REJECTED = "REJECTED", "مرفوض"
+
+    merchant = models.ForeignKey(MerchantProfile, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="المبلغ")
+    phone_number = models.CharField(max_length=15, verbose_name="رقم المحفظة")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"سحب {self.amount} لـ {self.merchant}"
+
+class ProductReview(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    rating = models.PositiveIntegerField(choices=[(i, str(i)) for i in range(1, 6)])
+    comment = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('product', 'user') # تقييم واحد لكل مستخدم للمنتج

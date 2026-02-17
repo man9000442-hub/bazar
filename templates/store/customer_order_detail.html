@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
+    <a href="{% url 'my_orders' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
+    <h5 class="m-0 fw-bold">تفاصيل الطلب</h5>
+</div>
+
+<div class="container pb-5">
+    
+    <!-- الحالة -->
+    <div class="card border-0 shadow-sm p-3 mb-3">
+        <h6 class="fw-bold text-primary mb-2">حالة الطلب</h6>
+        <div class="progress mb-2" style="height: 6px;">
+            {% if order.status == 'PENDING' %}
+                <div class="progress-bar bg-warning" style="width: 25%"></div>
+            {% elif order.status == 'SHIPPED' %}
+                <div class="progress-bar bg-info" style="width: 75%"></div>
+            {% elif order.status == 'DELIVERED' %}
+                <div class="progress-bar bg-success" style="width: 100%"></div>
+            {% endif %}
+        </div>
+        <p class="text-muted small mb-0">{{ order.get_status_display }}</p>
+    </div>
+
+    <!-- المنتجات -->
+    <h6 class="fw-bold mb-2 px-1">المنتجات</h6>
+    {% for item in order.items.all %}
+    <div class="card border-0 shadow-sm mb-2 p-2 d-flex flex-row align-items-center">
+        <img src="{{ item.product_size.product.image.url }}" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+        <div class="flex-grow-1">
+            <h6 class="m-0 fw-bold small">{{ item.product_size.product.name }}</h6>
+            <small class="text-muted">{{ item.product_size.size_label }} | {{ item.product_size.color_label }}</small>
+            <div class="d-flex justify-content-between mt-1">
+                <span class="text-primary fw-bold small">{{ item.price_at_purchase }} ج.م</span>
+                <span class="badge bg-light text-dark border">x{{ item.quantity }}</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- العنوان -->
+    <div class="card border-0 shadow-sm mt-3 p-3">
+        <h6 class="fw-bold mb-2"><i class="fas fa-map-marker-alt text-muted me-2"></i> عنوان التوصيل</h6>
+        <p class="text-muted small mb-0">{{ order.shipping_address }}</p>
+        <p class="text-muted small mb-0">{{ order.shipping_phone }}</p>
+    </div>
+
+    <!-- الملخص المالي -->
+    <div class="card border-0 shadow-sm mt-3 p-3">
+        <div class="d-flex justify-content-between small mb-1">
+            <span>المجموع</span>
+            <span>{{ order.total_products_price }} ج.م</span>
+        </div>
+        <div class="d-flex justify-content-between small mb-1">
+            <span>الشحن</span>
+            <span>{{ order.shipping_cost }} ج.م</span>
+        </div>
+        <hr class="my-2">
+        <div class="d-flex justify-content-between fw-bold text-dark">
+            <span>الإجمالي</span>
+            <span>{{ order.final_total }} ج.م</span>
+        </div>
+    </div>
+
+
+    <!-- في customer_order_detail.html -->
+
+<!-- ... (عرض التفاصيل كما هو) ... -->
+
+    <!-- الزر العائم للدفع -->
+    {% if order.status == 'WAITING_PAYMENT' %}
+    <div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 70px; z-index: 1000;">
+        <div class="alert alert-warning small mb-2 d-flex align-items-center">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span>الطلب بانتظار الدفع لتأكيده.</span>
+        </div>
+        
+        <a href="{% url 'retry_payment' order.id %}" class="btn btn-success w-100 py-3 fw-bold shadow-sm">
+            ادفع الآن ({{ order.final_total }} ج.م) <i class="fas fa-credit-card ms-2"></i>
+        </a>
+    </div>
+    {% endif %}
+
+    {% comment %} <!-- زر المساعدة -->
+    <a href="#" class="btn btn-outline-secondary w-100 mt-4 rounded-pill">
+        <i class="fas fa-headset me-2"></i> هل تواجه مشكلة؟ تواصل معنا
+    </a> {% endcomment %}
+
+</div>
+{% endblock %}

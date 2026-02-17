@@ -17,4 +17,7 @@ urlpatterns = [
     path('wishlist/toggle/<int:product_id>/', views.toggle_favorite, name='toggle_favorite'),
     path('notifications/', views.notifications_view, name='notifications'),
     path('confirm-delivery/<int:order_id>/', views.confirm_delivery_view, name='confirm_delivery_view'),
+    path('payment/callback/', views.payment_callback, name='payment_callback'),
+    path('payment/retry/<int:order_id>/', views.retry_payment, name='retry_payment'),
+    path('my-orders/<int:order_id>/', views.customer_order_detail, name='customer_order_detail'),
 ]
