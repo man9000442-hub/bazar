@@ -1,0 +1,39 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}إعدادات الموقع{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px;">
+    <form method="POST" enctype="multipart/form-data" class="card border-0 shadow-sm p-4 rounded-4">
+        {% csrf_token %}
+        
+        <h6 class="fw-bold text-primary mb-3">بيانات عامة</h6>
+        <div class="mb-3">
+            <label class="form-label">اسم الموقع</label>
+            <input type="text" name="site_name" class="form-control" value="{{ settings.site_name }}">
+        </div>
+
+        <h6 class="fw-bold text-primary mb-3 mt-4">الرسوم والمالية</h6>
+        <div class="row g-3">
+            <div class="col-6">
+                <label class="form-label">رسوم ثابتة (ج.م)</label>
+                <input type="number" name="fee_fixed" class="form-control" step="0.5" value="{{ settings.platform_fee_fixed }}">
+            </div>
+            <div class="col-6">
+                <label class="form-label">نسبة العمولة (%)</label>
+                <input type="number" name="fee_percent" class="form-control" step="0.1" value="{{ settings.platform_fee_percentage }}">
+            </div>
+        </div>
+
+        <h6 class="fw-bold text-primary mb-3 mt-4">المظهر</h6>
+        <div class="mb-3">
+            <label class="form-label">بانر العروض الرئيسي</label>
+            <input type="file" name="banner" class="form-control">
+            {% if settings.banner_image %}
+                <img src="{{ settings.banner_image.url }}" class="mt-2 rounded w-100" style="max-height: 100px; object-fit: cover;">
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-dark w-100 py-2 rounded-pill mt-3">حفظ التغييرات</button>
+    </form>
+</div>
+{% endblock %}

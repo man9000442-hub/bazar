@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum,Q
 
 # الموديلات
 from accounts.models import User
@@ -163,6 +163,7 @@ def team_management(request):
     
     if request.method == 'POST':
         username = request.POST.get('username')
+        email = request.POST.get('email') # استقبال الإيميل
         phone = request.POST.get('phone')
         password = request.POST.get('password')
         role = request.POST.get('role')
@@ -174,7 +175,7 @@ def team_management(request):
 
         # إنشاء المستخدم
         try:
-            new_admin = User.objects.create_user(username=username, password=password, phone_primary=phone)
+            new_admin = User.objects.create_user(username=username, password=password, phone_primary=phone, email=email)
             new_admin.role = role
             new_admin.is_staff = True # ليدخل لوحة جانجو أيضاً
             new_admin.save()
@@ -185,3 +186,171 @@ def team_management(request):
         return redirect('super_team')
 
     return render(request, 'supervisor/team_management.html', {'team': team})
+
+
+
+# قائمة المستخدمين
+@login_required
+def users_list(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    role_filter = request.GET.get('role')
+    search_query = request.GET.get('q')
+    
+    users = User.objects.all().order_by('-date_joined')
+    
+    if role_filter:
+        users = users.filter(role=role_filter)
+    if search_query:
+        users = users.filter(Q(username__icontains=search_query) | Q(phone_primary__icontains=search_query))
+
+    return render(request, 'supervisor/users_list.html', {'users': users})
+
+# تعديل مستخدم (أو حظره)
+@login_required
+def user_edit(request, user_id):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    user_obj = get_object_or_404(User, pk=user_id)
+    
+    if request.method == 'POST':
+        user_obj.first_name = request.POST.get('first_name')
+        user_obj.last_name = request.POST.get('last_name')
+        user_obj.phone_primary = request.POST.get('phone')
+        user_obj.email = request.POST.get('email')
+        user_obj.username = request.POST.get('username')
+        user_obj.role = request.POST.get('role')
+        user_obj.is_active = request.POST.get('is_active') == 'on'
+        
+        # تغيير الباسورد (إذا كتبه)
+        new_pass = request.POST.get('password')
+        if new_pass:
+            user_obj.set_password(new_pass)
+            
+        user_obj.save()
+        messages.success(request, "تم التحديث الشامل.")
+        return redirect('super_users_list')
+        
+    return render(request, 'supervisor/user_edit.html', {'user_obj': user_obj})
+
+# حذف مستخدم
+@login_required
+def user_delete(request, user_id):
+    if not is_supervisor(request.user): return redirect('home')
+    user_obj = get_object_or_404(User, pk=user_id)
+    if user_obj.is_superuser:
+        messages.error(request, "لا يمكن حذف السوبر أدمن.")
+    else:
+        user_obj.delete()
+        messages.success(request, "تم حذف المستخدم.")
+    return redirect('super_users_list')
+
+
+# ... (استيراد Category) ...
+
+@login_required
+def manage_categories(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    if request.method == 'POST':
+        # إضافة قسم جديد
+        name = request.POST.get('name')
+        image = request.FILES.get('image')
+        if name:
+            Category.objects.create(name=name, image=image)
+            messages.success(request, "تم إضافة القسم.")
+        return redirect('super_categories')
+
+    categories = Category.objects.all()
+    return render(request, 'supervisor/categories.html', {'categories': categories})
+
+@login_required
+def delete_category(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    Category.objects.filter(pk=pk).delete()
+    messages.success(request, "تم حذف القسم.")
+    return redirect('super_categories')
+
+
+from store.models import SiteSetting
+
+@login_required
+def site_settings_view(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    settings_obj = SiteSetting.objects.first()
+    if not settings_obj:
+        settings_obj = SiteSetting.objects.create()
+
+    if request.method == 'POST':
+        settings_obj.site_name = request.POST.get('site_name')
+        settings_obj.platform_fee_fixed = request.POST.get('fee_fixed')
+        settings_obj.platform_fee_percentage = request.POST.get('fee_percent')
+        if request.FILES.get('banner'):
+            settings_obj.banner_image = request.FILES.get('banner')
+        
+        settings_obj.save()
+        messages.success(request, "تم حفظ الإعدادات.")
+        return redirect('super_site_settings')
+
+    return render(request, 'supervisor/site_settings.html', {'settings': settings_obj})
+
+
+@login_required
+def pending_withdrawals(request):
+    if not is_supervisor(request.user): return redirect('home')
+    withdrawals = WithdrawalRequest.objects.all().order_by('-created_at')
+    return render(request, 'supervisor/pending_withdrawals.html', {'withdrawals': withdrawals})
+
+@login_required
+def approve_withdrawal(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    # جلب الطلب
+    withdrawal = get_object_or_404(WithdrawalRequest, pk=pk)
+    
+    if withdrawal.status == 'PENDING':
+        # 1. تحديث حالة الطلب
+        withdrawal.status = 'APPROVED'
+        withdrawal.save()
+        
+        # 2. تحديث سجل المعاملة المالية (لجعلها نهائية)
+        # نبحث عن المعاملة المرتبطة بهذا السحب (التي كانت بالسالب وقيد الانتظار)
+        # (للتبسيط، سنبحث بآخر معاملة سحب معلقة لهذا التاجر، أو الأفضل إضافة حقل withdrawal_request في Transaction)
+        
+        # هنا سنفترض أننا نريد فقط تأكيد العملية إدارياً
+        messages.success(request, f"تم تأكيد تحويل {withdrawal.amount} ج.م للتاجر {withdrawal.merchant.user.first_name}.")
+        
+    return redirect('super_pending_withdrawals')
+
+
+@login_required
+def order_detail(request, order_id):
+    if not is_supervisor(request.user): return redirect('home')
+    order = get_object_or_404(Order, order_id=order_id)
+    return render(request, 'supervisor/order_detail.html', {'order': order})
+
+
+
+import csv
+from django.http import HttpResponse
+
+@login_required
+def export_orders(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="orders.csv"'
+    
+    # BOM لدعم العربي في Excel
+    response.write(u'\ufeff'.encode('utf8'))
+
+    writer = csv.writer(response)
+    writer.writerow(['رقم الطلب', 'العميل', 'الهاتف', 'الإجمالي', 'الحالة', 'التاريخ'])
+
+    orders = Order.objects.all().values_list('order_id', 'customer__first_name', 'shipping_phone', 'final_total', 'status', 'created_at')
+    
+    for order in orders:
+        writer.writerow(order)
+
+    return response

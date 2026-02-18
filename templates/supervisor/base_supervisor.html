@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elbazaar Admin | لوحة القيادة</title>
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-bg: #1e293b;
+            --sidebar-hover: #334155;
+            --primary-color: #3b82f6;
+            --bg-body: #f8fafc;
+        }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-body); overflow-x: hidden; }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed; top: 0; right: 0; bottom: 0; width: var(--sidebar-width);
+            background: var(--sidebar-bg); color: #94a3b8; transition: 0.3s; z-index: 1000;
+            display: flex; flex-direction: column;
+        }
+        .sidebar-brand {
+            padding: 20px; font-size: 22px; font-weight: 800; color: #fff; text-align: center; border-bottom: 1px solid #334155;
+        }
+        .sidebar-menu { flex-grow: 1; padding: 15px 0; overflow-y: auto; }
+        .nav-link {
+            padding: 12px 25px; color: #cbd5e1; font-weight: 600; display: flex; align-items: center; text-decoration: none; border-right: 3px solid transparent; transition: 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: var(--sidebar-hover); color: #fff; border-right-color: var(--primary-color);
+        }
+        .nav-link i { width: 25px; margin-left: 10px; font-size: 18px; text-align: center; }
+        .nav-title { padding: 20px 25px 5px; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; }
+
+        /* Main Content */
+        .main-content { margin-right: var(--sidebar-width); padding: 30px; transition: 0.3s; }
+        
+        /* Navbar */
+        .top-navbar {
+            background: #fff; padding: 15px 30px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;
+        }
+        
+        /* Cards */
+        .card-stat {
+            background: #fff; border: none; border-radius: 16px; padding: 25px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: 0.3s;
+        }
+        .card-stat:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .icon-box {
+            width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px;
+        }
+
+        /* Mobile */
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(100%); }
+            .sidebar.show { transform: translateX(0); }
+            .main-content { margin-right: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-chart-pie text-primary me-2"></i> Admin Panel
+        </div>
+        
+        <div class="sidebar-menu">
+            <a href="{% url 'supervisor_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'supervisor_dashboard' %}active{% endif %}">
+                <i class="fas fa-home"></i> لوحة القيادة
+            </a>
+
+            <div class="nav-title">إدارة المتجر</div>
+            <a href="{% url 'super_all_orders' %}" class="nav-link {% if request.resolver_match.url_name == 'super_all_orders' %}active{% endif %}">
+                <i class="fas fa-shopping-cart"></i> الطلبات
+            </a>
+            <a href="{% url 'super_pending_products' %}" class="nav-link {% if request.resolver_match.url_name == 'super_pending_products' %}active{% endif %}">
+                <i class="fas fa-box-open"></i> المنتجات
+            </a>
+            <a href="{% url 'super_categories' %}" class="nav-link {% if request.resolver_match.url_name == 'super_categories' %}active{% endif %}">
+                <i class="fas fa-th-large"></i> الأقسام
+            </a>
+
+            <div class="nav-title">المستخدمين</div>
+            <a href="{% url 'super_users_list' %}" class="nav-link {% if request.resolver_match.url_name == 'super_users_list' %}active{% endif %}">
+                <i class="fas fa-users"></i> كل الأعضاء
+            </a>
+            <a href="{% url 'super_pending_merchants' %}" class="nav-link {% if request.resolver_match.url_name == 'super_pending_merchants' %}active{% endif %}">
+                <i class="fas fa-store"></i> تفعيل التجار
+            </a>
+            
+            {% if request.user.role == 'OWNER' or request.user.is_superuser %}
+            <a href="{% url 'super_team' %}" class="nav-link {% if request.resolver_match.url_name == 'super_team' %}active{% endif %}">
+                <i class="fas fa-user-shield"></i> فريق العمل
+            </a>
+            {% endif %}
+
+            <div class="nav-title">المالية & الإعدادات</div>
+            <a href="{% url 'super_pending_withdrawals' %}" class="nav-link {% if request.resolver_match.url_name == 'super_pending_deposits' %}active{% endif %}">
+                <i class="fas fa-wallet"></i> المالية
+            </a>
+            <a href="{% url 'super_site_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'super_site_settings' %}active{% endif %}">
+                <i class="fas fa-cog"></i> إعدادات الموقع
+            </a>
+        </div>
+        
+        <div class="p-3">
+            <a href="{% url 'home' %}" class="btn btn-outline-light w-100 btn-sm"><i class="fas fa-external-link-alt me-2"></i> الموقع</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <nav class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-light d-lg-none me-3" onclick="document.getElementById('sidebar').classList.toggle('show')">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 fw-bold text-dark">{% block page_title %}لوحة القيادة{% endblock %}</h4>
+            </div>
+            
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                    <img src="https://ui-avatars.com/api/?name={{ request.user.first_name }}&background=3b82f6&color=fff" class="rounded-circle me-2" width="40">
+                    <div class="d-none d-md-block">
+                        <span class="d-block fw-bold small">{{ request.user.first_name }}</span>
+                        <span class="d-block text-muted" style="font-size: 10px;">{{ request.user.get_role_display }}</span>
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
+                    <li><a class="dropdown-item" href="{% url 'profile' %}">ملفي الشخصي</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'account_logout' %}">تسجيل خروج</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center bg-white border-start border-4 border-{{ message.tags }}">
+                    <i class="fas fa-info-circle me-2 text-{{ message.tags }}"></i> {{ message }}
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}تفاصيل الطلب #{{ order.order_id }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    
+    <!-- 1. ملخص الطلب -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold m-0 text-primary">المنتجات</h6>
+                <span class="badge bg-light text-dark border">{{ order.get_status_display }}</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">المنتج</th>
+                            <th>التاجر</th>
+                            <th>الكمية</th>
+                            <th>السعر</th>
+                            <th>الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    {% if item.product_size.product.image %}
+                                        <img src="{{ item.product_size.product.image.url }}" class="rounded me-2" width="40" height="40">
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold small">{{ item.product_size.product.name }}</div>
+                                        <div class="text-muted small" style="font-size: 10px;">{{ item.product_size.size_label }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="#" class="text-decoration-none fw-bold small">{{ item.product_size.product.merchant.user.first_name }}</a>
+                            </td>
+                            <td>x{{ item.quantity }}</td>
+                            <td>{{ item.price_at_purchase }}</td>
+                            <td class="fw-bold">{{ item.total_price }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- تفاصيل مالية -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">المالية</h6>
+                <div class="row text-center">
+                    <div class="col-3">
+                        <small class="text-muted d-block">إجمالي المنتجات</small>
+                        <span class="fw-bold">{{ order.total_products_price }}</span>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted d-block">الشحن</small>
+                        <span class="fw-bold">{{ order.shipping_cost }}</span>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted d-block">رسوم المنصة</small>
+                        <span class="fw-bold text-danger">{{ order.platform_fees }}</span>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted d-block">الإجمالي النهائي</small>
+                        <span class="fw-bold text-success fs-5">{{ order.final_total }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. بيانات العميل والتحكم -->
+    <div class="col-md-4">
+        <!-- العميل -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3 text-primary">بيانات العميل</h6>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div class="fw-bold">{{ order.customer.first_name }} {{ order.customer.last_name }}</div>
+                        <div class="small text-muted">{{ order.customer.email }}</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-phone"></i></div>
+                    <div>
+                        <div class="fw-bold">{{ order.shipping_phone }}</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start">
+                    <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="small text-muted">
+                        {{ order.shipping_address }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- إجراءات المشرف -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">تحكم المشرف</h6>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-dark btn-sm">
+                        <i class="fas fa-print me-2"></i> طباعة الفاتورة
+                    </button>
+                    {% if order.status != 'CANCELLED' %}
+                    <button class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد من إلغاء هذا الطلب؟')">
+                        <i class="fas fa-ban me-2"></i> إلغاء الطلب قسرياً
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}طلبات السحب المعلقة{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">التاجر</th>
+                    <th>المبلغ</th>
+                    <th>رقم المحفظة</th>
+                    <th>تاريخ الطلب</th>
+                    <th class="text-end pe-4">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in withdrawals %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold">{{ req.merchant.user.first_name }}</div>
+                        <div class="small text-muted">{{ req.merchant.user.phone_primary }}</div>
+                    </td>
+                    <td>
+                        <span class="fw-bold text-danger">-{{ req.amount }} ج.م</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border font-monospace">{{ req.phone_number }}</span>
+                    </td>
+                    <td>{{ req.created_at|date:"d M, h:i A" }}</td>
+                    <td class="text-end pe-4">
+                        <!-- زر الموافقة -->
+                        <a href="{% url 'super_approve_withdrawal' req.pk %}" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" onclick="return confirm('هل قمت بتحويل المبلغ للتاجر بالفعل؟')">
+                            <i class="fas fa-check me-1"></i> تم التحويل
+                        </a>
+                        <!-- زر الرفض (اختياري) -->
+                        <button class="btn btn-sm btn-outline-danger border-0"><i class="fas fa-times"></i></button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <i class="fas fa-hand-holding-usd fa-3x text-muted opacity-25 mb-3"></i>
+                        <p class="text-muted">لا توجد طلبات سحب جديدة.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}تعديل المستخدم: {{ user_obj.username }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px;">
+    <form method="POST" class="card border-0 shadow-sm p-4 rounded-4">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label class="form-label">الاسم</label>
+            <input type="text" class="form-control" value="{{ user_obj.first_name }} {{ user_obj.last_name }}" readonly disabled>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">الدور (Role)</label>
+            <select name="role" class="form-select">
+                <option value="CUSTOMER" {% if user_obj.role == 'CUSTOMER' %}selected{% endif %}>عميل</option>
+                <option value="MERCHANT" {% if user_obj.role == 'MERCHANT' %}selected{% endif %}>تاجر</option>
+                <option value="ADMIN_LVL3" {% if user_obj.role == 'ADMIN_LVL3' %}selected{% endif %}>مشرف</option>
+            </select>
+        </div>
+
+        <div class="form-check form-switch mb-4 p-3 bg-light rounded">
+            <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if user_obj.is_active %}checked{% endif %}>
+            <label class="form-check-label fw-bold" for="isActive">حساب نشط (Active)</label>
+            <div class="form-text text-danger">إلغاء التفعيل سيمنع المستخدم من الدخول.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 rounded-pill">حفظ</button>
+    </form>
+</div>
+{% endblock %}
