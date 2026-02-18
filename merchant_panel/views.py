@@ -164,7 +164,19 @@ def shipping_settings(request):
                     defaults={'rate': price}
                 )
         messages.success(request, "تم حفظ أسعار الشحن بنجاح ✅")
+
+        # حفظ إعدادات الشحن المجاني
+        threshold = request.POST.get('free_shipping_threshold')
+        is_active = request.POST.get('is_free_shipping_active') == 'on'
+        
+        merchant.free_shipping_threshold = int(threshold) if threshold else 0
+        merchant.is_free_shipping_active = is_active
+        merchant.save()
+        
+        messages.success(request, "تم حفظ الإعدادات.")
+        # ...        
         return redirect('merchant_shipping')
+
 
     # 2. تجهيز البيانات للعرض (GET) - (هنا التعديل لإصلاح الخطأ)
     
@@ -365,6 +377,8 @@ def add_offer(request, product_id):
     if request.method == 'POST':
         percentage = int(request.POST.get('percentage'))
         days = int(request.POST.get('days'))
+        free_shipping = request.POST.get('free_shipping') == 'on'
+        threshold = int(request.POST.get('threshold', 1))
         
         Offer.objects.update_or_create(
             product=product,
@@ -373,7 +387,9 @@ def add_offer(request, product_id):
                 'start_date': timezone.now(),
                 'end_date': timezone.now() + timezone.timedelta(days=days),
                 'is_active': True,
-                'is_platform_offer': False
+                'is_platform_offer': False,
+                'free_shipping': free_shipping,
+                'free_shipping_threshold': threshold
             }
         )
         messages.success(request, "تم حفظ العرض ✅")

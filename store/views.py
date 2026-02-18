@@ -316,7 +316,6 @@ def checkout(request):
         created_orders = []
         grand_total_with_shipping = 0
         
-        # فحص الشحن المجاني
         is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).exists()
         free_shipping_used = False
 
@@ -326,15 +325,36 @@ def checkout(request):
                     merchant = group['merchant']
                     items = group['items']
                     
-                    # حساب الشحن
+                    # 1. حساب الشحن الأساسي
                     rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=gov).first()
                     base_shipping = rate_obj.rate if rate_obj else 50
+                    
+                    # 2. حساب الشحن الإضافي
                     extra_shipping = sum(i.product_size.product.shipping_fee * i.quantity for i in items)
+                    
+                    # 3. التحقق من عرض الشحن المجاني (Free Shipping Offer)
+                    is_free_shipping_offer_applied = False
+                    for item in items:
+                        try:
+                            offer = item.product_size.product.active_offer
+                            # الشرط: العرض مفعل + فيه شحن مجاني + الكمية >= الحد الأدنى
+                            if offer and offer.is_active and offer.free_shipping:
+                                if item.quantity >= offer.free_shipping_threshold:
+                                    is_free_shipping_offer_applied = True
+                                    break # طبقنا العرض على الشحنة
+                        except: pass
+
                     shipping_cost = base_shipping + extra_shipping
 
-                    if is_first_order and not free_shipping_used:
+                    # تطبيق الخصم (الأولوية لعرض التاجر، ثم عرض أول طلب)
+                    if is_free_shipping_offer_applied:
+                        shipping_cost = 0
+                        # (في هذه الحالة التاجر يتحمل الشحن، ولا نعوضه)
+                    
+                    elif is_first_order and not free_shipping_used:
                         shipping_cost = 0
                         free_shipping_used = True
+                        # (في هذه الحالة المنصة تعوض التاجر)
 
                     # الحالة المبدئية
                     initial_status = Order.Status.WAITING_PAYMENT if payment_method == 'ONLINE' else Order.Status.PENDING
@@ -345,9 +365,10 @@ def checkout(request):
                         shipping_address=f"{gov.name} - {address}",
                         governorate=gov,
                         shipping_phone=phone,
+                        payment_method=payment_method,
                         status=initial_status,
                         shipping_cost=shipping_cost,
-                        is_first_order=(shipping_cost == 0)
+                        is_first_order=(shipping_cost == 0 and not is_free_shipping_offer_applied) # لتمييز سبب المجاني
                     )
                     
                     for item in items:
@@ -369,21 +390,16 @@ def checkout(request):
         # --- الدفع ---
         if payment_method == 'ONLINE':
             try:
-                # 1. حساب رسوم الخدمة (Platform Fees)
                 settings_obj = SiteSetting.objects.first()
                 online_fees = 0
-                
                 if settings_obj:
-                    # معادلة: ثابت + (نسبة * الإجمالي)
                     fixed = float(settings_obj.platform_fee_fixed)
                     percent = float(settings_obj.platform_fee_percentage) / 100
                     online_fees = fixed + (float(grand_total_with_shipping) * percent)
 
-                # 2. المبلغ الكلي لـ Paymob (شامل الرسوم)
                 total_to_pay = float(grand_total_with_shipping) + online_fees
                 amount_cents = int(total_to_pay * 100)
                 
-                # 3. Paymob
                 paymob = PaymobManager()
                 token = paymob.get_token()
                 pm_order_id = paymob.create_order(token, amount_cents)
@@ -397,15 +413,10 @@ def checkout(request):
 
                 payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
                 
-                # يمكنك حفظ الرسوم في أول طلب كمرجع (اختياري)
-                # created_orders[0].platform_fees = online_fees
-                # created_orders[0].save()
-
                 iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
                 return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
 
             except Exception as e:
-                print(f"Paymob Error: {e}")
                 messages.error(request, "فشل الاتصال بالبنك.")
                 return redirect('my_orders')
         
@@ -413,17 +424,10 @@ def checkout(request):
             messages.success(request, "تم استلام طلبك بنجاح!")
             return redirect('order_success')
 
-    # --- GET: حساب الرسوم التقريبية للعرض ---
+    # --- GET ---
     settings_obj = SiteSetting.objects.first()
-    online_fees_display = 0
-    if settings_obj:
-        # نحتاج لتقدير الإجمالي (منتجات + شحن تقريبي) للعرض فقط
-        # الشحن سيتغير بالـ JS، لذا سنرسل "معاملات" الرسوم للـ JS يحسبها هو
-        fee_fixed = float(settings_obj.platform_fee_fixed)
-        fee_percent = float(settings_obj.platform_fee_percentage)
-    else:
-        fee_fixed = 0
-        fee_percent = 0
+    fee_fixed = float(settings_obj.platform_fee_fixed) if settings_obj else 0
+    fee_percent = float(settings_obj.platform_fee_percentage) if settings_obj else 0
 
     return render(request, 'store/checkout.html', {
         'cart_structure': cart_structure,
@@ -555,26 +559,21 @@ from django.http import JsonResponse
 @login_required
 def calculate_shipping_api(request):
     gov_id = request.GET.get('gov_id')
-    items_ids_str = request.GET.get('items', '') # IDs مفصولة بفاصلة
+    items_ids_str = request.GET.get('items', '')
     
-    if not gov_id:
-        return JsonResponse({'error': 'No Governorate ID'}, status=400)
+    if not gov_id: return JsonResponse({'error': 'No ID'}, status=400)
 
-    # 1. جلب السلة
     cart = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
-    if not cart:
-        return JsonResponse({'shipping_details': [], 'total_shipping': 0, 'grand_total': 0})
+    if not cart: return JsonResponse({'shipping_details': [], 'total_shipping': 0, 'grand_total': 0})
 
-    # 2. تحديد العناصر المطلوبة فقط
+    # فلترة العناصر المختارة
     if items_ids_str:
         try:
-            # تحويل النص "1,2,3" لقائمة [1, 2, 3]
             items_ids = [int(i) for i in items_ids_str.split(',') if i.isdigit()]
             cart_items = cart.items.filter(id__in=items_ids)
         except:
             cart_items = cart.items.none()
     else:
-        # إذا لم يرسل IDs (حالة نادرة)، نحسب للكل
         cart_items = cart.items.all()
 
     if not cart_items.exists():
@@ -582,38 +581,48 @@ def calculate_shipping_api(request):
 
     governorate = get_object_or_404(Governorate, pk=gov_id)
     
-    # 3. حساب الشحن
-    shipping_details = []
-    total_shipping = 0
-    total_products_price = 0
-    
-    # تجميع العناصر حسب التاجر
+    # التجميع
     items_by_merchant = {}
+    total_products_price = 0
     for item in cart_items:
         merch = item.product_size.product.merchant
         if merch not in items_by_merchant:
             items_by_merchant[merch] = []
         items_by_merchant[merch].append(item)
-        
-        # حساب مجموع المنتجات (لنعرض الإجمالي الصحيح)
         total_products_price += item.price_at_purchase * item.quantity
 
-    # فحص الشحن المجاني (أول طلب)
+    # فحص أول طلب
     is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).exists()
     free_shipping_used = False
 
+    shipping_details = []
+    total_shipping = 0
+
     for merchant, items in items_by_merchant.items():
-        # أ. الشحن الأساسي للمحافظة
+        # 1. الشحن الأساسي
         rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=governorate).first()
-        base_shipping = rate_obj.rate if rate_obj else 50 # الافتراضي
+        base_shipping = rate_obj.rate if rate_obj else 50
         
-        # ب. الشحن الإضافي (وزن)
+        # 2. الشحن الإضافي
         extra_shipping = sum(i.product_size.product.shipping_fee * i.quantity for i in items)
         
+        # 3. فحص عرض الشحن المجاني للتاجر
+        is_free_shipping_offer_applied = False
+        for item in items:
+            try:
+                offer = item.product_size.product.active_offer
+                if offer and offer.is_active and offer.free_shipping:
+                    if item.quantity >= offer.free_shipping_threshold:
+                        is_free_shipping_offer_applied = True
+                        break
+            except: pass
+
         cost = base_shipping + extra_shipping
         
-        # تطبيق المجاني (لأول تاجر فقط)
-        if is_first_order and not free_shipping_used:
+        # تطبيق الخصم
+        if is_free_shipping_offer_applied:
+            cost = 0
+        elif is_first_order and not free_shipping_used:
             cost = 0
             free_shipping_used = True
             
@@ -623,8 +632,7 @@ def calculate_shipping_api(request):
             'cost': float(cost)
         })
 
-    # الإجمالي النهائي (منتجات مختارة + شحن)
-    # (لا نضيف رسوم المنصة هنا لأنها تعتمد على الدفع، ويمكن إضافتها لاحقاً في الفرونت إند)
+    # الإجمالي النهائي
     grand_total = float(total_products_price) + float(total_shipping)
 
     return JsonResponse({

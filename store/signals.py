@@ -55,16 +55,17 @@ def distribute_profits(sender, instance, created, **kwargs):
 
             if merchant not in merchant_earnings:
                 merchant_earnings[merchant] = {
-                    'revenue': Decimal('0.00'), # الدخل (سعر + تعويض)
-                    'commission': Decimal('0.00') # العمولة المستحقة
+                    'revenue': Decimal('0.00'), 
+                    'compensation': Decimal('0.00'),
+                    'commission': Decimal('0.00')
                 }
             
-            # أ. الأسعار
+            # أ. الحسابات
             price_paid = item.price_at_purchase
             base_price = item.product_size.product.base_price
             qty = Decimal(item.quantity)
             
-            # ب. التعويض
+            # ب. التعويض عن العروض
             compensation = Decimal('0.00')
             try:
                 offer = item.product_size.product.active_offer
@@ -75,56 +76,59 @@ def distribute_profits(sender, instance, created, **kwargs):
             # ج. العمولة
             item_commission = (item.product_size.product.admin_commission * qty)
 
-            # د. التجميع (نفصل الدخل عن العمولة)
-            total_item_revenue = (price_paid * qty) + compensation
-            
-            merchant_earnings[merchant]['revenue'] += total_item_revenue
+            # د. تجميع الأرقام
+            merchant_earnings[merchant]['revenue'] += (price_paid * qty)
+            merchant_earnings[merchant]['compensation'] += compensation
             merchant_earnings[merchant]['commission'] += item_commission
 
-        # 2. التنفيذ (حركتين منفصلتين)
+        # 2. التنفيذ
         with transaction.atomic():
             for merchant, data in merchant_earnings.items():
                 wallet, _ = Wallet.objects.get_or_create(merchant=merchant)
                 
-                revenue = data['revenue']
-                commission = data['commission']
+                # ما الذي سيضاف للمحفظة؟
+                amount_to_add = Decimal('0.00')
                 
-                # أ. إضافة الدخل (شامل الشحن لو وجد)
-                shipping_income = instance.shipping_cost if instance.merchant == merchant else 0
-                if instance.is_first_order and instance.merchant == merchant:
-                     # (منطق تعويض الشحن السابق...)
-                     # للتبسيط هنا سنضيفه للدخل
-                     pass 
+                # 1. إذا كان الدفع أونلاين: التاجر لم يستلم شيئاً بيده
+                # نضيف له (سعر المنتج + التعويضات + الشحن)
+                if instance.payment_method == Order.PaymentMethod.ONLINE:
+                    amount_to_add += data['revenue'] + data['compensation']
+                    if instance.merchant == merchant:
+                        amount_to_add += instance.shipping_cost
 
-                total_income = revenue + shipping_income
-                
-                # 1. إضافة الدخل للرصيد المعلق
-                wallet.pending_balance += total_income
-                
-                WalletTransaction.objects.create(
-                    wallet=wallet,
-                    amount=total_income,
-                    transaction_type='PENDING',
-                    related_order_id=instance.order_id,
-                    description=f"إيراد طلب #{instance.order_id}",
-                    balance_after=wallet.balance, # المتاح لم يتغير
-                    is_released=False
-                )
+                # 2. إذا كان الدفع كاش: التاجر استلم (سعر المنتج + الشحن) بيده
+                # نضيف له (التعويضات فقط) + (تعويض الشحن المجاني إن وجد)
+                else:
+                    amount_to_add += data['compensation']
+                    # هل كان الشحن مجاني؟ نعوضه
+                    if instance.is_first_order and instance.merchant == merchant:
+                         # (حساب تعويض الشحن كما سبق)
+                         rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=instance.governorate).first()
+                         shipping_comp = rate_obj.rate if rate_obj else Decimal('50.00')
+                         amount_to_add += shipping_comp
 
-                # 2. خصم العمولة من الرصيد المتاح (فوراً)
-                if commission > 0:
-                    wallet.balance -= commission # يخصم من المتاح (وقد يصبح سالب)
-                    
+                # 3. خصم العمولة (دائماً تخصم من المحفظة)
+                # العمولة تخصم من الرصيد المتاح (Balance) وتظهر كحركة منفصلة بالسالب
+                if data['commission'] > 0:
+                    wallet.balance -= data['commission']
                     WalletTransaction.objects.create(
-                        wallet=wallet,
-                        amount=-commission, # بالسالب
-                        transaction_type=WalletTransaction.TxType.SALE, # صحيح (كابيتال) # أو نوع جديد COMMISSIONS
-                        related_order_id=instance.order_id,
-                        description=f"خصم عمولة منصة (طلب #{instance.order_id})",
-                        balance_after=wallet.balance,
-                        is_released=True # هذه عملية نهائية
+                        wallet=wallet, amount=-data['commission'], 
+                        transaction_type=WalletTransaction.TxType.SALE, # نوع "خصم عمولة"
+                        description=f"خصم عمولة (طلب #{instance.order_id})",
+                        balance_after=wallet.balance, is_released=True
                     )
-                
+
+                # 4. إضافة المستحقات (للرصيد المعلق)
+                if amount_to_add > 0:
+                    wallet.pending_balance += amount_to_add
+                    WalletTransaction.objects.create(
+                        wallet=wallet, amount=amount_to_add,
+                        transaction_type=WalletTransaction.TxType.PENDING,
+                        related_order_id=instance.order_id,
+                        description=f"مستحقات طلب #{instance.order_id} ({instance.get_payment_method_display()})",
+                        balance_after=wallet.balance, is_released=False
+                    )
+
                 wallet.save()
 
 # 4. معالجة طلبات شحن الرصيد (الإيداع)

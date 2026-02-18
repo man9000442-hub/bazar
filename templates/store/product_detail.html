@@ -3,11 +3,12 @@
 {% block content %}
 
 <!-- 1. Top Bar -->
-<div class="d-flex justify-content-between align-items-center p-3 sticky-top bg-white border-bottom shadow-sm">
+<div class="d-flex justify-content-between align-items-center p-3 sticky-top bg-white border-bottom shadow-sm" style="z-index: 1020;">
     <a href="javascript:history.back()" class="text-dark">
         <i class="fas fa-arrow-right fs-5"></i>
     </a>
     <div class="d-flex gap-3">
+        <!-- زر المفضلة -->
         <button onclick="toggleFavDetail('{{ product.id }}')" class="btn border-0 bg-transparent p-0">
             <i class="{% if is_fav %}fas text-danger{% else %}far text-muted{% endif %} fa-heart fs-5" id="fav-icon"></i>
         </button>
@@ -15,78 +16,70 @@
         <button onclick="shareProduct()" class="btn border-0 bg-transparent p-0">
             <i class="fas fa-share-alt fs-5 text-muted"></i>
         </button>
-
-        <!-- Toast (رسالة منبثقة صغيرة للنسخ) -->
-        <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" style="z-index: 2000;">
-            <div id="shareToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        تم نسخ الرابط بنجاح! 📋
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
 <!-- 2. Images Slider -->
-<div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+<div id="productCarousel" class="carousel slide bg-white" data-bs-ride="carousel">
     <div class="carousel-inner">
+        <!-- الصورة الرئيسية -->
         <div class="carousel-item active">
             {% if product.image %}
-                <img src="{{ product.image.url }}" class="d-block w-100" style="height: 350px; object-fit: cover;">
+                <img src="{{ product.image.url }}" class="d-block w-100" style="height: 380px; object-fit: contain;">
             {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 350px;">
+                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 380px;">
                     <i class="fas fa-camera fa-3x text-muted opacity-25"></i>
                 </div>
             {% endif %}
         </div>
+        <!-- الصور الإضافية -->
         {% for img in product.images.all %}
         <div class="carousel-item">
-            <img src="{{ img.image.url }}" class="d-block w-100" style="height: 350px; object-fit: cover;">
+            <img src="{{ img.image.url }}" class="d-block w-100" style="height: 380px; object-fit: contain;">
         </div>
         {% endfor %}
     </div>
     
+    <!-- المؤشرات (Dots) -->
     {% if product.images.exists %}
     <div class="carousel-indicators">
-        <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active"></button>
+        <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active bg-primary"></button>
         {% for img in product.images.all %}
-        <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter }}"></button>
+        <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter }}" class="bg-primary"></button>
         {% endfor %}
     </div>
     {% endif %}
+    
+    <!-- أزرار التحكم -->
+    {% if product.images.exists %}
+    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon bg-dark rounded-circle p-3" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon bg-dark rounded-circle p-3" aria-hidden="true"></span>
+    </button>
+    {% endif %}
 </div>
 
-<!-- 3. Product Info -->
-<div class="container bg-white rounded-top-4 p-4 position-relative" style="margin-top: -20px; z-index: 10;">
+<!-- 3. Product Info Section -->
+<div class="container bg-white rounded-top-4 p-4 position-relative shadow-sm" style="margin-top: -20px; z-index: 10;">
     
+    <!-- القسم والتقييم -->
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-light text-primary border border-primary rounded-pill px-3 py-1">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">
             {{ product.category.name }}
         </span>
-        <div class="text-warning small">
-            <!-- عرض النجوم -->
-            {% with ''|center:5 as range %}
-            {% for _ in range %}
-                {% if forloop.counter <= product.average_rating %}
-                    <i class="fas fa-star"></i>
-                {% else %}
-                    <i class="far fa-star"></i>
-                {% endif %}
-            {% endfor %}
-            {% endwith %}
-            
-            <span class="text-muted ms-1">({{ product.average_rating }})</span>
-            <span class="text-muted small"> • {{ product.reviews_count }} تقييم</span>
+        <div class="text-warning small fw-bold">
+            <i class="fas fa-star"></i> {{ product.average_rating|default:4.5 }}
+            <span class="text-muted fw-normal">({{ product.reviews_count|default:10 }})</span>
         </div>
     </div>
 
-    <h5 class="fw-bold mb-2">{{ product.name }}</h5>
+    <!-- الاسم -->
+    <h5 class="fw-bold mb-2 text-dark">{{ product.name }}</h5>
     
-    <!-- السعر -->
-    <div class="d-flex align-items-center mb-3">
+    <!-- السعر والعرض -->
+    <div class="d-flex align-items-center mb-3 flex-wrap">
         {% if product.active_offer and product.active_offer.is_active %}
             <h3 class="text-danger fw-bold mb-0 me-2">{{ product.active_offer.discounted_price|floatformat:0 }}</h3>
             <span class="text-danger small fw-bold me-2">ج.م</span>
@@ -96,15 +89,24 @@
             <h3 class="text-primary fw-bold mb-0 me-2">{{ product.base_price }}</h3>
             <span class="text-muted small">ج.م</span>
         {% endif %}
-        
-        {% if product.shipping_fee == 0 %}
-        {% else %}
-            <span class="text-muted small ms-auto">+ {{ product.shipping_fee }} ج.م شحن</span>
-        {% endif %}
     </div>
-    <!-- Merchant Info Card -->
+
+    <!-- عرض الشحن المجاني -->
+    {% if product.active_offer and product.active_offer.free_shipping %}
+    <div class="alert alert-success border-success py-2 px-3 mb-3 d-flex align-items-center small bg-success-subtle text-success-emphasis">
+        <i class="fas fa-truck-fast fs-5 me-2"></i>
+        <div>
+            <strong>شحن مجاني</strong>
+            <span class="d-block" style="font-size: 11px;">عند شراء {{ product.active_offer.free_shipping_threshold }} قطع أو أكثر لهذا المنتج</span>
+        </div>
+    </div>
+    {% elif product.shipping_fee > 0 %}
+        <p class="text-muted small mb-3"><i class="fas fa-truck me-1"></i> مصاريف شحن إضافية (وزن): {{ product.shipping_fee }} ج.م</p>
+    {% endif %}
+
+    <!-- رابط التاجر -->
     <a href="{% url 'merchant_shop' product.merchant.pk %}" class="text-decoration-none">
-        <div class="d-flex align-items-center bg-light p-2 rounded-3 mb-3 border border-light shadow-sm">
+        <div class="d-flex align-items-center bg-light p-2 rounded-3 mb-4 border border-light shadow-sm">
             <div class="me-2">
                 {% if product.merchant.shop_image %}
                     <img src="{{ product.merchant.shop_image.url }}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">
@@ -114,29 +116,27 @@
                     </div>
                 {% endif %}
             </div>
-            
             <div class="flex-grow-1">
                 <small class="text-muted d-block" style="font-size: 10px;">بواسطة التاجر</small>
                 <h6 class="fw-bold text-dark mb-0" style="font-size: 13px;">
                     {{ product.merchant.user.first_name }} {{ product.merchant.user.last_name }}
                 </h6>
             </div>
-            
             <i class="fas fa-chevron-left text-muted small"></i>
         </div>
     </a>
-    <hr class="text-muted opacity-25">
 
+    <!-- الوصف -->
     <h6 class="fw-bold mb-2">الوصف</h6>
     <p class="text-muted small mb-4" style="line-height: 1.6;">
         {{ product.description|linebreaksbr }}
     </p>
 
-    <!-- 4. Form (Colors & Sizes Logic) -->
+    <hr class="text-muted opacity-25">
+
+    <!-- 4. Form (Colors & Sizes) -->
     <form method="POST" action="{% url 'add_to_cart' product.pk %}" class="pb-5 mb-5">
         {% csrf_token %}
-        
-        <!-- Input مخفي للمقاس النهائي -->
         <input type="hidden" name="size_id" id="selected_variant_id" required>
 
         <!-- A. اختيار اللون -->
@@ -151,20 +151,36 @@
                 </label>
             </div>
             {% empty %}
-            <p class="text-danger small">غير متوفر</p>
+            <p class="text-danger small">المنتج غير متوفر حالياً</p>
             {% endfor %}
         </div>
 
-        <!-- B. اختيار المقاس (يظهر بالـ JS) -->
+        <!-- B. اختيار المقاس (يظهر بالجافاسكربت) -->
         <div id="sizes-section" style="display: none;">
             <h6 class="fw-bold mb-2">2. اختر المقاس</h6>
             <div class="d-flex flex-wrap gap-2 mb-4" id="sizes-container">
-                <!-- المقاسات ستضاف هنا -->
+                <!-- سيتم ملؤه ديناميكياً -->
             </div>
         </div>
 
-        <!-- 5. Similar Products -->
-        {% if similar_products %}
+        <!-- 5. Floating Action Bar -->
+        <div class="fixed-bottom bg-white p-3 border-top shadow-lg d-flex align-items-center gap-3" style="bottom: 70px; z-index: 1000;">
+            <!-- الكمية -->
+            <div class="bg-light rounded-pill d-flex align-items-center px-2 py-1 border" style="width: 120px; justify-content: space-between;">
+                <button type="button" class="btn btn-sm text-muted" onclick="this.nextElementSibling.stepDown()"><i class="fas fa-minus"></i></button>
+                <input type="number" name="quantity" class="form-control form-control-sm border-0 bg-transparent text-center p-0 fw-bold" value="1" min="1" max="10" style="width: 40px;">
+                <button type="button" class="btn btn-sm text-primary" onclick="this.previousElementSibling.stepUp()"><i class="fas fa-plus"></i></button>
+            </div>
+
+            <!-- زر الإضافة -->
+            <button type="submit" id="add-to-cart-btn" class="btn btn-secondary w-100 py-2 fw-bold shadow-sm" disabled>
+                إضافة للسلة <i class="fas fa-shopping-bag ms-2"></i>
+            </button>
+        </div>
+    </form>
+    
+    <!-- 6. Similar Products (اختياري) -->
+    {% if similar_products %}
         <h6 class="fw-bold mb-3 mt-4">منتجات مشابهة</h6>
         <div class="d-flex overflow-auto pb-2" style="gap: 10px;">
             {% for sim in similar_products %}
@@ -184,34 +200,29 @@
             {% endfor %}
         </div>
         <hr class="text-muted opacity-25 my-4">
-        {% endif %}
-
-        <!-- 6. Floating Action Bar -->
-        <div class="fixed-bottom bg-white p-3 border-top shadow-lg d-flex align-items-center gap-3" style="bottom: 70px; z-index: 1000;">
-            <div class="bg-light rounded-pill d-flex align-items-center px-2 py-1 border" style="width: 120px; justify-content: space-between;">
-                <button type="button" class="btn btn-sm text-muted" onclick="this.nextElementSibling.stepDown()"><i class="fas fa-minus"></i></button>
-                <input type="number" name="quantity" class="form-control form-control-sm border-0 bg-transparent text-center p-0 fw-bold" value="1" min="1" max="10" style="width: 40px;">
-                <button type="button" class="btn btn-sm text-primary" onclick="this.previousElementSibling.stepUp()"><i class="fas fa-plus"></i></button>
-            </div>
-
-            <!-- الزر معطل افتراضياً -->
-            <button type="submit" id="add-to-cart-btn" class="btn btn-primary-app w-100 py-2 fw-bold shadow-sm" disabled>
-                إضافة للسلة <i class="fas fa-shopping-bag ms-2"></i>
-            </button>
-        </div>
-    </form>
+    {% endif %}
 </div>
 
+<!-- مساحة إضافية في الأسفل -->
+<div style="height: 80px;"></div>
+
+<!-- Styles -->
 <style>
-    /* تنسيق زر الراديو عند الاختيار */
     .btn-check:checked + label {
         background-color: var(--primary-blue);
         color: white;
         border-color: var(--primary-blue);
     }
+    .carousel-indicators [data-bs-target] {
+        background-color: var(--primary-blue);
+        width: 8px; height: 8px; border-radius: 50%;
+    }
+    .carousel-control-prev-icon, .carousel-control-next-icon {
+        width: 1.5rem; height: 1.5rem;
+    }
 </style>
 
-<!-- JavaScript Logic -->
+<!-- JavaScript -->
 <script>
     const variantsData = {{ variants_json|safe }};
     const addToCartBtn = document.getElementById('add-to-cart-btn');
@@ -221,21 +232,22 @@
         const sizesSection = document.getElementById('sizes-section');
         const hiddenInput = document.getElementById('selected_variant_id');
         
-        // إعادة تعيين الحالة
         sizesSection.style.display = 'block';
         sizesContainer.innerHTML = '';
         hiddenInput.value = '';
-        addToCartBtn.disabled = true; // تعطيل الزر عند تغيير اللون
+        
+        addToCartBtn.disabled = true;
+        addToCartBtn.classList.remove('btn-primary-app');
+        addToCartBtn.classList.add('btn-secondary');
 
         const sizes = variantsData[colorName];
-
         sizes.forEach(variant => {
             const wrapper = document.createElement('div');
             wrapper.innerHTML = `
                 <input type="radio" class="btn-check" name="size_option" id="variant_${variant.id}" value="${variant.id}" onchange="selectSize('${variant.id}')">
-                <label class="btn btn-outline-secondary rounded-3 px-3 py-2 d-flex flex-column align-items-center" for="variant_${variant.id}" style="min-width: 60px;">
+                <label class="btn btn-outline-secondary rounded-3 px-3 py-2 d-flex flex-column align-items-center shadow-sm" for="variant_${variant.id}" style="min-width: 60px;">
                     <span class="fw-bold">${variant.size}</span>
-                    <small style="font-size: 9px;">متاح: ${variant.qty}</small>
+                    <small style="font-size: 9px;" class="text-muted">متاح: ${variant.qty}</small>
                 </label>
             `;
             sizesContainer.appendChild(wrapper);
@@ -244,7 +256,7 @@
 
     function selectSize(variantId) {
         document.getElementById('selected_variant_id').value = variantId;
-        addToCartBtn.disabled = false; // تفعيل الزر الآن!
+        addToCartBtn.disabled = false;
         addToCartBtn.classList.remove('btn-secondary');
         addToCartBtn.classList.add('btn-primary-app');
     }
@@ -264,31 +276,21 @@
                 }
             });
     }
-</script>
-<script>
-function shareProduct() {
-    const shareData = {
-        title: '{{ product.name }}',
-        text: 'انظر لهذا المنتج الرائع على Elbazaar!',
-        url: window.location.href
-    };
 
-    // 1. محاولة استخدام Web Share API (للموبايل)
-    if (navigator.share) {
-        navigator.share(shareData)
-            .then(() => console.log('Shared successfully'))
-            .catch((err) => console.error('Error sharing:', err));
-    } else {
-        // 2. البديل: نسخ الرابط للحافظة (للكمبيوتر)
-        navigator.clipboard.writeText(window.location.href).then(function() {
-            // إظهار رسالة النجاح
-            const toastEl = document.getElementById('shareToast');
-            const toast = new bootstrap.Toast(toastEl);
-            toast.show();
-        }, function(err) {
-            console.error('Could not copy text: ', err);
-        });
+    // المشاركة
+    function shareProduct() {
+        const shareData = {
+            title: '{{ product.name }}',
+            text: 'انظر لهذا المنتج الرائع على Elbazaar!',
+            url: window.location.href
+        };
+        if (navigator.share) {
+            navigator.share(shareData);
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert("تم نسخ الرابط!");
+        }
     }
-}
 </script>
+
 {% endblock %}

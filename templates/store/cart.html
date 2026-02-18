@@ -16,30 +16,30 @@
             <div class="card border-0 shadow-sm mb-3 overflow-hidden bg-white">
                 <div class="row g-0 align-items-center">
                     
-                    <!-- Checkbox -->
                     <div class="col-1 text-center">
-                        <!-- هنا السر: وضعنا onchange مباشرة في العنصر لضمان الاستجابة -->
                         <input type="checkbox" name="selected_items" value="{{ item.id }}" 
                                class="form-check-input item-checkbox" 
                                data-price="{{ item.total_price }}" 
                                checked onchange="updateTotal()">
                     </div>
 
-                    <!-- صورة المنتج -->
-                    <div class="col-3 bg-light d-flex align-items-center justify-content-center p-2">
+                    <div class="col-3 bg-light d-flex align-items-center justify-content-center p-2 position-relative">
                         <a href="{% url 'product_detail' item.product_size.product.pk %}">
                             {% if item.product_size.product.image %}
                                 <img src="{{ item.product_size.product.image.url }}" class="img-fluid rounded" style="height: 80px; object-fit: cover;">
-                            {% else %}
-                                <i class="fas fa-camera text-muted"></i>
                             {% endif %}
                         </a>
+                        
+                        <!-- Badge العرض -->
+                        {% if item.product_size.product.active_offer and item.product_size.product.active_offer.is_active %}
+                            <span class="badge bg-danger position-absolute top-0 start-0 m-1" style="font-size: 8px;">
+                                -{{ item.product_size.product.active_offer.discount_percentage }}%
+                            </span>
+                        {% endif %}
                     </div>
                     
-                    <!-- التفاصيل -->
                     <div class="col-8">
                         <div class="card-body p-2 position-relative">
-                            
                             <a href="{% url 'product_detail' item.product_size.product.pk %}" class="text-decoration-none text-dark">
                                 <h6 class="card-title fw-bold text-truncate mb-1" style="font-size: 13px;">
                                     {{ item.product_size.product.name }}
@@ -50,10 +50,22 @@
                                 {{ item.product_size.size_label }} | {{ item.product_size.color_label }}
                             </p>
                             
-                            <div class="d-flex justify-content-between align-items-end mt-2">
-                                <span class="text-primary fw-bold">{{ item.price_at_purchase }} ج.م</span>
+                            <!-- عرض الشحن المجاني -->
+                            {% if item.product_size.product.active_offer.free_shipping %}
+                                <div class="badge bg-success-subtle text-success border border-success-subtle mb-2" style="font-size: 9px;">
+                                    <i class="fas fa-truck"></i> شحن مجاني (عند شراء {{ item.product_size.product.active_offer.free_shipping_threshold }})
+                                </div>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-end mt-1">
+                                <div>
+                                    <span class="text-primary fw-bold">{{ item.price_at_purchase }} ج.م</span>
+                                    <!-- السعر الأصلي المشطوب -->
+                                    {% if item.price_at_purchase < item.product_size.product.base_price %}
+                                        <small class="text-muted text-decoration-line-through ms-1">{{ item.product_size.product.base_price }}</small>
+                                    {% endif %}
+                                </div>
                                 
-                                <!-- الكمية -->
                                 <div class="btn-group btn-group-sm rounded-pill border overflow-hidden" role="group">
                                     <a href="{% url 'update_cart_qty' item.id 'sub' %}" class="btn btn-light text-muted px-2 py-0 border-end">-</a>
                                     <span class="bg-white px-2 py-0 fw-bold small d-flex align-items-center text-dark">{{ item.quantity }}</span>
@@ -63,7 +75,7 @@
 
                             <div class="text-end mt-2 border-top pt-2">
                                 <a href="{% url 'remove_from_cart' item.id %}" class="text-danger text-decoration-none small fw-bold">
-                                    <i class="far fa-trash-alt me-1"></i> حذف من السلة
+                                    <i class="far fa-trash-alt me-1"></i> حذف
                                 </a>
                             </div>
                         </div>
@@ -72,21 +84,20 @@
             </div>
             {% endfor %}
 
-            <!-- ملخص الطلب العائم -->
+            <!-- ملخص -->
             <div class="fixed-bottom bg-white p-3 border-top shadow-lg rounded-top-4" style="bottom: 70px; z-index: 990;">
                 <div class="d-flex justify-content-between mb-3 align-items-center">
                     <span class="text-muted small">الإجمالي المحدد</span>
                     <span id="cart-total" class="fw-bold fs-5 text-dark">0.00 ج.م</span>
                 </div>
                 
-                <!-- الزر معطل افتراضياً (disabled) -->
                 <button type="submit" id="checkout-btn" class="btn btn-secondary w-100 py-3 fw-bold shadow-sm" disabled>
                     اختر منتجات للشراء
                 </button>
             </div>
 
         {% else %}
-            <!-- سلة فارغة -->
+            <!-- فارغة -->
             <div class="text-center py-5 mt-5">
                 <div class="bg-white rounded-circle d-inline-flex p-4 shadow-sm mb-3">
                     <i class="fas fa-shopping-cart fa-3x text-muted opacity-50"></i>
@@ -99,37 +110,29 @@
 </form>
 
 <script>
-    // دالة التحديث (تعمل عند أي تغيير)
     function updateTotal() {
         let total = 0;
         let count = 0;
-        
-        // نجمع كل الـ checkboxes
         const checkboxes = document.querySelectorAll('.item-checkbox');
         const checkoutBtn = document.getElementById('checkout-btn');
         const totalDisplay = document.getElementById('cart-total');
 
         checkboxes.forEach(cb => {
             if (cb.checked) {
-                // نحسب المجموع
                 let price = parseFloat(cb.getAttribute('data-price')) || 0;
                 total += price;
                 count++;
             }
         });
 
-        // تحديث النص
         totalDisplay.innerText = total.toFixed(2) + " ج.م";
         
-        // منطق التفعيل/التعطيل
         if (count === 0) {
-            // تعطيل
             checkoutBtn.disabled = true;
             checkoutBtn.innerText = "اختر منتجات للشراء";
             checkoutBtn.classList.remove('btn-primary-app');
             checkoutBtn.classList.add('btn-secondary');
         } else {
-            // تفعيل
             checkoutBtn.disabled = false;
             checkoutBtn.innerHTML = `متابعة الشراء (${count}) <i class="fas fa-arrow-left ms-2"></i>`;
             checkoutBtn.classList.remove('btn-secondary');
@@ -137,11 +140,7 @@
         }
     }
 
-    // تشغيل عند تحميل الصفحة لضبط الحالة الأولية
-    // (لأن المتصفح قد يحفظ حالة الـ checkboxes)
-    document.addEventListener('DOMContentLoaded', function() {
-        updateTotal();
-    });
+    document.addEventListener('DOMContentLoaded', updateTotal);
 </script>
 
 {% endblock %}

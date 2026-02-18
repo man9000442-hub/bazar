@@ -60,6 +60,21 @@
                     </div>
                 </div>
 
+                <hr class="my-3">
+                <h6 class="fw-bold text-success mb-3"><i class="fas fa-truck me-2"></i> عرض الشحن المجاني</h6>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" name="free_shipping" id="freeShip" 
+                        {% if offer.free_shipping %}checked{% endif %}>
+                    <label class="form-check-label" for="freeShip">تفعيل شحن مجاني لهذا المنتج</label>
+                </div>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text">بشرط شراء</span>
+                    <input type="number" name="threshold" class="form-control" value="{{ offer.free_shipping_threshold|default:1 }}" min="1">
+                    <span class="input-group-text">قطع</span>
+                </div>
+
                 <!-- مدة العرض -->
                 <div class="mb-4">
                     <label class="form-label fw-bold small">مدة العرض (بالأيام)</label>

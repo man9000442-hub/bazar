@@ -24,7 +24,9 @@ class MerchantProfile(models.Model):
     goods_quantity = models.CharField(max_length=100, verbose_name="كمية البضاعة المحتملة")
     goods_types = models.TextField(verbose_name="أنواع البضاعة")
     goods_average_price = models.CharField(max_length=100, verbose_name="متوسط الأسعار")
-    goods_sizes = models.TextField(verbose_name="المقاسات المتاحة")      
+    goods_sizes = models.TextField(verbose_name="المقاسات المتاحة")
+    free_shipping_threshold = models.PositiveIntegerField(default=0, verbose_name="حد الشحن المجاني (عدد قطع)")
+    is_free_shipping_active = models.BooleanField(default=False, verbose_name="تفعيل عرض الشحن المجاني")      
     def __str__(self):
         return f"متجر: {self.user.username}"
     
@@ -168,7 +170,11 @@ class Order(models.Model):
     governorate = models.ForeignKey(Governorate, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="المحافظة")
     # تتبع العروض (اختياري للمستقبل)
     is_first_order = models.BooleanField(default=False, verbose_name="أول طلب (شحن مجاني)")
-
+    class PaymentMethod(models.TextChoices):
+        COD = "COD", "الدفع عند الاستلام"
+        ONLINE = "ONLINE", "دفع إلكتروني (Paymob)"
+    
+    payment_method = models.CharField(max_length=10, choices=PaymentMethod.choices, default=PaymentMethod.COD, verbose_name="طريقة الدفع")
     def save(self, *args, **kwargs):
         # توليد Order ID تلقائيًا إذا لم يكن موجودًا
         if not self.order_id:
@@ -255,6 +261,8 @@ class Offer(models.Model):
     # حقول جديدة للتمييز
     is_platform_offer = models.BooleanField(default=False, verbose_name="عرض من المنصة (يوجد تعويض)")
     created_at = models.DateTimeField(auto_now_add=True)
+    free_shipping = models.BooleanField(default=False, verbose_name="شحن مجاني")
+    free_shipping_threshold = models.PositiveIntegerField(default=1, verbose_name="عند شراء X قطع")
 
     def __str__(self):
         type_str = "Platform" if self.is_platform_offer else "Merchant"

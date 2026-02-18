@@ -2,7 +2,7 @@
 {% block content %}
 
 <!-- Header -->
-<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3 sticky-top">
     <a href="{% url 'my_orders' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
     <h5 class="m-0 fw-bold">تفاصيل الطلب #{{ order.order_id }}</h5>
 </div>
@@ -29,22 +29,22 @@
         </div>
         
         {% if order.status == 'WAITING_PAYMENT' %}
-            <p class="text-danger small mb-0"><i class="fas fa-exclamation-circle me-1"></i> بانتظار الدفع لتأكيد الطلب</p>
+            <div class="alert alert-danger small mb-0 mt-2 d-flex align-items-center">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <div>
+                    <strong>لم يتم الدفع!</strong> يرجى إكمال الدفع لتأكيد الطلب.
+                </div>
+            </div>
         {% endif %}
     </div>
 
     <!-- المنتجات -->
-    <h6 class="fw-bold mb-2 px-1 text-dark">المنتجات</h6>
+    <h6 class="fw-bold mb-2 px-1 text-dark">المنتجات ({{ order.items.count }})</h6>
     {% for item in order.items.all %}
     <div class="card border-0 shadow-sm mb-2 p-2 d-flex flex-row align-items-center bg-white">
-        <!-- صورة المنتج -->
         <div class="me-3 border rounded overflow-hidden" style="width: 60px; height: 60px;">
             {% if item.product_size.product.image %}
                 <img src="{{ item.product_size.product.image.url }}" class="w-100 h-100" style="object-fit: cover;">
-            {% else %}
-                <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center">
-                    <i class="fas fa-camera text-muted"></i>
-                </div>
             {% endif %}
         </div>
         
@@ -52,8 +52,11 @@
             <h6 class="m-0 fw-bold small text-dark">{{ item.product_size.product.name }}</h6>
             <p class="text-muted small mb-1">{{ item.product_size.size_label }} | {{ item.product_size.color_label }}</p>
             <div class="d-flex justify-content-between">
-                <span class="text-primary fw-bold small">{{ item.price_at_purchase }} ج.م</span>
-                <span class="badge bg-light text-dark border">x{{ item.quantity }}</span>
+                <div>
+                    <span class="text-primary fw-bold small">{{ item.price_at_purchase }} ج.م</span>
+                    <span class="badge bg-light text-dark border ms-1">x{{ item.quantity }}</span>
+                </div>
+                <span class="fw-bold text-dark small">{{ item.total_price }} ج.م</span>
             </div>
         </div>
     </div>
@@ -61,25 +64,32 @@
 
     <!-- العنوان -->
     <div class="card border-0 shadow-sm mt-3 p-3 bg-white">
-        <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-map-marker-alt text-muted me-2"></i> عنوان التوصيل</h6>
+        <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-map-marker-alt text-muted me-2"></i> التوصيل إلى</h6>
+        <p class="text-muted small mb-0 fw-bold">{{ request.user.first_name }} {{ request.user.last_name }}</p>
         <p class="text-muted small mb-0">{{ order.shipping_address }}</p>
         <p class="text-muted small mb-0">{{ order.shipping_phone }}</p>
     </div>
 
-    <!-- الملخص المالي -->
+    <!-- الفاتورة التفصيلية -->
     <div class="card border-0 shadow-sm mt-3 p-3 bg-white">
-        <div class="d-flex justify-content-between small mb-1 text-muted">
-            <span>قيمة المنتجات</span>
+        <h6 class="fw-bold mb-3 border-bottom pb-2">ملخص الدفع</h6>
+        
+        <div class="d-flex justify-content-between small mb-2 text-muted">
+            <span>المجموع الفرعي</span>
             <span>{{ order.total_products_price }} ج.م</span>
         </div>
-        <div class="d-flex justify-content-between small mb-1 text-muted">
+        
+        <div class="d-flex justify-content-between small mb-2 text-muted">
             <span>الشحن</span>
-            <span>{{ order.shipping_cost }} ج.م</span>
+            {% if order.shipping_cost == 0 %}
+                <span class="text-success fw-bold">مجاني</span>
+            {% else %}
+                <span>{{ order.shipping_cost }} ج.م</span>
+            {% endif %}
         </div>
         
-        <!-- رسوم الخدمة (تظهر فقط لو موجودة) -->
         {% if order.platform_fees > 0 %}
-        <div class="d-flex justify-content-between small mb-1 text-muted">
+        <div class="d-flex justify-content-between small mb-2 text-muted">
             <span>رسوم الدفع الإلكتروني</span>
             <span>{{ order.platform_fees }} ج.م</span>
         </div>
@@ -90,27 +100,32 @@
             <span>الإجمالي النهائي</span>
             <span class="fs-5 text-primary">{{ order.final_total }} ج.م</span>
         </div>
+        
+        <div class="mt-2 text-center">
+            <span class="badge bg-secondary-subtle text-secondary border">
+                طريقة الدفع: {{ order.get_payment_method_display }}
+            </span>
+        </div>
     </div>
 
-    <!-- زر المساعدة -->
     <a href="#" class="btn btn-outline-secondary w-100 mt-4 rounded-pill border-0 bg-light text-muted small">
         <i class="fas fa-headset me-2"></i> هل تواجه مشكلة؟ تواصل معنا
     </a>
 
 </div>
 
-<!-- الزر العائم للدفع (يظهر فقط إذا لم يدفع بعد) -->
+<!-- الزر العائم (إكمال الدفع) -->
 {% if order.status == 'WAITING_PAYMENT' %}
-<div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 0; z-index: 1000;">
+<div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 70px; z-index: 1000;">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <small class="text-muted">المطلوب دفعه:</small>
         <span class="fw-bold text-dark">{{ order.final_total }} ج.م</span>
     </div>
     <a href="{% url 'retry_payment' order.id %}" class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-pill">
-        ادفع الآن (فيزا / محفظة) <i class="fas fa-credit-card ms-2"></i>
+        إكمال الدفع الآن 🔒
     </a>
 </div>
-<!-- مساحة إضافية -->
+<!-- مساحة -->
 <div style="height: 100px;"></div>
 {% endif %}
 
