@@ -118,7 +118,7 @@ def distribute_profits(sender, instance, created, **kwargs):
                     WalletTransaction.objects.create(
                         wallet=wallet,
                         amount=-commission, # بالسالب
-                        transaction_type=WalletTransaction.TxType.sale, # أو نوع جديد COMMISSIONS
+                        transaction_type=WalletTransaction.TxType.SALE, # صحيح (كابيتال) # أو نوع جديد COMMISSIONS
                         related_order_id=instance.order_id,
                         description=f"خصم عمولة منصة (طلب #{instance.order_id})",
                         balance_after=wallet.balance,

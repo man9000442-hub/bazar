@@ -437,45 +437,59 @@ def checkout(request):
 
 @login_required
 def retry_payment(request, order_id):
-    # نأخذ طلباً واحداً (أو مجموعة طلبات معلقة) ونعيد توجيهها للدفع
+    # جلب الطلب المعلق
     order = get_object_or_404(Order, pk=order_id, customer=request.user, status=Order.Status.WAITING_PAYMENT)
-    
-    # نعيد حساب المبلغ (منتجات + شحن + رسوم مخزنة أو نحسبها من جديد)
-    # للتبسيط سنعيد العملية بالكامل كما في Checkout
     
     try:
         from .paymob_utils import PaymobManager
         paymob = PaymobManager()
         token = paymob.get_token()
         
-        # المبلغ (يفضل أن يكون محفوظاً، أو نحسبه)
-        # هنا سنفترض أن final_total محفوظ في الطلب وشامل الرسوم والشحن
-        # (ملاحظة: إذا لم تكن الرسوم مضافة، أضفها هنا)
+        # 1. حساب رسوم الدفع الإلكتروني (Online Fees)
+        # (لأننا ربما لم نحسبها عند الإنشاء أو نريد تحديثها)
         settings_obj = SiteSetting.objects.first()
-        platform_fees = 0
+        online_fees = 0
+        base_amount = float(order.total_products_price + order.shipping_cost)
+
         if settings_obj:
-             fixed = float(settings_obj.platform_fee_fixed)
-             percent = float(settings_obj.platform_fee_percentage) / 100
-             # حساب عكسي تقريبي أو إضافة جديدة (الأفضل أن تكون محفوظة في الموديل)
-             # سنفترض أنها محفوظة في platform_fees
+            fixed = float(settings_obj.platform_fee_fixed)
+            percent = float(settings_obj.platform_fee_percentage) / 100
+            # الرسوم = ثابت + (نسبة * المبلغ الأساسي)
+            online_fees = fixed + (base_amount * percent)
         
+        # 2. تحديث الطلب في الداتابيز (هام ليراه العميل والتاجر)
+        order.platform_fees = online_fees
+        order.final_total = base_amount + online_fees
+        order.save()
+
+        # 3. المبلغ لـ Paymob (بالقروش)
         amount_cents = int(order.final_total * 100)
         
+        # إنشاء الطلب في Paymob
         pm_order_id = paymob.create_order(token, amount_cents)
         
+        # بيانات العميل
         billing_data = {
-            "first_name": request.user.first_name, "last_name": request.user.last_name,
-            "email": request.user.email or "test@test.com", "phone_number": order.shipping_phone,
-            "city": "Cairo", "country": "EG", "state": "NA", "street": "NA", "building": "NA", "floor": "NA", "apartment": "NA", "postal_code": "NA", "shipping_method": "NA"
+            "first_name": request.user.first_name or "Guest",
+            "last_name": request.user.last_name or "User",
+            "email": request.user.email or "retry@payment.com",
+            "phone_number": order.shipping_phone, # نستخدم هاتف الشحن المسجل
+            "apartment": "NA", "floor": "NA", "street": "NA", "building": "NA", 
+            "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
         }
 
+        # الحصول على المفتاح
         payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
         
+        # رابط الـ Iframe
         iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+        
+        # عرض صفحة الدفع
         return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
 
     except Exception as e:
-        messages.error(request, "فشل إنشاء رابط الدفع.")
+        print(f"Retry Payment Error: {e}")
+        messages.error(request, "حدث خطأ أثناء الاتصال ببوابة الدفع.")
         return redirect('my_orders')
 
 @login_required
