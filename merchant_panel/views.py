@@ -428,7 +428,6 @@ def edit_product(request, product_id):
         # 1. تحديث البيانات الأساسية
         product.name = request.POST.get('name')
         product.base_price = request.POST.get('price')
-        product.shipping_fee = request.POST.get('shipping_fee')
         product.description = request.POST.get('description')
         product.save()
 
