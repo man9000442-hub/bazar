@@ -145,16 +145,10 @@ def add_to_cart(request, pk):
         final_price = product.base_price # السعر الافتراضي
 
         try:
-            # نحاول الوصول للعرض المرتبط بالمنتج
             offer = product.active_offer
-            # الشرط: العرض موجود + مفعل + تاريخه ساري
-            if offer and offer.is_active:
-                from django.utils import timezone
-                if offer.end_date >= timezone.now():
-                    final_price = offer.discounted_price
-                    print(f"--- Offer Applied: New Price is {final_price} ---")
-        except:
-            pass # لا يوجد عرض أو حدث خطأ بسيط
+            if offer and offer.is_active: # ...
+                final_price = offer.discounted_price
+        except: pass
 
         # ==========================================
         # 2. إنشاء أو جلب الطلب (Sart)
@@ -179,7 +173,8 @@ def add_to_cart(request, pk):
             defaults={
                 'quantity': quantity,
                 'price_at_purchase': final_price, # <--- السعر النهائي (مخفض أو أصلي)
-                'merchant': product.merchant
+                'merchant': product.merchant,
+                'price_at_purchase': final_price,
             }
         )
 
@@ -198,12 +193,44 @@ def add_to_cart(request, pk):
 
     return redirect('home')
 
-# عرض السلة
 @login_required
 def cart_view(request):
     order = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
-    return render(request, 'store/cart.html', {'order': order})
+    
+    if order:
+        print("--- Checking Cart Prices ---")
+        for item in order.items.all():
+            product = item.product_size.product
+            current_price = product.base_price
+            
+            # فحص العرض
+            try:
+                offer = getattr(product, 'active_offer', None) # استخدام getattr للأمان
+                if offer and offer.is_active:
+                    from django.utils import timezone
+                    if offer.end_date >= timezone.now():
+                        current_price = offer.discounted_price
+                        print(f"Product {product.name} has offer: {current_price}")
+                    else:
+                        print(f"Offer expired for {product.name}")
+                else:
+                    print(f"No active offer for {product.name}")
+            except Exception as e:
+                print(f"Error checking offer: {e}")
 
+            # تحديث السعر
+            if item.price_at_purchase != current_price:
+                print(f"Updating price from {item.price_at_purchase} to {current_price}")
+                item.price_at_purchase = current_price
+                item.save()
+        
+        # إعادة حساب الإجمالي يدوياً لضمان الدقة
+        # ✅ الصحيح
+        total = sum(i.quantity * i.price_at_purchase for i in order.items.all())
+        order.total_products_price = total
+        order.save()
+
+    return render(request, 'store/cart.html', {'order': order})
 # حذف من السلة
 @login_required
 def remove_from_cart(request, item_id):

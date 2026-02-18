@@ -19,9 +19,12 @@ class MerchantProfile(models.Model):
     )
     is_approved = models.BooleanField(default=False, verbose_name="تمت الموافقة من المشرف")
     created_at = models.DateTimeField(auto_now_add=True)
-    tax_register = models.FileField(upload_to='merchant_docs/', blank=True, null=True, verbose_name="السجل الضريبي")
+    tax_register_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="رقم السجل الضريبي")                                           
 
-    business_description = models.TextField(verbose_name="وصف النشاط والبضاعة (أنواع، أعداد، أسعار)")    
+    goods_quantity = models.CharField(max_length=100, verbose_name="كمية البضاعة المحتملة")
+    goods_types = models.TextField(verbose_name="أنواع البضاعة")
+    goods_average_price = models.CharField(max_length=100, verbose_name="متوسط الأسعار")
+    goods_sizes = models.TextField(verbose_name="المقاسات المتاحة")      
     def __str__(self):
         return f"متجر: {self.user.username}"
     

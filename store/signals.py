@@ -12,6 +12,7 @@ def update_order_totals(sender, instance, **kwargs):
     order = instance.order
     # (نحسب المجموع فقط للعرض، ولا نضيف رسوم هنا لأنها تضاف في Checkout)
     current_items = order.items.all()
+    # ✅ الصحيح: نضرب السعر في الكمية
     total_products = sum(item.quantity * item.price_at_purchase for item in current_items)
     order.total_products_price = total_products
     order.final_total = total_products + order.shipping_cost + order.platform_fees

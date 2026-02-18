@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-2=@6ne*bhsuw#t^inbg*7fs5h5*@&h)(1f90mp45jp1oh+f(o@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['bazar-production-f1e0.up.railway.app','127.0.0.1','elbazaare.com']
 CSRF_TRUSTED_ORIGINS = [
@@ -145,6 +145,7 @@ SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
     # الباك إند الجديد الخاص بنا (الأهم)
+    'django.contrib.auth.backends.ModelBackend',
     'accounts.backends.EmailPhoneUsernameBackend', 
     
     # باك إند allauth (ضروري لتسجيل جوجل وغيره)
@@ -155,9 +156,9 @@ SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 LOGIN_REDIRECT_URL = '/'  # التوجيه بعد الدخول
 LOGOUT_REDIRECT_URL = '/accounts/login/' 
-ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_REQUIRED = False 
 ACCOUNT_USERNAME_REQUIRED = False  # <--- مهم جداً: لا تطلب اسم مستخدم
-ACCOUNT_AUTHENTICATION_METHOD = 'email' # أو 'username_email'
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email' # أو 'username_email'
 ACCOUNT_EMAIL_VERIFICATION = 'none' # لا ترسل إيميل تفعيل
 
 # إعدادات Google (مؤقتة حتى نحصل على المفاتيح الحقيقية)
