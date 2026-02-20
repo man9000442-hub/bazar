@@ -563,42 +563,79 @@ def update_order_status(request, order_id):
 
 from store.models import WithdrawalRequest
 
+from store.models import SiteSetting, WithdrawalRequest, WalletTransaction
+
 @login_required
 def request_withdrawal(request):
-    if not is_merchant(request.user): return redirect('home')
+    # 1. التحقق من التاجر
+    if not is_merchant(request.user): 
+        return redirect('home')
     
     wallet = request.user.merchant_profile.wallet
+    
+    # 2. جلب الإعدادات المالية
+    settings_obj = SiteSetting.objects.first()
+    # القيم الافتراضية في حالة عدم وجود إعدادات
+    min_withdraw_amount = settings_obj.min_withdrawal_amount if settings_obj else Decimal('50.00')
+    reserved_balance = settings_obj.min_wallet_balance if settings_obj else Decimal('200.00')
+    
+    # 3. حساب الرصيد القابل للسحب الفعلي
+    # (الرصيد الحالي - المبلغ المحجوز للأمان)
+    withdrawable_balance = wallet.balance - reserved_balance
+    
+    # التأكد من أنه ليس سالباً (للعرض فقط)
+    if withdrawable_balance < 0:
+        withdrawable_balance = Decimal('0.00')
 
     if request.method == 'POST':
-        amount = Decimal(request.POST.get('amount'))
-        phone = request.POST.get('phone')
-        
-        # 1. التحقق من الرصيد المتاح
-        if amount > wallet.balance:
-            messages.error(request, "رصيدك غير كافٍ للسحب.")
-        elif amount < 1000: # حد أدنى للسحب
-            messages.error(request, "الحد الأدنى للسحب 1000 ج.م")
-        else:
-            # 2. إنشاء الطلب
-            WithdrawalRequest.objects.create(
-                merchant=request.user.merchant_profile,
-                amount=amount,
-                phone_number=phone
-            )
-            # (اختياري: يمكننا خصم الرصيد فوراً وحجزه، أو الانتظار للموافقة)
-            # الأفضل: خصمه فوراً لمنع سحبه مرتين
-            with transaction.atomic():
-                wallet.balance -= amount
-                wallet.save()
+        try:
+            amount = Decimal(request.POST.get('amount'))
+            phone = request.POST.get('phone')
+            
+            # --- التحقق من الشروط ---
+            
+            # أ. هل المبلغ أكبر من المتاح فعلياً؟
+            if amount > withdrawable_balance:
+                messages.error(request, f"رصيدك غير كافٍ. يجب إبقاء {reserved_balance} ج.م في المحفظة كحد أدنى.")
+            
+            # ب. هل المبلغ أقل من الحد الأدنى للعملية؟
+            elif amount < min_withdraw_amount:
+                messages.error(request, f"عفواً، أقل مبلغ يمكن سحبه هو {min_withdraw_amount} ج.م")
                 
-                # نسجل العملية كـ "سحب قيد الانتظار"
-                WalletTransaction.objects.create(
-                    wallet=wallet, amount=-amount, 
-                    transaction_type=WalletTransaction.TxType.WITHDRAWAL,
-                    description="طلب سحب (قيد الانتظار)", balance_after=wallet.balance
-                )
+            else:
+                # --- تنفيذ السحب ---
+                with transaction.atomic():
+                    # 1. إنشاء طلب السحب
+                    WithdrawalRequest.objects.create(
+                        merchant=request.user.merchant_profile,
+                        amount=amount,
+                        phone_number=phone
+                    )
+                    
+                    # 2. خصم الرصيد فوراً (لحجزه)
+                    wallet.balance -= amount
+                    wallet.save()
+                    
+                    # 3. تسجيل المعاملة
+                    WalletTransaction.objects.create(
+                        wallet=wallet, 
+                        amount=-amount, # بالسالب
+                        transaction_type=WalletTransaction.TxType.WITHDRAWAL,
+                        description="طلب سحب (قيد المراجعة)", 
+                        balance_after=wallet.balance,
+                        is_released=False # ستصبح True عند موافقة المشرف
+                    )
 
-            messages.success(request, "تم تقديم طلب السحب بنجاح.")
-            return redirect('merchant_wallet')
+                messages.success(request, "تم تقديم طلب السحب بنجاح. سيتم تحويل المبلغ قريباً.")
+                return redirect('merchant_wallet')
 
-    return render(request, 'merchant/withdraw.html', {'wallet': wallet})
+        except Exception as e:
+            print(f"Withdraw Error: {e}")
+            messages.error(request, "حدث خطأ في البيانات. يرجى المحاولة مرة أخرى.")
+
+    return render(request, 'merchant/withdraw.html', {
+        'wallet': wallet,
+        'withdrawable_balance': withdrawable_balance,
+        'min_withdraw': min_withdraw_amount,
+        'reserved_balance': reserved_balance
+    })

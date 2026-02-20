@@ -315,7 +315,13 @@ class SiteSetting(models.Model):
     site_name = models.CharField(max_length=100, default="Elbazaar", verbose_name="اسم الموقع")
     platform_fee_fixed = models.DecimalField(max_digits=5, decimal_places=2, default=3.00, verbose_name="رسوم ثابتة (ج.م)")
     platform_fee_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=2.75, verbose_name="نسبة العمولة (%)")
+    min_withdrawal_amount = models.DecimalField(max_digits=10, decimal_places=2, default=50.00, verbose_name="الحد الأدنى للسحب")
     
+    # 2. المبلغ المحجوز في المحفظة (لا يمكن سحبه)
+    min_wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=200.00, verbose_name="المبلغ المحجوز في المحفظة")
+    
+    # 3. الحد الأدنى لتفعيل المنتجات
+    min_active_balance = models.DecimalField(max_digits=10, decimal_places=2, default=-500.00, verbose_name="الحد الأدنى لتفعيل المنتجات")    
     # صور البانر (يمكن زيادتها)
     banner_image = models.ImageField(upload_to='banners/', blank=True, null=True, verbose_name="صورة البانر الرئيسي")
     

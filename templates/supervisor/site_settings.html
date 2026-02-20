@@ -23,6 +23,23 @@
                 <input type="number" name="fee_percent" class="form-control" step="0.1" value="{{ settings.platform_fee_percentage }}">
             </div>
         </div>
+        <!-- في templates/supervisor/site_settings.html -->
+
+        <h6 class="fw-bold text-primary mb-3 mt-4">السياسات المالية</h6>
+        <div class="row g-3">
+            <div class="col-4">
+                <label class="form-label small">الحد الأدنى للسحب</label>
+                <input type="number" name="min_withdrawal" class="form-control" value="{{ settings.min_withdrawal_amount }}">
+            </div>
+            <div class="col-4">
+                <label class="form-label small">المبلغ المحجوز (للأمان)</label>
+                <input type="number" name="reserved_balance" class="form-control" value="{{ settings.min_wallet_balance }}">
+            </div>
+            <div class="col-4">
+                <label class="form-label small">حد تفعيل المنتجات</label>
+                <input type="number" name="min_active" class="form-control" value="{{ settings.min_active_balance }}">
+            </div>
+        </div>
 
         <h6 class="fw-bold text-primary mb-3 mt-4">المظهر</h6>
         <div class="mb-3">

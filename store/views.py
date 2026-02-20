@@ -73,9 +73,13 @@ def home(request):
             return redirect('complete_profile')
     query = request.GET.get('q') # كلمة البحث
     category_id = request.GET.get('category')
+    settings_obj = SiteSetting.objects.first()
+    min_balance = settings_obj.min_active_balance if settings_obj else Decimal('-500.00')
+    
     products = Product.objects.filter(
         is_active=True,
-        merchant__wallet__balance__gte=F('merchant__minimum_balance_required')
+        # الشرط الجديد: الرصيد >= الحد العام
+        merchant__wallet__balance__gte=min_balance
     ).order_by('-created_at')
 
 
@@ -441,7 +445,6 @@ def checkout(request):
 
 @login_required
 def retry_payment(request, order_id):
-    # جلب الطلب المعلق
     order = get_object_or_404(Order, pk=order_id, customer=request.user, status=Order.Status.WAITING_PAYMENT)
     
     try:
@@ -449,52 +452,47 @@ def retry_payment(request, order_id):
         paymob = PaymobManager()
         token = paymob.get_token()
         
-        # 1. حساب رسوم الدفع الإلكتروني (Online Fees)
-        # (لأننا ربما لم نحسبها عند الإنشاء أو نريد تحديثها)
+        # 1. حساب المبلغ الأساسي (منتجات + شحن)
+        # ملاحظة: platform_fees قد تكون 0 إذا كان الطلب كاش سابقاً
+        base_total = order.total_products_price + order.shipping_cost
+        
+        # 2. حساب رسوم الدفع (Paymob Fees)
         settings_obj = SiteSetting.objects.first()
         online_fees = 0
-        base_amount = float(order.total_products_price + order.shipping_cost)
-
         if settings_obj:
             fixed = float(settings_obj.platform_fee_fixed)
             percent = float(settings_obj.platform_fee_percentage) / 100
-            # الرسوم = ثابت + (نسبة * المبلغ الأساسي)
-            online_fees = fixed + (base_amount * percent)
-        
-        # 2. تحديث الطلب في الداتابيز (هام ليراه العميل والتاجر)
+            online_fees = fixed + (float(base_total) * percent)
+            
+        # 3. تحديث الطلب (هام جداً ليظهر في الفاتورة)
         order.platform_fees = online_fees
-        order.final_total = base_amount + online_fees
+        order.final_total = Decimal(base_total) + Decimal(online_fees)
+        order.payment_method = Order.PaymentMethod.ONLINE # تأكد أنه تحول لأونلاين
         order.save()
 
-        # 3. المبلغ لـ Paymob (بالقروش)
+        # 4. المبلغ لـ Paymob
         amount_cents = int(order.final_total * 100)
         
-        # إنشاء الطلب في Paymob
         pm_order_id = paymob.create_order(token, amount_cents)
         
-        # بيانات العميل
         billing_data = {
-            "first_name": request.user.first_name or "Guest",
-            "last_name": request.user.last_name or "User",
-            "email": request.user.email or "retry@payment.com",
-            "phone_number": order.shipping_phone, # نستخدم هاتف الشحن المسجل
+            "first_name": request.user.first_name or "G", 
+            "last_name": request.user.last_name or "U",
+            "email": request.user.email or "retry@pay.com", 
+            "phone_number": order.shipping_phone,
             "apartment": "NA", "floor": "NA", "street": "NA", "building": "NA", 
             "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
         }
 
-        # الحصول على المفتاح
         payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
         
-        # رابط الـ Iframe
         iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
-        
-        # عرض صفحة الدفع
         return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
 
     except Exception as e:
-        print(f"Retry Payment Error: {e}")
-        messages.error(request, "حدث خطأ أثناء الاتصال ببوابة الدفع.")
-        return redirect('my_orders')
+        print(f"Retry Error: {e}")
+        messages.error(request, "فشل الاتصال بالبنك.")
+        return redirect('customer_order_detail', order_id=order.id)
 
 @login_required
 def customer_order_detail(request, order_id):

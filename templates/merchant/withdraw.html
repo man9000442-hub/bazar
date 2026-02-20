@@ -3,8 +3,10 @@
 <div class="container mt-4">
     <h5 class="fw-bold text-coffee mb-3">طلب سحب أرباح 💸</h5>
     <div class="card p-4 border-0 shadow-sm">
-        <div class="alert alert-info small">
-            رصيدك المتاح: <strong>{{ wallet.balance }} ج.م</strong>
+        <div class="alert alert-success">
+            الرصيد القابل للسحب: <strong>{{ withdrawable_balance }} ج.م</strong>
+            <br>
+            <small class="text-muted">(يتم حجز {{ reserved_balance }} ج.م لتغطية المرتجعات)</small>
         </div>
         
         <form method="POST">
