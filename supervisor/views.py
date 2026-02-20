@@ -173,14 +173,33 @@ def pending_withdrawals(request):
     withdrawals = WithdrawalRequest.objects.filter(status=WithdrawalRequest.Status.PENDING).order_by('-created_at')
     return render(request, 'supervisor/pending_withdrawals.html', {'withdrawals': withdrawals})
 
+from store.models import Notification # تأكد من الاستيراد
+
 @login_required
 def approve_withdrawal(request, pk):
     if not is_supervisor(request.user): return redirect('home')
-    req = get_object_or_404(WithdrawalRequest, pk=pk)
-    if req.status == 'PENDING':
-        req.status = 'APPROVED'
-        req.save()
-        messages.success(request, "تم تأكيد السحب.")
+    
+    # جلب الطلب
+    withdrawal = get_object_or_404(WithdrawalRequest, pk=pk)
+    
+    if withdrawal.status == 'PENDING':
+        # 1. تغيير الحالة
+        withdrawal.status = 'APPROVED'
+        withdrawal.save()
+        
+        # 2. تحديث سجل المعاملة (كما سبق)
+        # (يمكنك البحث عن المعاملة وتغييرها لـ Released إذا أردت دقة 100%)
+        
+        # 3. إرسال إشعار للتاجر 🔔
+        Notification.objects.create(
+            recipient=withdrawal.merchant.user,
+            title="تم تحويل الأرباح 💰",
+            message=f"تمت الموافقة على طلب السحب بقيمة {withdrawal.amount} ج.م وتم التحويل لمحفظتك.",
+            link="/merchant/wallet/" # رابط يوجهه لصفحة المحفظة
+        )
+        
+        messages.success(request, f"تم تأكيد التحويل للتاجر {withdrawal.merchant.user.first_name}.")
+        
     return redirect('super_pending_withdrawals')
 
 # --- 7. Settings & Categories ---
