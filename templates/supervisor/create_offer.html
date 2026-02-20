@@ -28,6 +28,23 @@
                     <input type="number" name="days" class="form-control" value="3" required>
                 </div>
             </div>
+            <!-- داخل الفورم -->
+            <hr class="my-3">
+            <h6 class="fw-bold text-success mb-3"><i class="fas fa-truck me-2"></i> شحن مجاني (مدعوم)</h6>
+
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" name="free_shipping" id="freeShip">
+                <label class="form-check-label" for="freeShip">تفعيل الشحن المجاني</label>
+            </div>
+
+            <div class="input-group mb-3">
+                <span class="input-group-text">بشرط شراء</span>
+                <input type="number" name="threshold" class="form-control" value="1" min="1">
+                <span class="input-group-text">قطع</span>
+            </div>
+            <div class="form-text text-muted small">
+                * في حالة تفعيل هذا الخيار، سيتم تعويض التاجر عن قيمة الشحن بالكامل.
+            </div>
 
             <button type="submit" class="btn btn-gold w-100 fw-bold">إطلاق العرض 🚀</button>
         </form>

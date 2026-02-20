@@ -7,7 +7,8 @@ import csv
 from django.http import HttpResponse
 from django.db.models.functions import TruncMonth
 import json
-
+from django.db import transaction
+from decimal import Decimal
 # الموديلات
 from accounts.models import User
 from store.models import (
@@ -84,8 +85,8 @@ def product_review(request, pk):
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'approve':
-            commission = request.POST.get('commission')
-            product.admin_commission = commission
+            commission_pct = request.POST.get('commission')
+            product.commission_pct = commission_pct # حفظ النسبة
             product.is_active = True
             product.save()
             messages.success(request, f"تم اعتماد المنتج {product.name}")
@@ -213,8 +214,38 @@ def site_settings_view(request):
 # --- 8. Offers & Team ---
 @login_required
 def create_platform_offer(request):
-    # (الكود السابق)
-    return render(request, 'supervisor/create_offer.html', {'products': Product.objects.filter(is_active=True)})
+    if not is_supervisor(request.user): return redirect('home')
+    
+    if request.method == 'POST':
+        product_id = request.POST.get('product_id')
+        percentage = request.POST.get('percentage')
+        days = int(request.POST.get('days'))
+        
+        # استلام خيارات الشحن المجاني
+        free_shipping = request.POST.get('free_shipping') == 'on'
+        threshold = int(request.POST.get('threshold', 1))
+        
+        product = get_object_or_404(Product, pk=product_id)
+        
+        Offer.objects.update_or_create(
+            product=product,
+            defaults={
+                'discount_percentage': percentage,
+                'start_date': timezone.now(),
+                'end_date': timezone.now() + timezone.timedelta(days=days),
+                'is_active': True,
+                'is_platform_offer': True, # عرض منصة (تعويض)
+                
+                # إعدادات الشحن
+                'free_shipping': free_shipping,
+                'free_shipping_threshold': threshold
+            }
+        )
+        messages.success(request, "تم إطلاق عرض المنصة (خصم + شحن) مع التعويض!")
+        return redirect('supervisor_dashboard')
+
+    products = Product.objects.filter(is_active=True)
+    return render(request, 'supervisor/create_offer.html', {'products': products})
 
 @login_required
 def team_management(request):
@@ -451,3 +482,49 @@ def adjust_wallet(request, wallet_id):
             return redirect('super_wallets_list')
 
     return render(request, 'supervisor/adjust_wallet.html', {'wallet': wallet})
+
+
+
+from django.db.models import Count, Q
+
+@login_required
+def all_products(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    # جلب المنتجات مع إحصائيات البيع
+    products = Product.objects.all().annotate(
+        total_sold=Count('variations__orderitem', filter=Q(variations__orderitem__order__status='DELIVERED')),
+        total_returned=Count('variations__orderitem', filter=Q(variations__orderitem__order__status='RETURNED'))
+    ).order_by('-created_at')
+
+    # بحث
+    q = request.GET.get('q')
+    if q:
+        products = products.filter(name__icontains=q)
+
+    return render(request, 'supervisor/all_products.html', {'products': products})
+
+# دالة الحذف (أدمن)
+@login_required
+def delete_product_admin(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    product = get_object_or_404(Product, pk=pk)
+    product.delete() # حذف نهائي أو إخفاء حسب سياستك
+    messages.success(request, "تم حذف المنتج.")
+    return redirect('super_all_products')
+
+# دالة التعديل (أدمن) - يمكننا استخدام نفس قالب التاجر أو إنشاء واحد جديد
+# للأدمن، يهمنا تعديل "الحالة" و "العمولة" أكثر من الوصف
+@login_required
+def edit_product_admin(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    product = get_object_or_404(Product, pk=pk)
+    
+    if request.method == 'POST':
+        product.is_active = request.POST.get('is_active') == 'on'
+        product.commission_pct = request.POST.get('commission')
+        product.save()
+        messages.success(request, "تم تحديث المنتج.")
+        return redirect('super_all_products')
+        
+    return render(request, 'supervisor/product_edit_admin.html', {'product': product})

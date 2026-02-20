@@ -84,7 +84,11 @@
                 <i class="fas fa-shopping-cart"></i> الطلبات
             </a>
             <a href="{% url 'super_pending_products' %}" class="nav-link {% if request.resolver_match.url_name == 'super_pending_products' %}active{% endif %}">
-                <i class="fas fa-box-open"></i> المنتجات
+                <i class="fas fa-box-open"></i>  مراجعه المنتجات 
+            </a>
+            <!-- تحت قسم إدارة المتجر -->
+            <a href="{% url 'super_all_products' %}" class="nav-link">
+                <i class="fas fa-boxes me-2"></i> كل المنتجات
             </a>
             <a href="{% url 'super_categories' %}" class="nav-link {% if request.resolver_match.url_name == 'super_categories' %}active{% endif %}">
                 <i class="fas fa-th-large"></i> الأقسام

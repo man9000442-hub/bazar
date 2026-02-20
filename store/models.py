@@ -54,7 +54,10 @@ class Product(models.Model):
     shipping_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="مصاريف الشحن")
     is_active = models.BooleanField(default=False, verbose_name="مفعل (موافقة المشرف)")
     created_at = models.DateTimeField(auto_now_add=True)
-    admin_commission = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="عمولة المنصة")
+    commission_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=10.00, 
+        verbose_name="نسبة عمولة المنصة (%)"
+    )
     def __str__(self):
         return self.name
     

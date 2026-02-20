@@ -41,4 +41,7 @@ urlpatterns = [
     path('withdrawals/reject/<int:pk>/', views.reject_withdrawal, name='super_reject_withdrawal'),
     path('wallets/', views.wallets_list, name='super_wallets_list'),
     path('wallets/adjust/<int:wallet_id>/', views.adjust_wallet, name='super_adjust_wallet'),
+    path('products/all/', views.all_products, name='super_all_products'),
+path('products/delete/<int:pk>/', views.delete_product_admin, name='super_delete_product'),
+path('products/edit/<int:pk>/', views.edit_product_admin, name='super_edit_product'),
 ]
