@@ -87,7 +87,6 @@
                             <td class="small">{{ member.phone_primary }}</td>
                             <td class="small text-muted">{{ member.email }}</td>
                             <td class="text-end pe-4">
-                                <a href="{% url 'super_user_edit' member.id %}" class="btn btn-sm btn-light border"><i class="fas fa-pen"></i></a>
                                 {% if request.user.role == 'OWNER' %}
                                 <a href="{% url 'super_user_delete' member.id %}" class="btn btn-sm btn-light border text-danger" onclick="return confirm('حذف المشرف؟')"><i class="fas fa-trash"></i></a>
                                 {% endif %}
