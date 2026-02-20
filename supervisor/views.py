@@ -10,7 +10,7 @@ import json
 from django.db import transaction
 from decimal import Decimal
 # الموديلات
-from accounts.models import User
+from accounts.models import User,CustomRole
 from store.models import (
     Product, Order, MerchantProfile, DepositRequest, 
     WithdrawalRequest, Offer, Category, SiteSetting
@@ -267,41 +267,68 @@ def create_platform_offer(request):
     products = Product.objects.filter(is_active=True)
     return render(request, 'supervisor/create_offer.html', {'products': products})
 
+from accounts.models import CustomRole # تأكد من الاستيراد
+
 @login_required
 def team_management(request):
-    user = request.user
-    # حماية: Lvl3 لا يدخل هنا
-    if user.role == User.Role.ADMIN_LVL3 or not is_supervisor(user):
+    # 1. الحماية: فقط المالك (Owner) والسوبر يوزر يمكنهم الدخول
+    if request.user.role != 'OWNER' and not request.user.is_superuser:
         return redirect('supervisor_dashboard')
 
-    # جلب المشرفين الحاليين
-    team = User.objects.filter(role__in=[User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3]).exclude(pk=user.pk)
+    # 2. جلب البيانات (المشرفين + الأدوار المتاحة)
+    # نستبعد المستخدم الحالي (عشان ما يحذفش نفسه)
+    team = User.objects.filter(role__in=[User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3]).exclude(pk=request.user.pk)
     
+    custom_roles = CustomRole.objects.all() # الأدوار اللي أنشأناها
+
+    # 3. معالجة الإضافة (POST)
     if request.method == 'POST':
         username = request.POST.get('username')
-        email = request.POST.get('email') # استقبال الإيميل
         phone = request.POST.get('phone')
+        email = request.POST.get('email')
         password = request.POST.get('password')
-        role = request.POST.get('role')
+        role_id = request.POST.get('custom_role') # ID الدور المختار
         
-        # حماية: Lvl2 لا يمكنه تعيين Lvl2 (فقط Lvl3)
-        if user.role == User.Role.ADMIN_LVL2 and role == User.Role.ADMIN_LVL2:
-            messages.error(request, "غير مسموح لك بتعيين مشرف من نفس درجتك.")
-            return redirect('super_team')
+        # التحقق من البيانات
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "اسم المستخدم موجود مسبقاً.")
+        elif User.objects.filter(phone_primary=phone).exists():
+            messages.error(request, "رقم الهاتف مسجل بالفعل.")
+        else:
+            try:
+                # إنشاء المستخدم
+                new_admin = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    phone_primary=phone
+                )
+                
+                # تعيين الصلاحيات
+                new_admin.is_staff = True # ليدخل لوحة جانجو أيضاً (اختياري)
+                
+                # نربطه بالدور المخصص
+                if role_id:
+                    role_obj = CustomRole.objects.get(id=role_id)
+                    new_admin.custom_role = role_obj
+                    # نجعله "مشرف عام" كنوع أساسي، والتفاصيل في custom_role
+                    new_admin.role = User.Role.ADMIN_LVL3 
+                else:
+                    # لو لم يختر دوراً، نجعله Lvl3 افتراضياً
+                    new_admin.role = User.Role.ADMIN_LVL3
 
-        # إنشاء المستخدم
-        try:
-            new_admin = User.objects.create_user(username=username, password=password, phone_primary=phone, email=email)
-            new_admin.role = role
-            new_admin.is_staff = True # ليدخل لوحة جانجو أيضاً
-            new_admin.save()
-            messages.success(request, "تم تعيين المشرف بنجاح ✅")
-        except Exception as e:
-            messages.error(request, f"خطأ: {e}")
+                new_admin.save()
+                messages.success(request, f"تم تعيين المشرف {username} بنجاح ✅")
+                
+            except Exception as e:
+                messages.error(request, f"حدث خطأ: {e}")
             
         return redirect('super_team')
 
-    return render(request, 'supervisor/team_management.html', {'team': team})
+    return render(request, 'supervisor/team_management.html', {
+        'team': team,
+        'custom_roles': custom_roles
+    })
 
 
 @login_required
@@ -599,3 +626,50 @@ def support_ticket_detail(request, pk):
         return redirect('super_ticket_detail', pk=pk)
 
     return render(request, 'supervisor/support_ticket_detail.html', {'ticket': ticket})
+
+
+
+from accounts.models import CustomRole
+
+# قائمة الصلاحيات المتاحة (للاختيار منها)
+AVAILABLE_PERMISSIONS = [
+    ('orders', 'إدارة الطلبات'),
+    ('products', 'إدارة المنتجات'),
+    ('categories', 'إدارة الأقسام'),
+    ('users', 'إدارة المستخدمين'),
+    ('merchants', 'تفعيل التجار'),
+    ('finance', 'المالية والسحوبات'),
+    ('settings', 'إعدادات الموقع'),
+    ('support', 'الدعم الفني'),
+    ('team', 'فريق العمل'),
+]
+
+@login_required
+def manage_roles(request):
+    if request.user.role != 'OWNER' and not request.user.is_superuser:
+        return redirect('supervisor_dashboard')
+        
+    roles = CustomRole.objects.all()
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        perms = request.POST.getlist('permissions') # استقبال القائمة
+        perms_str = ",".join(perms) # تحويلها لنص
+        
+        CustomRole.objects.create(name=name, permissions=perms_str)
+        messages.success(request, "تم إنشاء الدور بنجاح.")
+        return redirect('super_manage_roles')
+
+    return render(request, 'supervisor/manage_roles.html', {
+        'roles': roles,
+        'available_perms': AVAILABLE_PERMISSIONS
+    })
+
+@login_required
+def delete_role(request, pk):
+    if request.user.role != 'OWNER' and not request.user.is_superuser: return redirect('home')
+    CustomRole.objects.filter(pk=pk).delete()
+    messages.success(request, "تم حذف الدور.")
+    return redirect('super_manage_roles')
+
+# دالة التعديل والحذف بالمثل...

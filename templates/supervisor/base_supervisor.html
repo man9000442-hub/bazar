@@ -32,7 +32,7 @@
         }
         .sidebar-menu { flex-grow: 1; padding: 15px 0; overflow-y: auto; }
         
-        /* Sidebar Links */
+        /* Links */
         .nav-link {
             padding: 12px 25px; color: #cbd5e1; font-weight: 600; display: flex; align-items: center; text-decoration: none; border-right: 3px solid transparent; transition: 0.2s; cursor: pointer;
         }
@@ -52,6 +52,16 @@
         .top-navbar {
             background: #fff; padding: 15px 30px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;
+        }
+        
+        /* Cards */
+        .card-stat {
+            background: #fff; border: none; border-radius: 16px; padding: 25px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: 0.3s;
+        }
+        .card-stat:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .icon-box {
+            width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px;
         }
 
         /* Mobile */
@@ -75,42 +85,59 @@
         </div>
         
         <div class="sidebar-menu">
+            <!-- 1. الرئيسية (متاحة للكل) -->
             <a href="{% url 'supervisor_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'supervisor_dashboard' %}active{% endif %}">
                 <i class="fas fa-home"></i> لوحة القيادة
             </a>
 
+            <!-- 2. إدارة المتجر -->
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "orders" in request.user.custom_role.permissions or "products" in request.user.custom_role.permissions %}
             <div class="nav-title">إدارة المتجر</div>
+            {% endif %}
+
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "orders" in request.user.custom_role.permissions %}
             <a href="{% url 'super_all_orders' %}" class="nav-link {% if request.resolver_match.url_name == 'super_all_orders' %}active{% endif %}">
                 <i class="fas fa-shopping-cart"></i> الطلبات
             </a>
+            {% endif %}
+
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "products" in request.user.custom_role.permissions %}
             <a href="{% url 'super_pending_products' %}" class="nav-link {% if request.resolver_match.url_name == 'super_pending_products' %}active{% endif %}">
-                <i class="fas fa-box-open"></i>  مراجعه المنتجات 
+                <i class="fas fa-box-open"></i> المنتجات
             </a>
-            <!-- تحت قسم إدارة المتجر -->
-            <a href="{% url 'super_all_products' %}" class="nav-link">
-                <i class="fas fa-boxes me-2"></i> كل المنتجات
-            </a>
+            {% endif %}
+
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "categories" in request.user.custom_role.permissions %}
             <a href="{% url 'super_categories' %}" class="nav-link {% if request.resolver_match.url_name == 'super_categories' %}active{% endif %}">
                 <i class="fas fa-th-large"></i> الأقسام
             </a>
+            {% endif %}
 
+            <!-- 3. المستخدمين -->
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "users" in request.user.custom_role.permissions or "merchants" in request.user.custom_role.permissions %}
             <div class="nav-title">المستخدمين</div>
+            {% endif %}
+
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "users" in request.user.custom_role.permissions %}
             <a href="{% url 'super_users_list' %}" class="nav-link {% if request.resolver_match.url_name == 'super_users_list' %}active{% endif %}">
                 <i class="fas fa-users"></i> كل الأعضاء
             </a>
+            {% endif %}
+
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "merchants" in request.user.custom_role.permissions %}
             <a href="{% url 'super_pending_merchants' %}" class="nav-link {% if request.resolver_match.url_name == 'super_pending_merchants' %}active{% endif %}">
                 <i class="fas fa-store"></i> تفعيل التجار
             </a>
+            {% endif %}
             
-            {% if request.user.role == 'OWNER' or request.user.is_superuser %}
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "team" in request.user.custom_role.permissions %}
             <a href="{% url 'super_team' %}" class="nav-link {% if request.resolver_match.url_name == 'super_team' %}active{% endif %}">
                 <i class="fas fa-user-shield"></i> فريق العمل
             </a>
             {% endif %}
-            <a href="{% url 'super_support_tickets' %}" class="nav-link">
-                <i class="fas fa-headset"></i> الدعم الفني
-            </a>
 
+            <!-- 4. المالية والإعدادات -->
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "finance" in request.user.custom_role.permissions %}
             <div class="nav-title">المالية & الإعدادات</div>
             
             <!-- قائمة المالية المنسدلة -->
@@ -123,9 +150,8 @@
                     <a href="{% url 'super_finance_overview' %}" class="nav-link ps-5 small text-light opacity-75">
                         <i class="fas fa-chart-pie me-2"></i> نظرة عامة
                     </a>
-                            <!-- الزر الجديد 👇 -->
                     <a href="{% url 'super_wallets_list' %}" class="nav-link ps-5 small text-light opacity-75">
-                        <i class="fas fa-users-cog me-2"></i> إدارة المحافظ
+                        <i class="fas fa-users-cog me-2"></i> المحافظ
                     </a>
                     <a href="{% url 'super_pending_deposits' %}" class="nav-link ps-5 small text-light opacity-75">
                         <i class="fas fa-arrow-down me-2"></i> الإيداعات
@@ -138,10 +164,19 @@
                     </a>
                 </div>
             </div>
+            {% endif %}
 
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "settings" in request.user.custom_role.permissions %}
             <a href="{% url 'super_site_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'super_site_settings' %}active{% endif %}">
                 <i class="fas fa-cog"></i> إعدادات الموقع
             </a>
+            {% endif %}
+            
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "support" in request.user.custom_role.permissions %}
+            <a href="{% url 'super_support_tickets' %}" class="nav-link {% if request.resolver_match.url_name == 'super_support_tickets' %}active{% endif %}">
+                <i class="fas fa-headset"></i> الدعم الفني
+            </a>
+            {% endif %}
         </div>
         
         <div class="p-3">

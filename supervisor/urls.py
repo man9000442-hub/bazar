@@ -46,4 +46,6 @@ path('products/delete/<int:pk>/', views.delete_product_admin, name='super_delete
 path('products/edit/<int:pk>/', views.edit_product_admin, name='super_edit_product'),
 path('support/', views.support_tickets, name='super_support_tickets'),
 path('support/<int:pk>/', views.support_ticket_detail, name='super_ticket_detail'),
+path('team/roles/', views.manage_roles, name='super_manage_roles'),
+path('team/roles/delete/<int:pk>/', views.delete_role, name='super_delete_role'),
 ]

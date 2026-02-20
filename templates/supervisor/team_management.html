@@ -1,60 +1,104 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}إدارة الفريق{% endblock %}
+{% block page_title %}إدارة فريق العمل{% endblock %}
 
 {% block content %}
 <div class="row g-4">
-    <!-- إضافة مشرف -->
+    
+    <!-- 1. نموذج إضافة مشرف -->
     <div class="col-md-4">
         <div class="card border-0 shadow-sm rounded-4 p-4">
-            <h6 class="fw-bold mb-3">إضافة مشرف جديد</h6>
+            <h6 class="fw-bold mb-3 text-primary">تعيين مشرف جديد</h6>
             <form method="POST">
                 {% csrf_token %}
-                <div class="mb-2">
-                    <input type="text" name="username" class="form-control" placeholder="اسم المستخدم" required>
-                </div>
-                <div class="col-6">
-                    <input type="email" name="email" class="form-control" placeholder="البريد الإلكتروني" required>
-                </div>
-                <div class="mb-2">
-                    <input type="text" name="phone" class="form-control" placeholder="رقم الهاتف" required>
-                </div>
-                <div class="mb-2">
-                    <input type="password" name="password" class="form-control" placeholder="كلمة المرور" required>
+                <div class="mb-3">
+                    <label class="form-label small">اسم المستخدم</label>
+                    <input type="text" name="username" class="form-control" required>
                 </div>
                 <div class="mb-3">
-                    <select name="role" class="form-select" required>
-                        <option value="">اختر الصلاحية...</option>
-                        <option value="ADMIN_LVL3">خدمة عملاء (Lvl 3)</option>
-                        {% if request.user.role == 'OWNER' or request.user.is_superuser %}
-                        <option value="ADMIN_LVL2">مدير (Lvl 2)</option>
-                        {% endif %}
-                    </select>
+                    <label class="form-label small">رقم الهاتف</label>
+                    <input type="text" name="phone" class="form-control" required>
                 </div>
-                <button type="submit" class="btn btn-dark w-100 rounded-pill">تعيين الآن</button>
+                <div class="mb-3">
+                    <label class="form-label small">البريد الإلكتروني</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">كلمة المرور</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">المسمى الوظيفي (الدور)</label>
+                    <select name="custom_role" class="form-select" required>
+                        <option value="">اختر الوظيفة...</option>
+                        {% for role in custom_roles %}
+                        <option value="{{ role.id }}">{{ role.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text small">
+                        أو <a href="{% url 'super_manage_roles' %}" class="text-decoration-none">أنشئ دوراً جديداً</a>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-dark w-100 rounded-pill mt-2">تأكيد التعيين</button>
             </form>
         </div>
     </div>
 
-    <!-- القائمة -->
+    <!-- 2. قائمة المشرفين -->
     <div class="col-md-8">
         <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-header bg-white py-3 fw-bold">الأعضاء الحاليين</div>
-            <ul class="list-group list-group-flush">
-                {% for member in team %}
-                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-light rounded-circle p-2 me-3"><i class="fas fa-user-shield text-dark"></i></div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">{{ member.username }}</h6>
-                            <small class="text-muted">{{ member.get_role_display }}</small>
-                        </div>
-                    </div>
-                    <span class="text-muted small">{{ member.phone_primary }}</span>
-                </li>
-                {% empty %}
-                <li class="list-group-item text-center py-4 text-muted">لا يوجد مشرفين آخرين.</li>
-                {% endfor %}
-            </ul>
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <span class="fw-bold">فريق العمل الحالي</span>
+                <a href="{% url 'super_manage_roles' %}" class="btn btn-sm btn-outline-primary rounded-pill">
+                    <i class="fas fa-shield-alt me-1"></i> إدارة الصلاحيات
+                </a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">المشرف</th>
+                            <th>الدور</th>
+                            <th>الهاتف</th>
+                            <th>الإيميل</th>
+                            <th class="text-end pe-4">تحكم</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in team %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded-circle p-2 me-2"><i class="fas fa-user-shield text-dark"></i></div>
+                                    <div class="fw-bold">{{ member.first_name }} {{ member.last_name|default:member.username }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if member.custom_role %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ member.custom_role.name }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">غير محدد</span>
+                                {% endif %}
+                            </td>
+                            <td class="small">{{ member.phone_primary }}</td>
+                            <td class="small text-muted">{{ member.email }}</td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'super_user_edit' member.id %}" class="btn btn-sm btn-light border"><i class="fas fa-pen"></i></a>
+                                {% if request.user.role == 'OWNER' %}
+                                <a href="{% url 'super_user_delete' member.id %}" class="btn btn-sm btn-light border text-danger" onclick="return confirm('حذف المشرف؟')"><i class="fas fa-trash"></i></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center py-4 text-muted">لا يوجد مشرفين حتى الآن.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
