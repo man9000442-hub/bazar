@@ -538,38 +538,24 @@ def delete_product(request, product_id):
 
 @login_required
 def update_order_status(request, order_id):
-    # 1. التحقق من أن المستخدم تاجر
     if not hasattr(request.user, 'merchant_profile'):
         return redirect('home')
     
     order = get_object_or_404(Order, order_id=order_id)
     
-    # 2. السماح بالتعديل (تجاوز الفحص الدقيق مؤقتاً للتجربة)
-    # أو الفحص البسيط: هل هذا التاجر هو merchant الطلب؟
-    # (لاحظ: نحن نستخدم request.POST وليس GET لتغيير الحالة)
-    
     if request.method == 'POST':
         new_status = request.POST.get('status')
-        print(f"--- Action: Change Status to {new_status} ---") # تتبع في التيرمينال
+        print(f"--- Action: Change Status to '{new_status}' ---") # تتبع
 
-        if new_status in ['SHIPPED', 'DELIVERED', 'CANCELLED']:
+        # التحقق من أن الحالة صحيحة وغير فارغة
+        if new_status and new_status in ['SHIPPED', 'DELIVERED', 'CANCELLED']:
             order.status = new_status
-            
-            # (إضافة اختيارية: تسجيل تاريخ الشحن)
-            if new_status == 'SHIPPED':
-                # order.shipped_at = timezone.now()
-                pass
-
             order.save()
             messages.success(request, f"تم تغيير الحالة إلى {order.get_status_display()}")
         else:
             messages.error(request, "حالة غير صالحة.")
-            
-        # العودة لنفس الصفحة (التفاصيل)
-        return redirect('merchant_order_detail', order_id=order.order_id)
         
-    # إذا لم يكن POST، نوجهه للقائمة
-    return redirect('merchant_orders')
+    return redirect('merchant_order_detail', order_id=order.order_id)
 
 
 
