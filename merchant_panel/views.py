@@ -538,23 +538,89 @@ def delete_product(request, product_id):
 
 @login_required
 def update_order_status(request, order_id):
+    # 1. التحقق من التاجر
     if not hasattr(request.user, 'merchant_profile'):
         return redirect('home')
     
     order = get_object_or_404(Order, order_id=order_id)
+    merchant = request.user.merchant_profile
     
+    # 2. التحقق من الملكية
+    # (نسمح للتاجر بتعديل الطلب إذا كان هو المالك المباشر أو يملك منتجات فيه)
+    is_owner = (order.merchant == merchant)
+    has_items = order.items.filter(product_size__product__merchant=merchant).exists()
+    
+    if not (is_owner or has_items):
+        messages.error(request, "ليس لديك صلاحية.")
+        return redirect('merchant_orders')
+
     if request.method == 'POST':
         new_status = request.POST.get('status')
-        print(f"--- Action: Change Status to '{new_status}' ---") # تتبع
+        old_status = order.status
+        print(f"--- Changing Status: {old_status} -> {new_status} ---")
 
-        # التحقق من أن الحالة صحيحة وغير فارغة
-        if new_status and new_status in ['SHIPPED', 'DELIVERED', 'CANCELLED']:
+        if new_status not in ['SHIPPED', 'DELIVERED', 'CANCELLED']:
+            messages.error(request, "حالة غير صالحة.")
+            return redirect('merchant_order_detail', order_id=order.order_id)
+
+        # 3. حساب إجمالي العمولة لهذا الطلب
+        total_commission = Decimal('0.00')
+        for item in order.items.all():
+            # نحسب العمولة فقط لمنتجات هذا التاجر
+            if item.product_size.product.merchant == merchant:
+                pct = item.product_size.product.commission_pct / 100
+                price = item.price_at_purchase
+                qty = Decimal(item.quantity)
+                total_commission += (price * pct * qty)
+
+        wallet = merchant.wallet
+
+        # --- السيناريو 1: بدء الشحن (خصم العمولة) ---
+        if new_status == 'SHIPPED' and old_status == 'PENDING':
+            if wallet.balance < total_commission:
+                messages.error(request, f"رصيدك غير كافٍ لخصم عمولة المنصة ({total_commission} ج.م). يرجى الشحن.")
+                return redirect('merchant_order_detail', order_id=order.order_id)
+            
+            with transaction.atomic():
+                order.status = 'SHIPPED'
+                order.save()
+                
+                wallet.balance -= total_commission
+                wallet.save()
+                
+                WalletTransaction.objects.create(
+                    wallet=wallet, amount=-total_commission,
+                    transaction_type=WalletTransaction.TxType.SALE,
+                    related_order_id=order.order_id,
+                    description=f"خصم عمولة مبكر (شحن طلب #{order.order_id})",
+                    balance_after=wallet.balance, is_released=True
+                )
+            messages.success(request, f"تم بدء الشحن وخصم عمولة {total_commission} ج.م")
+
+        # --- السيناريو 2: إلغاء بعد الشحن (إعادة العمولة) ---
+        elif new_status == 'CANCELLED' and old_status == 'SHIPPED':
+            with transaction.atomic():
+                order.status = 'CANCELLED'
+                order.save()
+                
+                wallet.balance += total_commission
+                wallet.save()
+                
+                WalletTransaction.objects.create(
+                    wallet=wallet, amount=total_commission,
+                    transaction_type=WalletTransaction.TxType.COMPENSATION,
+                    related_order_id=order.order_id,
+                    description=f"استرداد عمولة (إلغاء شحن #{order.order_id})",
+                    balance_after=wallet.balance, is_released=True
+                )
+            messages.warning(request, "تم إلغاء الطلب واسترداد العمولة.")
+
+        # --- السيناريو 3: تغيير عادي (تسليم أو إلغاء قبل الشحن) ---
+        else:
             order.status = new_status
             order.save()
             messages.success(request, f"تم تغيير الحالة إلى {order.get_status_display()}")
-        else:
-            messages.error(request, "حالة غير صالحة.")
-        
+
     return redirect('merchant_order_detail', order_id=order.order_id)
 
 

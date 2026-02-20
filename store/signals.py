@@ -42,21 +42,24 @@ def manage_inventory(sender, instance, created, **kwargs):
 # ========================================================
 @receiver(post_save, sender=Order)
 def distribute_profits(sender, instance, created, **kwargs):
+    # العمل فقط عند التسليم النهائي
     if instance.status == Order.Status.DELIVERED:
         
+        # حماية من التكرار
         if WalletTransaction.objects.filter(related_order_id=instance.order_id).exists():
             return
 
         merchant_earnings = {}
 
+        # 1. تجميع أرباح المنتجات لكل تاجر
         for item in instance.items.all():
             merchant = item.product_size.product.merchant
             if not merchant: continue
 
             if merchant not in merchant_earnings:
                 merchant_earnings[merchant] = {
-                    'product_revenue': Decimal('0.00'), # إيراد المنتجات فقط
-                    'commission': Decimal('0.00')
+                    'product_revenue': Decimal('0.00'), # سعر البيع الفعلي
+                    'compensation': Decimal('0.00'),    # تعويض فرق السعر (عروض)
                 }
             
             # أ. الأسعار
@@ -64,44 +67,43 @@ def distribute_profits(sender, instance, created, **kwargs):
             base_price = item.product_size.product.base_price
             qty = Decimal(item.quantity)
             
-            # ب. التعويض عن العروض
+            # ب. التعويض عن العروض (Platform Offer Compensation)
             compensation = Decimal('0.00')
             try:
                 offer = item.product_size.product.active_offer
+                # إذا كان العرض من المنصة والسعر المدفوع أقل من الأصلي -> نعوض الفرق
                 if offer and offer.is_platform_offer and offer.is_active and price_paid < base_price:
                     compensation = (base_price - price_paid) * qty
-            except: pass
+            except:
+                pass
 
-            # ج. العمولة
-            pct = item.product_size.product.commission_pct / 100
-            commission = (price_paid * pct * qty)
+            # ج. تجميع البيانات
+            merchant_earnings[merchant]['product_revenue'] += (price_paid * qty)
+            merchant_earnings[merchant]['compensation'] += compensation
 
-            # د. تجميع إيراد المنتجات (السعر + تعويض العرض)
-            total_item_revenue = (price_paid * qty) + compensation
-            
-            merchant_earnings[merchant]['product_revenue'] += total_item_revenue
-            merchant_earnings[merchant]['commission'] += commission
-
-        # 2. التنفيذ
+        # 2. التنفيذ الفعلي
         with transaction.atomic():
             for merchant, data in merchant_earnings.items():
                 wallet, _ = Wallet.objects.get_or_create(merchant=merchant)
                 
                 product_revenue = data['product_revenue']
-                commission = data['commission']
+                compensation = data['compensation']
+                
                 shipping_income = Decimal('0.00')
                 shipping_desc = ""
+                is_shipping_compensated = False
 
-                # هـ. حساب الشحن
+                # د. حساب الشحن (إذا كان التاجر هو صاحب الطلب)
                 if instance.merchant == merchant:
-                    # 1. شحن مدفوع
+                    
+                    # 1. شحن مدفوع (العميل دفعه)
                     if instance.shipping_cost > 0:
                         shipping_income = instance.shipping_cost
                         shipping_desc = f"شحن مدفوع (طلب #{instance.order_id})"
                     
-                    # 2. شحن مجاني (هل يوجد تعويض؟)
+                    # 2. شحن مجاني (0) -> من يدفع؟
                     else:
-                        # أ. عرض منصة
+                        # أ. هل هو عرض منصة؟
                         is_platform_funded = False
                         for item in instance.items.all():
                             try:
@@ -112,54 +114,78 @@ def distribute_profits(sender, instance, created, **kwargs):
                                         break
                             except: pass
                         
-                        rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=instance.governorate).first()
+                        # حساب السعر الأصلي للشحن (للتعويض)
+                        rate_obj = MerchantShippingRate.objects.filter(
+                            merchant=merchant, governorate=instance.governorate
+                        ).first()
                         original_shipping = rate_obj.rate if rate_obj else Decimal('50.00')
 
                         if is_platform_funded:
                             shipping_income = original_shipping
-                            shipping_desc = f"تعويض شحن منصة (طلب #{instance.order_id})"
+                            shipping_desc = f"تعويض شحن (عرض منصة)"
+                            is_shipping_compensated = True
                         
                         elif instance.is_first_order:
                             shipping_income = original_shipping
-                            shipping_desc = f"تعويض شحن أول طلب (طلب #{instance.order_id})"
+                            shipping_desc = f"تعويض شحن (أول طلب)"
+                            is_shipping_compensated = True
                         
                         else:
-                            # عرض تاجر (لا دخل)
+                            # عرض تاجر -> لا دخل (التاجر يتحمل)
                             shipping_income = 0
 
-                # و. تسجيل الحركات (منفصلة للوضوح)
+                # ==========================================
+                # هـ. الإضافة للمحفظة (اللوجيك الحاسم)
+                # ==========================================
                 
-                # 1. حركة المنتجات
-                if product_revenue > 0:
-                    wallet.pending_balance += product_revenue
-                    WalletTransaction.objects.create(
-                        wallet=wallet, amount=product_revenue,
-                        transaction_type='PENDING',
-                        related_order_id=instance.order_id,
-                        description=f"مبيعات منتجات (طلب #{instance.order_id})",
-                        balance_after=wallet.balance, is_released=False
-                    )
+                # 1. حالة الدفع أونلاين (ONLINE)
+                # التاجر لم يستلم شيئاً بيده -> المنصة تحول له كل شيء
+                if instance.payment_method == Order.PaymentMethod.ONLINE:
+                    
+                    # أ. سعر المنتجات
+                    if product_revenue > 0:
+                        wallet.pending_balance += product_revenue
+                        WalletTransaction.objects.create(
+                            wallet=wallet, amount=product_revenue,
+                            transaction_type='PENDING',
+                            description=f"مبيعات منتجات (أونلاين #{instance.order_id})",
+                            balance_after=wallet.balance, is_released=False
+                        )
+                    
+                    # ب. الشحن (سواء دفعه العميل أو تعويض)
+                    if shipping_income > 0:
+                        wallet.pending_balance += shipping_income
+                        WalletTransaction.objects.create(
+                            wallet=wallet, amount=shipping_income,
+                            transaction_type='PENDING',
+                            description=shipping_desc,
+                            balance_after=wallet.balance, is_released=False
+                        )
 
-                # 2. حركة الشحن (إن وجدت)
-                if shipping_income > 0:
-                    wallet.pending_balance += shipping_income
-                    WalletTransaction.objects.create(
-                        wallet=wallet, amount=shipping_income,
-                        transaction_type='PENDING', # أو COMPENSATION إذا أردت تمييزها
-                        related_order_id=instance.order_id,
-                        description=shipping_desc,
-                        balance_after=wallet.balance, is_released=False
-                    )
+                # 2. حالة الدفع كاش (COD)
+                # التاجر استلم (سعر المنتج + الشحن المدفوع) في يده
+                # -> المنصة لا تضيف له هذا المبلغ، بل تضيف "التعويضات" فقط
+                else:
+                    # أ. هل الشحن كان تعويضاً؟ (مجاني للعميل، مدفوع من المنصة)
+                    if is_shipping_compensated and shipping_income > 0:
+                        wallet.pending_balance += shipping_income
+                        WalletTransaction.objects.create(
+                            wallet=wallet, amount=shipping_income,
+                            transaction_type=WalletTransaction.TxType.COMPENSATION,
+                            description=shipping_desc,
+                            balance_after=wallet.balance, is_released=False
+                        )
+                    
+                    # (لاحظ: لا نضيف product_revenue ولا شحن العميل المدفوع)
 
-                # 3. خصم العمولة (من المتاح فوراً)
-                if commission > 0:
-                    wallet.balance -= commission
+                # 3. إضافة تعويضات العروض (دائماً تضاف لأنها من المنصة)
+                if compensation > 0:
+                    wallet.pending_balance += compensation
                     WalletTransaction.objects.create(
-                        wallet=wallet, amount=-commission,
-                        transaction_type=WalletTransaction.TxType.SALE,
-                        related_order_id=instance.order_id,
-                        description=f"خصم عمولة المنصة (طلب #{instance.order_id})",
-                        balance_after=wallet.balance, is_released=True
+                        wallet=wallet, amount=compensation,
+                        transaction_type=WalletTransaction.TxType.COMPENSATION,
+                        description=f"تعويض فرق عرض (طلب #{instance.order_id})",
+                        balance_after=wallet.balance, is_released=False
                     )
                 
                 wallet.save()
