@@ -497,7 +497,21 @@ def retry_payment(request, order_id):
 @login_required
 def customer_order_detail(request, order_id):
     order = get_object_or_404(Order, pk=order_id, customer=request.user)
-    return render(request, 'store/customer_order_detail.html', {'order': order})
+    
+    # حساب الرسوم المتوقعة للعرض (إذا لم تكن محسوبة)
+    expected_fees = order.platform_fees
+    if order.status == Order.Status.WAITING_PAYMENT and expected_fees == 0:
+        settings_obj = SiteSetting.objects.first()
+        if settings_obj:
+            base = float(order.total_products_price + order.shipping_cost)
+            fixed = float(settings_obj.platform_fee_fixed)
+            percent = float(settings_obj.platform_fee_percentage) / 100
+            expected_fees = fixed + (base * percent)
+
+    return render(request, 'store/customer_order_detail.html', {
+        'order': order,
+        'expected_fees': round(expected_fees, 2) # نرسلها للقالب
+    })
 
 # استقبال رد Paymob بعد الدفع
 def payment_callback(request):
