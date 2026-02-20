@@ -545,8 +545,8 @@ def request_withdrawal(request):
         # 1. التحقق من الرصيد المتاح
         if amount > wallet.balance:
             messages.error(request, "رصيدك غير كافٍ للسحب.")
-        elif amount < 50: # حد أدنى للسحب
-            messages.error(request, "الحد الأدنى للسحب 50 ج.م")
+        elif amount < 1000: # حد أدنى للسحب
+            messages.error(request, "الحد الأدنى للسحب 1000 ج.م")
         else:
             # 2. إنشاء الطلب
             WithdrawalRequest.objects.create(

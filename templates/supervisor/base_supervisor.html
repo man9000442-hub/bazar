@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elbazaar Admin | لوحة القيادة</title>
+    <title>Elbazaar Admin | لوحة الإشراف</title>
     
-    <!-- CSS -->
+    <!-- CSS Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
@@ -31,12 +31,17 @@
             padding: 20px; font-size: 22px; font-weight: 800; color: #fff; text-align: center; border-bottom: 1px solid #334155;
         }
         .sidebar-menu { flex-grow: 1; padding: 15px 0; overflow-y: auto; }
+        
+        /* Sidebar Links */
         .nav-link {
-            padding: 12px 25px; color: #cbd5e1; font-weight: 600; display: flex; align-items: center; text-decoration: none; border-right: 3px solid transparent; transition: 0.2s;
+            padding: 12px 25px; color: #cbd5e1; font-weight: 600; display: flex; align-items: center; text-decoration: none; border-right: 3px solid transparent; transition: 0.2s; cursor: pointer;
         }
         .nav-link:hover, .nav-link.active {
             background: var(--sidebar-hover); color: #fff; border-right-color: var(--primary-color);
         }
+        .nav-link i.fa-chevron-down { transition: transform 0.3s; }
+        .nav-link[aria-expanded="true"] i.fa-chevron-down { transform: rotate(180deg); }
+        
         .nav-link i { width: 25px; margin-left: 10px; font-size: 18px; text-align: center; }
         .nav-title { padding: 20px 25px 5px; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; }
 
@@ -48,16 +53,6 @@
             background: #fff; padding: 15px 30px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;
         }
-        
-        /* Cards */
-        .card-stat {
-            background: #fff; border: none; border-radius: 16px; padding: 25px; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: 0.3s;
-        }
-        .card-stat:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        .icon-box {
-            width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px;
-        }
 
         /* Mobile */
         @media (max-width: 992px) {
@@ -65,6 +60,10 @@
             .sidebar.show { transform: translateX(0); }
             .main-content { margin-right: 0; }
         }
+        
+        /* Scrollbar */
+        .sidebar-menu::-webkit-scrollbar { width: 5px; }
+        .sidebar-menu::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -106,9 +105,33 @@
             {% endif %}
 
             <div class="nav-title">المالية & الإعدادات</div>
-            <a href="{% url 'super_pending_withdrawals' %}" class="nav-link {% if request.resolver_match.url_name == 'super_pending_deposits' %}active{% endif %}">
+            
+            <!-- قائمة المالية المنسدلة -->
+            <a class="nav-link collapsed" data-bs-toggle="collapse" href="#financeMenu" role="button" aria-expanded="false">
                 <i class="fas fa-wallet"></i> المالية
+                <i class="fas fa-chevron-down ms-auto small opacity-50"></i>
             </a>
+            <div class="collapse {% if 'finance' in request.path %}show{% endif %}" id="financeMenu">
+                <div class="bg-black bg-opacity-25 py-2">
+                    <a href="{% url 'super_finance_overview' %}" class="nav-link ps-5 small text-light opacity-75">
+                        <i class="fas fa-chart-pie me-2"></i> نظرة عامة
+                    </a>
+                            <!-- الزر الجديد 👇 -->
+                    <a href="{% url 'super_wallets_list' %}" class="nav-link ps-5 small text-light opacity-75">
+                        <i class="fas fa-users-cog me-2"></i> إدارة المحافظ
+                    </a>
+                    <a href="{% url 'super_pending_deposits' %}" class="nav-link ps-5 small text-light opacity-75">
+                        <i class="fas fa-arrow-down me-2"></i> الإيداعات
+                    </a>
+                    <a href="{% url 'super_pending_withdrawals' %}" class="nav-link ps-5 small text-light opacity-75">
+                        <i class="fas fa-arrow-up me-2"></i> السحوبات
+                    </a>
+                    <a href="{% url 'super_finance_logs' %}" class="nav-link ps-5 small text-light opacity-75">
+                        <i class="fas fa-list me-2"></i> السجل الشامل
+                    </a>
+                </div>
+            </div>
+
             <a href="{% url 'super_site_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'super_site_settings' %}active{% endif %}">
                 <i class="fas fa-cog"></i> إعدادات الموقع
             </a>

@@ -1,0 +1,33 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}إدارة المحافظ{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">التاجر</th>
+                    <th>الرصيد المتاح</th>
+                    <th>الرصيد المعلق</th>
+                    <th class="text-end pe-4">تحكم</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in wallets %}
+                <tr>
+                    <td class="ps-4 fw-bold">{{ w.merchant.user.first_name }}</td>
+                    <td class="text-success fw-bold">{{ w.balance }} ج.م</td>
+                    <td class="text-warning">{{ w.pending_balance }} ج.م</td>
+                    <td class="text-end pe-4">
+                        <a href="{% url 'super_adjust_wallet' w.id %}" class="btn btn-sm btn-outline-primary rounded-pill">
+                            <i class="fas fa-edit"></i> تعديل
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

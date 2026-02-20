@@ -2,27 +2,30 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Sum,Q
+from django.db.models import Count, Sum, Q
+import csv
+from django.http import HttpResponse
+from django.db.models.functions import TruncMonth
+import json
 
 # الموديلات
 from accounts.models import User
 from store.models import (
     Product, Order, MerchantProfile, DepositRequest, 
-    WithdrawalRequest, Offer, Category
+    WithdrawalRequest, Offer, Category, SiteSetting
 )
+
+from store.models import Wallet,WalletTransaction,WithdrawalRequest
 
 # دالة التحقق
 def is_supervisor(user):
     return user.is_superuser or user.role in [User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3, User.Role.OWNER]
-def is_supervisor(user):
-    return user.is_superuser or user.role in [User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3, User.Role.OWNER]
 
+# --- 1. Dashboard ---
 @login_required
 def supervisor_dashboard(request):
-    if not is_supervisor(request.user):
-        return redirect('home')
+    if not is_supervisor(request.user): return redirect('home')
     
-    # إحصائيات سريعة
     pending_orders = Order.objects.filter(status=Order.Status.PENDING).count()
     pending_products = Product.objects.filter(is_active=False).count()
     pending_deposits = DepositRequest.objects.filter(status=DepositRequest.Status.PENDING).count()
@@ -33,43 +36,67 @@ def supervisor_dashboard(request):
         'pending_deposits': pending_deposits
     })
 
-# ==========================
-# 1. إدارة المنتجات
-# ==========================
+# --- 2. Orders ---
+@login_required
+def all_orders(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    status = request.GET.get('status')
+    orders = Order.objects.exclude(status=Order.Status.CART).order_by('-created_at')
+    
+    if status:
+        orders = orders.filter(status=status)
+        
+    return render(request, 'supervisor/all_orders.html', {'orders': orders})
+
+@login_required
+def order_detail(request, order_id):
+    if not is_supervisor(request.user): return redirect('home')
+    order = get_object_or_404(Order, order_id=order_id)
+    return render(request, 'supervisor/order_detail.html', {'order': order})
+
+@login_required
+def export_orders(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="orders.csv"'
+    response.write(u'\ufeff'.encode('utf8'))
+
+    writer = csv.writer(response)
+    writer.writerow(['رقم الطلب', 'العميل', 'الهاتف', 'الإجمالي', 'الحالة', 'التاريخ'])
+    orders = Order.objects.exclude(status='CART').values_list('order_id', 'customer__first_name', 'shipping_phone', 'final_total', 'status', 'created_at')
+    for order in orders: writer.writerow(order)
+    return response
+
+# --- 3. Products ---
 @login_required
 def pending_products(request):
     if not is_supervisor(request.user): return redirect('home')
-    # المنتجات غير المفعلة
     products = Product.objects.filter(is_active=False).order_by('-created_at')
     return render(request, 'supervisor/pending_products.html', {'products': products})
 
 @login_required
 def product_review(request, pk):
     if not is_supervisor(request.user): return redirect('home')
-    
     product = get_object_or_404(Product, pk=pk)
     
     if request.method == 'POST':
         action = request.POST.get('action')
-        
         if action == 'approve':
             commission = request.POST.get('commission')
-            product.admin_commission = commission # تحديد العمولة
-            product.is_active = True # تفعيل
+            product.admin_commission = commission
+            product.is_active = True
             product.save()
-            messages.success(request, f"تم اعتماد المنتج {product.name} وعمولته {commission} ج.م")
-            
+            messages.success(request, f"تم اعتماد المنتج {product.name}")
         elif action == 'reject':
-            product.delete() # أو يمكن إضافة حقل is_rejected
-            messages.error(request, "تم رفض المنتج وحذفه.")
-            
+            product.delete()
+            messages.error(request, "تم رفض وحذف المنتج.")
         return redirect('super_pending_products')
 
     return render(request, 'supervisor/product_review.html', {'product': product})
 
-# ==========================
-# 2. إدارة التجار
-# ==========================
+# --- 4. Merchants ---
 @login_required
 def pending_merchants(request):
     if not is_supervisor(request.user): return redirect('home')
@@ -83,73 +110,111 @@ def approve_merchant(request, pk):
     merchant.is_approved = True
     merchant.save()
     messages.success(request, f"تم تفعيل التاجر {merchant.user.first_name}")
-    return redirect('pending_merchants')
+    return redirect('super_pending_merchants')
 
-# ==========================
-# 3. عروض المنصة (Owner Offers)
-# ==========================
+# --- 5. Users ---
 @login_required
-def create_platform_offer(request):
+def users_list(request):
     if not is_supervisor(request.user): return redirect('home')
-    
+    role = request.GET.get('role')
+    q = request.GET.get('q')
+    users = User.objects.all().order_by('-date_joined')
+    if role: users = users.filter(role=role)
+    if q: users = users.filter(Q(username__icontains=q) | Q(phone_primary__icontains=q))
+    return render(request, 'supervisor/users_list.html', {'users': users})
+
+@login_required
+def user_edit(request, user_id):
+    if not is_supervisor(request.user): return redirect('home')
+    user_obj = get_object_or_404(User, pk=user_id)
     if request.method == 'POST':
-        product_id = request.POST.get('product_id')
-        percentage = request.POST.get('percentage')
-        days = int(request.POST.get('days'))
-        
-        product = get_object_or_404(Product, pk=product_id)
-        
-        Offer.objects.update_or_create(
-            product=product,
-            defaults={
-                'discount_percentage': percentage,
-                'start_date': timezone.now(),
-                'end_date': timezone.now() + timezone.timedelta(days=days),
-                'is_active': True,
-                'is_platform_offer': True # <--- هذا هو السحر (تعويض)
-            }
-        )
-        messages.success(request, "تم إطلاق عرض المنصة! سيتم تعويض التاجر عن الفرق.")
-        return redirect('supervisor_dashboard')
-
-    # نرسل المنتجات المفعلة فقط للاختيار منها
-    products = Product.objects.filter(is_active=True)
-    return render(request, 'supervisor/create_offer.html', {'products': products})
-
+        user_obj.first_name = request.POST.get('first_name')
+        user_obj.last_name = request.POST.get('last_name')
+        user_obj.phone_primary = request.POST.get('phone')
+        user_obj.role = request.POST.get('role')
+        user_obj.is_active = request.POST.get('is_active') == 'on'
+        if request.POST.get('password'): user_obj.set_password(request.POST.get('password'))
+        user_obj.save()
+        messages.success(request, "تم التحديث.")
+        return redirect('super_users_list')
+    return render(request, 'supervisor/user_edit.html', {'user_obj': user_obj})
 
 @login_required
-def all_orders(request):
+def user_delete(request, user_id):
     if not is_supervisor(request.user): return redirect('home')
-    
-    # فلترة حسب الحالة (اختياري)
-    status = request.GET.get('status')
-    orders = Order.objects.all().order_by('-created_at')
-    
-    if status:
-        orders = orders.filter(status=status)
-        
-    return render(request, 'supervisor/all_orders.html', {'orders': orders})
+    user_obj = get_object_or_404(User, pk=user_id)
+    if not user_obj.is_superuser:
+        user_obj.delete()
+        messages.success(request, "تم الحذف.")
+    return redirect('super_users_list')
 
-
-
+# --- 6. Finance (Deposits & Withdrawals) ---
 @login_required
 def pending_deposits(request):
     if not is_supervisor(request.user): return redirect('home')
-    
     deposits = DepositRequest.objects.filter(status=DepositRequest.Status.PENDING).order_by('-created_at')
     return render(request, 'supervisor/pending_deposits.html', {'deposits': deposits})
 
 @login_required
 def approve_deposit(request, pk):
     if not is_supervisor(request.user): return redirect('home')
-    
     deposit = get_object_or_404(DepositRequest, pk=pk)
     deposit.status = DepositRequest.Status.APPROVED
-    deposit.save() # الـ Signal سيزيد الرصيد تلقائياً
-    
-    messages.success(request, f"تم قبول الإيداع بقيمة {deposit.amount} ج.م")
+    deposit.save()
+    messages.success(request, "تم قبول الإيداع.")
     return redirect('super_pending_deposits')
 
+@login_required
+def pending_withdrawals(request):
+    if not is_supervisor(request.user): return redirect('home')
+    # عرض الكل للتأكد، أو الفلتر
+    withdrawals = WithdrawalRequest.objects.filter(status=WithdrawalRequest.Status.PENDING).order_by('-created_at')
+    return render(request, 'supervisor/pending_withdrawals.html', {'withdrawals': withdrawals})
+
+@login_required
+def approve_withdrawal(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    req = get_object_or_404(WithdrawalRequest, pk=pk)
+    if req.status == 'PENDING':
+        req.status = 'APPROVED'
+        req.save()
+        messages.success(request, "تم تأكيد السحب.")
+    return redirect('super_pending_withdrawals')
+
+# --- 7. Settings & Categories ---
+@login_required
+def manage_categories(request):
+    if not is_supervisor(request.user): return redirect('home')
+    if request.method == 'POST':
+        Category.objects.create(name=request.POST.get('name'), image=request.FILES.get('image'))
+        return redirect('super_categories')
+    categories = Category.objects.all()
+    return render(request, 'supervisor/categories.html', {'categories': categories})
+
+@login_required
+def delete_category(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    Category.objects.filter(pk=pk).delete()
+    return redirect('super_categories')
+
+@login_required
+def site_settings_view(request):
+    if not is_supervisor(request.user): return redirect('home')
+    settings_obj = SiteSetting.objects.first() or SiteSetting.objects.create()
+    if request.method == 'POST':
+        settings_obj.site_name = request.POST.get('site_name')
+        settings_obj.platform_fee_fixed = request.POST.get('fee_fixed')
+        settings_obj.platform_fee_percentage = request.POST.get('fee_percent')
+        if request.FILES.get('banner'): settings_obj.banner_image = request.FILES.get('banner')
+        settings_obj.save()
+        messages.success(request, "تم الحفظ.")
+    return render(request, 'supervisor/site_settings.html', {'settings': settings_obj})
+
+# --- 8. Offers & Team ---
+@login_required
+def create_platform_offer(request):
+    # (الكود السابق)
+    return render(request, 'supervisor/create_offer.html', {'products': Product.objects.filter(is_active=True)})
 
 @login_required
 def team_management(request):
@@ -188,169 +253,201 @@ def team_management(request):
     return render(request, 'supervisor/team_management.html', {'team': team})
 
 
-
-# قائمة المستخدمين
 @login_required
-def users_list(request):
+def finance_overview(request):
     if not is_supervisor(request.user): return redirect('home')
     
-    role_filter = request.GET.get('role')
-    search_query = request.GET.get('q')
-    
-    users = User.objects.all().order_by('-date_joined')
-    
-    if role_filter:
-        users = users.filter(role=role_filter)
-    if search_query:
-        users = users.filter(Q(username__icontains=search_query) | Q(phone_primary__icontains=search_query))
+    # 1. الحسابات الإجمالية
+    # نستخدم or 0 لضمان عدم وجود None
+    income_val = WalletTransaction.objects.filter(
+        amount__lt=0, description__contains="خصم عمولة"
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    income = abs(float(income_val)) # تحويل لـ float
 
-    return render(request, 'supervisor/users_list.html', {'users': users})
+    expenses_val = WalletTransaction.objects.filter(
+        transaction_type='COMPENSATION'
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    expenses = float(expenses_val)
 
-# تعديل مستخدم (أو حظره)
+    net_profit = income - expenses
+
+    merchants_val = Wallet.objects.aggregate(Sum('balance'))['balance__sum'] or 0
+    total_merchants_balance = float(merchants_val)
+
+    # 2. الشارت (البيانات الشهرية)
+    # نجمع الإيرادات لكل شهر
+    chart_data = WalletTransaction.objects.filter(
+        transaction_type__in=['SALE', 'COMPENSATION'],
+        amount__gt=0
+    ).annotate(month=TruncMonth('created_at')).values('month').annotate(total=Sum('amount')).order_by('month')
+
+    months = []
+    revenues = []
+
+    for entry in chart_data:
+        # تحويل التاريخ لاسم شهر
+        months.append(entry['month'].strftime('%b')) 
+        # تحويل المبلغ لـ float (مهم جداً!)
+        revenues.append(float(entry['total']))
+
+    # إذا لم توجد بيانات، نضع قيماً افتراضية لكي لا يظهر الشارت فارغاً
+    if not months:
+        months = ['No Data']
+        revenues = [0]
+
+    context = {
+        'income': income,
+        'expenses': expenses,
+        'net_profit': net_profit,
+        'total_merchants_balance': total_merchants_balance,
+        'chart_months': json.dumps(months),
+        'chart_revenues': json.dumps(revenues),
+    }
+
+    return render(request, 'supervisor/finance_overview.html', context)
+
 @login_required
-def user_edit(request, user_id):
+def finance_logs(request):
     if not is_supervisor(request.user): return redirect('home')
     
-    user_obj = get_object_or_404(User, pk=user_id)
+    # فلترة
+    tx_type = request.GET.get('type')
+    logs = WalletTransaction.objects.all().select_related('wallet__merchant__user').order_by('-created_at')
     
-    if request.method == 'POST':
-        user_obj.first_name = request.POST.get('first_name')
-        user_obj.last_name = request.POST.get('last_name')
-        user_obj.phone_primary = request.POST.get('phone')
-        user_obj.email = request.POST.get('email')
-        user_obj.username = request.POST.get('username')
-        user_obj.role = request.POST.get('role')
-        user_obj.is_active = request.POST.get('is_active') == 'on'
+    if tx_type:
+        logs = logs.filter(transaction_type=tx_type)
         
-        # تغيير الباسورد (إذا كتبه)
-        new_pass = request.POST.get('password')
-        if new_pass:
-            user_obj.set_password(new_pass)
-            
-        user_obj.save()
-        messages.success(request, "تم التحديث الشامل.")
-        return redirect('super_users_list')
-        
-    return render(request, 'supervisor/user_edit.html', {'user_obj': user_obj})
-
-# حذف مستخدم
-@login_required
-def user_delete(request, user_id):
-    if not is_supervisor(request.user): return redirect('home')
-    user_obj = get_object_or_404(User, pk=user_id)
-    if user_obj.is_superuser:
-        messages.error(request, "لا يمكن حذف السوبر أدمن.")
-    else:
-        user_obj.delete()
-        messages.success(request, "تم حذف المستخدم.")
-    return redirect('super_users_list')
-
-
-# ... (استيراد Category) ...
-
-@login_required
-def manage_categories(request):
-    if not is_supervisor(request.user): return redirect('home')
-    
-    if request.method == 'POST':
-        # إضافة قسم جديد
-        name = request.POST.get('name')
-        image = request.FILES.get('image')
-        if name:
-            Category.objects.create(name=name, image=image)
-            messages.success(request, "تم إضافة القسم.")
-        return redirect('super_categories')
-
-    categories = Category.objects.all()
-    return render(request, 'supervisor/categories.html', {'categories': categories})
-
-@login_required
-def delete_category(request, pk):
-    if not is_supervisor(request.user): return redirect('home')
-    Category.objects.filter(pk=pk).delete()
-    messages.success(request, "تم حذف القسم.")
-    return redirect('super_categories')
-
-
-from store.models import SiteSetting
-
-@login_required
-def site_settings_view(request):
-    if not is_supervisor(request.user): return redirect('home')
-    
-    settings_obj = SiteSetting.objects.first()
-    if not settings_obj:
-        settings_obj = SiteSetting.objects.create()
-
-    if request.method == 'POST':
-        settings_obj.site_name = request.POST.get('site_name')
-        settings_obj.platform_fee_fixed = request.POST.get('fee_fixed')
-        settings_obj.platform_fee_percentage = request.POST.get('fee_percent')
-        if request.FILES.get('banner'):
-            settings_obj.banner_image = request.FILES.get('banner')
-        
-        settings_obj.save()
-        messages.success(request, "تم حفظ الإعدادات.")
-        return redirect('super_site_settings')
-
-    return render(request, 'supervisor/site_settings.html', {'settings': settings_obj})
-
-
-@login_required
-def pending_withdrawals(request):
-    if not is_supervisor(request.user): return redirect('home')
-    withdrawals = WithdrawalRequest.objects.all().order_by('-created_at')
-    return render(request, 'supervisor/pending_withdrawals.html', {'withdrawals': withdrawals})
-
-@login_required
-def approve_withdrawal(request, pk):
-    if not is_supervisor(request.user): return redirect('home')
-    
-    # جلب الطلب
-    withdrawal = get_object_or_404(WithdrawalRequest, pk=pk)
-    
-    if withdrawal.status == 'PENDING':
-        # 1. تحديث حالة الطلب
-        withdrawal.status = 'APPROVED'
-        withdrawal.save()
-        
-        # 2. تحديث سجل المعاملة المالية (لجعلها نهائية)
-        # نبحث عن المعاملة المرتبطة بهذا السحب (التي كانت بالسالب وقيد الانتظار)
-        # (للتبسيط، سنبحث بآخر معاملة سحب معلقة لهذا التاجر، أو الأفضل إضافة حقل withdrawal_request في Transaction)
-        
-        # هنا سنفترض أننا نريد فقط تأكيد العملية إدارياً
-        messages.success(request, f"تم تأكيد تحويل {withdrawal.amount} ج.م للتاجر {withdrawal.merchant.user.first_name}.")
-        
-    return redirect('super_pending_withdrawals')
-
-
-@login_required
-def order_detail(request, order_id):
-    if not is_supervisor(request.user): return redirect('home')
-    order = get_object_or_404(Order, order_id=order_id)
-    return render(request, 'supervisor/order_detail.html', {'order': order})
+    return render(request, 'supervisor/finance_logs.html', {'logs': logs})
 
 
 
 import csv
 from django.http import HttpResponse
 
+# تقرير الأرباح (كل العمليات)
 @login_required
-def export_orders(request):
+def export_profit_report(request):
     if not is_supervisor(request.user): return redirect('home')
     
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="orders.csv"'
+    response['Content-Disposition'] = 'attachment; filename="profits_report.csv"'
+    response.write(u'\ufeff'.encode('utf8')) # BOM للعربي
+
+    writer = csv.writer(response)
+    writer.writerow(['المعرف', 'التاجر', 'النوع', 'المبلغ', 'الوصف', 'التاريخ'])
+
+    # نأخذ كل المعاملات (أو يمكن فلترتها حسب التاريخ)
+    transactions = WalletTransaction.objects.all().order_by('-created_at')
     
-    # BOM لدعم العربي في Excel
+    for tx in transactions:
+        writer.writerow([
+            tx.id, 
+            tx.wallet.merchant.user.first_name, 
+            tx.get_transaction_type_display(), 
+            tx.amount, 
+            tx.description, 
+            tx.created_at.strftime("%Y-%m-%d %H:%M")
+        ])
+
+    return response
+
+# تقرير المديونيات (أرصدة التجار الحالية)
+@login_required
+def export_debts_report(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="merchants_balances.csv"'
     response.write(u'\ufeff'.encode('utf8'))
 
     writer = csv.writer(response)
-    writer.writerow(['رقم الطلب', 'العميل', 'الهاتف', 'الإجمالي', 'الحالة', 'التاريخ'])
+    writer.writerow(['التاجر', 'رقم الهاتف', 'الرصيد المتاح', 'الرصيد المعلق'])
 
-    orders = Order.objects.all().values_list('order_id', 'customer__first_name', 'shipping_phone', 'final_total', 'status', 'created_at')
+    wallets = Wallet.objects.all()
     
-    for order in orders:
-        writer.writerow(order)
+    for w in wallets:
+        writer.writerow([
+            w.merchant.user.first_name,
+            w.merchant.user.phone_primary,
+            w.balance,
+            w.pending_balance
+        ])
 
     return response
+
+
+@login_required
+def reject_withdrawal(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    req = get_object_or_404(WithdrawalRequest, pk=pk)
+    
+    if req.status == 'PENDING':
+        # 1. تغيير حالة الطلب
+        req.status = 'REJECTED'
+        req.save()
+        
+        # 2. إعادة المبلغ للمحفظة
+        wallet = req.merchant.wallet
+        wallet.balance += req.amount
+        wallet.save()
+        
+        # 3. تسجيل حركة "استرداد" (Refund)
+        WalletTransaction.objects.create(
+            wallet=wallet,
+            amount=req.amount,
+            transaction_type=WalletTransaction.TxType.COMPENSATION, # أو REFUND
+            description=f"استرداد طلب سحب مرفوض #{req.id}",
+            balance_after=wallet.balance,
+            is_released=True
+        )
+        
+        messages.warning(request, f"تم رفض السحب وإعادة {req.amount} ج.م للتاجر.")
+        
+    return redirect('super_pending_withdrawals')
+
+
+from store.models import Wallet
+
+@login_required
+def wallets_list(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    # التأكد من أن كل تاجر لديه محفظة
+    for m in MerchantProfile.objects.all():
+        Wallet.objects.get_or_create(merchant=m)
+    
+    wallets = Wallet.objects.all().order_by('-balance')
+    return render(request, 'supervisor/wallets_list.html', {'wallets': wallets})
+
+@login_required
+def adjust_wallet(request, wallet_id):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    wallet = get_object_or_404(Wallet, pk=wallet_id)
+    
+    if request.method == 'POST':
+        amount = Decimal(request.POST.get('amount'))
+        reason = request.POST.get('reason')
+        action = request.POST.get('action') # add or deduct
+        
+        with transaction.atomic():
+            if action == 'add':
+                wallet.balance += amount
+                desc = f"إضافة إدارية: {reason}"
+            else:
+                wallet.balance -= amount
+                desc = f"خصم إداري: {reason}"
+            
+            wallet.save()
+            
+            # تسجيل الحركة
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=amount if action=='add' else -amount,
+                transaction_type=WalletTransaction.TxType.COMPENSATION,
+                description=desc, balance_after=wallet.balance, is_released=True
+            )
+            messages.success(request, "تم تعديل الرصيد بنجاح.")
+            return redirect('super_wallets_list')
+
+    return render(request, 'supervisor/adjust_wallet.html', {'wallet': wallet})

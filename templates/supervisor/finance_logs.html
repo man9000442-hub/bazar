@@ -1,0 +1,49 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}السجل المالي الشامل{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4">
+    <!-- فلتر -->
+    <div class="card-header bg-white py-3">
+        <form class="d-flex w-50">
+            <select name="type" class="form-select rounded-pill me-2">
+                <option value="">كل العمليات</option>
+                <option value="SALE">مبيعات/عمولات</option>
+                <option value="COMPENSATION">تعويضات/إيداع</option>
+                <option value="WITHDRAWAL">سحب</option>
+                <option value="PENDING">معلق</option>
+            </select>
+            <button class="btn btn-dark rounded-pill">تصفية</button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">المعرف</th>
+                    <th>التاجر</th>
+                    <th>النوع</th>
+                    <th>المبلغ</th>
+                    <th>الوصف</th>
+                    <th>التاريخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="ps-4 text-muted">#{{ log.id }}</td>
+                    <td class="fw-bold">{{ log.wallet.merchant.user.first_name }}</td>
+                    <td><span class="badge bg-secondary">{{ log.get_transaction_type_display }}</span></td>
+                    <td class="{% if log.amount > 0 %}text-success{% else %}text-danger{% endif %} fw-bold" dir="ltr">
+                        {{ log.amount }}
+                    </td>
+                    <td class="small">{{ log.description }}</td>
+                    <td class="small text-muted">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

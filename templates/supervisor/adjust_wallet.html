@@ -1,0 +1,33 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}تعديل رصيد التاجر{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px;">
+    <div class="card p-4 shadow-sm border-0 rounded-4">
+        <h5 class="fw-bold mb-3 text-center">تعديل رصيد: {{ wallet.merchant.user.first_name }}</h5>
+        <div class="alert alert-info text-center">
+            الرصيد الحالي: <strong>{{ wallet.balance }} ج.م</strong>
+        </div>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">المبلغ</label>
+                <input type="number" name="amount" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">السبب (للأرشيف)</label>
+                <input type="text" name="reason" class="form-control" placeholder="بونص / غرامة / تسوية..." required>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" name="action" value="add" class="btn btn-success flex-grow-1">
+                    <i class="fas fa-plus"></i> إضافة
+                </button>
+                <button type="submit" name="action" value="deduct" class="btn btn-danger flex-grow-1">
+                    <i class="fas fa-minus"></i> خصم
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
