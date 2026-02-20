@@ -223,12 +223,44 @@ def merchant_order_detail(request, order_id):
 
 from store.models import WalletTransaction
 
+from datetime import timedelta
+
 @login_required
 def merchant_wallet(request):
-    if not is_merchant(request.user):
-        return redirect('home')
+    if not is_merchant(request.user): return redirect('home')
     
     wallet = request.user.merchant_profile.wallet
+    
+    # --- 1. تحرير الأرصدة المستحقة (Auto Release) ---
+    time_threshold = timezone.now() - timedelta(hours=24)
+    
+    # نبحث عن المعاملات المعلقة القديمة
+    pending_txs = WalletTransaction.objects.filter(
+        wallet=wallet,
+        transaction_type='PENDING', # أو النوع الذي استخدمته
+        created_at__lte=time_threshold,
+        is_released=False
+    )
+    
+    released_amount = Decimal('0.00')
+    if pending_txs.exists():
+        with transaction.atomic():
+            for tx in pending_txs:
+                released_amount += tx.amount
+                tx.is_released = True
+                # نغير النوع لـ SALE ليدل على أنه أصبح متاحاً، أو نتركه PENDING released
+                tx.transaction_type = WalletTransaction.TxType.SALE 
+                tx.description += " (تم التحرير)"
+                tx.save()
+            
+            # تحديث المحفظة
+            wallet.pending_balance -= released_amount
+            wallet.balance += released_amount
+            wallet.save()
+            
+            messages.success(request, f"تم تحرير {released_amount} ج.م من الرصيد المعلق.")
+
+    # --- 2. عرض الصفحة ---
     transactions = WalletTransaction.objects.filter(wallet=wallet).order_by('-created_at')
     
     return render(request, 'merchant/wallet.html', {
@@ -237,8 +269,7 @@ def merchant_wallet(request):
     })
 
 # (صفحة طلب السحب - سنبنيها لاحقاً)
-def request_withdrawal(request):
-    pass 
+ 
 
 
 from django.http import HttpResponse

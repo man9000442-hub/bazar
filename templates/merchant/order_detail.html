@@ -11,7 +11,7 @@
             <small class="text-muted">{{ order.created_at|date:"d M, h:i A" }}</small>
         </div>
         
-        <!-- شريط التقدم للحالة -->
+        <!-- شريط التقدم -->
         <div class="progress mt-2" style="height: 6px;">
             {% if order.status == 'PENDING' %}
                 <div class="progress-bar bg-warning" style="width: 33%"></div>
@@ -77,19 +77,13 @@
     {% for item in items %}
     <div class="card border-0 shadow-sm mb-2 p-2 bg-white">
         <div class="d-flex align-items-center">
-            <!-- صورة المنتج -->
             <div class="me-3 border rounded overflow-hidden position-relative" style="width: 70px; height: 70px;">
                 {% if item.product_size.product.image %}
                     <img src="{{ item.product_size.product.image.url }}" class="w-100 h-100" style="object-fit: cover;">
-                {% else %}
-                    <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center">
-                        <i class="fas fa-camera text-muted"></i>
-                    </div>
                 {% endif %}
                 <span class="position-absolute bottom-0 end-0 bg-dark text-white px-1 small" style="font-size: 10px;">x{{ item.quantity }}</span>
             </div>
             
-            <!-- التفاصيل -->
             <div class="flex-grow-1">
                 <h6 class="m-0 fw-bold text-dark mb-1">{{ item.product_size.product.name }}</h6>
                 <div class="d-flex gap-2 mb-1">
@@ -102,29 +96,63 @@
     </div>
     {% endfor %}
 
-    <!-- 3. تفاصيل الدفع -->
+    <!-- 3. التفاصيل المالية (الذكية) -->
     <div class="card border-0 shadow-sm mt-3 p-3 bg-white">
+        <h6 class="fw-bold mb-3 border-bottom pb-2">التفاصيل المالية</h6>
+
         <div class="d-flex justify-content-between small mb-1">
-            <span class="text-muted">الشحن</span>
+            <span class="text-muted">سعر المنتجات</span>
+            <span>{{ order.total_products_price }} ج.م</span>
+        </div>
+        
+        <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">تكلفة الشحن</span>
+            <span>{{ order.shipping_cost }} ج.م</span>
+        </div>
+
+        <!-- تنبيهات الشحن المجاني -->
+        {% if order.shipping_cost == 0 %}
+            <div class="alert alert-info py-2 px-2 small mt-2 mb-2 border-info-subtle bg-info-subtle text-info-emphasis">
+                <i class="fas fa-info-circle me-1"></i>
+                {% if order.is_first_order %}
+                    <strong>شحن أول مرة:</strong> لا تحصل شحن. <span class="text-success fw-bold">المنصة ستعوضك.</span>
+                {% else %}
+                    <strong>عرض شحن مجاني:</strong> لا تحصل شحن (أنت تتحمله).
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <hr class="my-2">
+        
+        <!-- المبلغ المطلوب تحصيله -->
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-dark">المطلوب تحصيله:</span>
             
-            <!-- إذا كان الشحن 0 (مجاني)، نوضح للتاجر أن المنصة ستعوضه -->
-            {% if order.shipping_cost == 0 and order.is_first_order %}
-                <span class="text-success fw-bold">مجاني (تعويض من المنصة)</span>
+            {% if order.payment_method == 'ONLINE' %}
+                <div class="text-end">
+                    <span class="fw-bold text-success fs-5">0.00 ج.م</span>
+                    <span class="d-block badge bg-success mt-1">مدفوع فيزا ✅</span>
+                </div>
+            
             {% else %}
-                <span>{{ order.shipping_cost }} ج.م</span>
+                <!-- كاش (COD) -->
+                <div class="text-end">
+                    <span class="fw-bold text-danger fs-5">{{ order.final_total }} ج.م</span>
+                    <span class="d-block badge bg-secondary mt-1">دفع عند الاستلام</span>
+                </div>
             {% endif %}
         </div>
         
-        <hr class="my-2">
-        <div class="d-flex justify-content-between fw-bold text-dark">
-            <span>المطلوب تحصيله من العميل (COD)</span>
-            <span>{{ order.final_total }} ج.م</span>
-        </div>
+        {% if order.payment_method == 'ONLINE' %}
+            <p class="text-muted small mt-2 mb-0 bg-light p-2 rounded">
+                * تم إضافة المبلغ (منتجات + شحن) لمحفظتك كـ <strong>رصيد معلق</strong>.
+            </p>
+        {% endif %}
     </div>
 
 </div>
 
-<!-- 4. شريط التحكم السفلي (Fixed Bottom Actions) -->
+<!-- 4. شريط التحكم السفلي -->
 <div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 0; z-index: 1000; border-radius: 20px 20px 0 0;">
     
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -132,48 +160,41 @@
         <span class="fw-bold text-dark badge bg-light border">{{ order.get_status_display }}</span>
     </div>
 
-    <!-- الفورم يبدأ هنا -->
     <form method="POST" action="{% url 'merchant_update_order' order.order_id %}">
         {% csrf_token %}
         
         <div class="d-grid gap-2">
-            
-            <!-- الحالة: انتظار (PENDING) -->
             {% if order.status == 'PENDING' %}
                 <button type="submit" name="status" value="SHIPPED" class="btn btn-primary-app fw-bold py-2 shadow-sm">
                     <i class="fas fa-truck me-2"></i> بدء الشحن
                 </button>
-                <button type="submit" name="status" value="CANCELLED" class="btn btn-outline-danger py-2" onclick="return confirm('هل أنت متأكد من إلغاء الطلب؟')">
+                <button type="button" class="btn btn-outline-danger py-2" onclick="if(confirm('إلغاء الطلب؟')) { this.form.status.value='CANCELLED'; this.form.submit(); }">
                     إلغاء الطلب
                 </button>
+                <input type="hidden" name="status" value="">
 
-            <!-- الحالة: تم الشحن (SHIPPED) -->
             {% elif order.status == 'SHIPPED' %}
                 <button type="submit" name="status" value="DELIVERED" class="btn btn-success fw-bold py-2 shadow-sm">
                     <i class="fas fa-check-circle me-2"></i> تأكيد التسليم
                 </button>
                 <div class="alert alert-info small mb-0 py-2 text-center mt-2">
-                    <i class="fas fa-info-circle"></i> تأكيد التسليم سيضيف الأرباح لمحفظتك.
+                    <i class="fas fa-coins me-1"></i> سيتم إضافة الأرباح فور التأكيد.
                 </div>
 
-            <!-- الحالة: تم التسليم (DELIVERED) -->
             {% elif order.status == 'DELIVERED' %}
                 <div class="btn btn-light text-success fw-bold py-2 disabled border-success bg-success-subtle">
                     <i class="fas fa-check-double me-2"></i> تم التسليم بنجاح
                 </div>
 
-            <!-- الحالة: ملغي (CANCELLED) -->
             {% elif order.status == 'CANCELLED' %}
                 <div class="btn btn-light text-danger fw-bold py-2 disabled border-danger bg-danger-subtle">
                     <i class="fas fa-times-circle me-2"></i> تم إلغاء الطلب
                 </div>
             {% endif %}
-            
         </div>
     </form>
 </div>
 
-<!-- مساحة إضافية في الأسفل -->
 <div style="height: 160px;"></div>
 
 {% endblock %}
