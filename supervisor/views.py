@@ -134,6 +134,7 @@ def user_edit(request, user_id):
         user_obj.phone_primary = request.POST.get('phone')
         user_obj.role = request.POST.get('role')
         user_obj.is_active = request.POST.get('is_active') == 'on'
+        user_obj.first_name = request.POST.get('first_name')
         if request.POST.get('password'): user_obj.set_password(request.POST.get('password'))
         user_obj.save()
         messages.success(request, "تم التحديث.")
@@ -528,3 +529,54 @@ def edit_product_admin(request, pk):
         return redirect('super_all_products')
         
     return render(request, 'supervisor/product_edit_admin.html', {'product': product})
+
+
+
+
+from support.models import SupportTicket, TicketMessage
+
+# 1. قائمة التذاكر
+@login_required
+def support_tickets(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    # فلتر الحالة
+    status = request.GET.get('status')
+    tickets = SupportTicket.objects.all().order_by('-created_at')
+    
+    if status:
+        tickets = tickets.filter(status=status)
+        
+    return render(request, 'supervisor/support_tickets.html', {'tickets': tickets})
+
+# 2. صفحة الرد (Chat View)
+@login_required
+def support_ticket_detail(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    ticket = get_object_or_404(SupportTicket, pk=pk)
+    
+    if request.method == 'POST':
+        # أ. الرد
+        message = request.POST.get('message')
+        if message:
+            TicketMessage.objects.create(
+                ticket=ticket, 
+                sender=request.user, 
+                message=message,
+                is_support_reply=True
+            )
+            ticket.status = 'IN_PROGRESS' # تغيير الحالة تلقائياً
+            ticket.save()
+            messages.success(request, "تم إرسال الرد.")
+        
+        # ب. تغيير الحالة يدوياً (إغلاق التذكرة)
+        new_status = request.POST.get('status')
+        if new_status:
+            ticket.status = new_status
+            ticket.save()
+            messages.info(request, "تم تحديث الحالة.")
+            
+        return redirect('super_ticket_detail', pk=pk)
+
+    return render(request, 'supervisor/support_ticket_detail.html', {'ticket': ticket})

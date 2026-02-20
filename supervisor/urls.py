@@ -44,4 +44,6 @@ urlpatterns = [
     path('products/all/', views.all_products, name='super_all_products'),
 path('products/delete/<int:pk>/', views.delete_product_admin, name='super_delete_product'),
 path('products/edit/<int:pk>/', views.edit_product_admin, name='super_edit_product'),
+path('support/', views.support_tickets, name='super_support_tickets'),
+path('support/<int:pk>/', views.support_ticket_detail, name='super_ticket_detail'),
 ]

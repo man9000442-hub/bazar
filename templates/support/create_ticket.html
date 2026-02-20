@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <h5 class="fw-bold mb-4">إنشاء تذكرة جديدة</h5>
+    
+    <form method="POST" class="card border-0 shadow-sm p-4">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label class="form-label small">الموضوع</label>
+            <input type="text" name="subject" class="form-control" required placeholder="مثلاً: مشكلة في الطلب #123">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small">طلب متعلق (اختياري)</label>
+            <select name="order_id" class="form-select">
+                <option value="">-- اختر طلب --</option>
+                {% for order in orders %}
+                <option value="{{ order.id }}">#{{ order.order_id }} - {{ order.final_total }} ج.م</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label small">التفاصيل</label>
+            <textarea name="message" class="form-control" rows="5" required placeholder="اشرح مشكلتك بالتفصيل..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary-app w-100 fw-bold">إرسال</button>
+    </form>
+</div>
+{% endblock %}

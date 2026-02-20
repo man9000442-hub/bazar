@@ -18,6 +18,7 @@ urlpatterns = [
     path('merchant/', include('merchant_panel.urls')),
     path('super/', include('supervisor.urls')),
     path('', include('store.urls')),
+    path('support/', include('support.urls')),
     
     # --- الروابط السحرية لتشغيل الصور (حتى لو DEBUG=False) ---
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),

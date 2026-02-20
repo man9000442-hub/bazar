@@ -1,0 +1,156 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}تذكرة #{{ ticket.id }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    
+    <!-- 1. منطقة الشات -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100" style="min-height: 500px;">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold m-0"><i class="fas fa-comments me-2 text-primary"></i> المحادثة</h6>
+            </div>
+            
+            <div class="card-body overflow-auto d-flex flex-column bg-light" id="chat-box" style="max-height: 450px;">
+                
+                <!-- رسالة العميل الأصلية (تظهر دائماً في البداية) -->
+                <div class="align-self-start bg-white p-3 rounded-3 mb-3 shadow-sm border border-start border-4 border-primary" style="max-width: 85%;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="fw-bold text-primary">{{ ticket.customer.first_name }}</small>
+                        <small class="text-muted" style="font-size: 10px;">{{ ticket.created_at|date:"d M, H:i" }}</small>
+                    </div>
+                    <p class="mb-0 text-dark">{{ ticket.message }}</p>
+                </div>
+
+                <!-- الردود السابقة (من السيرفر) -->
+                {% for msg in ticket.messages.all %}
+                    {% if msg.is_support_reply %}
+                        <!-- رد المشرف (أنا) -> يمين -->
+                        <div class="align-self-end bg-primary text-white p-3 rounded-3 mb-3 shadow-sm" style="max-width: 85%; border-bottom-right-radius: 0;">
+                            <p class="mb-1">{{ msg.message }}</p>
+                            <small class="text-white-50 d-block text-end" style="font-size: 9px;">{{ msg.created_at|date:"H:i" }}</small>
+                        </div>
+                    {% else %}
+                        <!-- رد العميل -> يسار -->
+                        <div class="align-self-start bg-white text-dark p-3 rounded-3 mb-3 shadow-sm border" style="max-width: 85%; border-bottom-left-radius: 0;">
+                            <p class="mb-1">{{ msg.message }}</p>
+                            <small class="text-muted d-block" style="font-size: 9px;">{{ msg.created_at|date:"H:i" }}</small>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                
+            </div>
+            
+            <!-- فورم الرد -->
+            <div class="card-footer bg-white p-3 border-0">
+                <form method="POST" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <input type="text" name="message" class="form-control rounded-pill bg-light border-0" placeholder="اكتب ردك هنا..." required autocomplete="off">
+                    <button class="btn btn-primary rounded-circle shadow-sm" style="width: 45px; height: 45px;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. معلومات وتحكم -->
+    <div class="col-md-4">
+        <!-- بيانات التذكرة -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-3">
+            <h6 class="fw-bold mb-3 border-bottom pb-2">بيانات التذكرة</h6>
+            <div class="mb-2">
+                <small class="text-muted d-block">العميل</small>
+                <span class="fw-bold">{{ ticket.customer.first_name }} {{ ticket.customer.last_name }}</span>
+            </div>
+            <div class="mb-2">
+                <small class="text-muted d-block">رقم الهاتف</small>
+                <a href="tel:{{ ticket.customer.phone_primary }}" class="text-decoration-none">{{ ticket.customer.phone_primary }}</a>
+            </div>
+            {% if ticket.order %}
+            <div class="mb-2">
+                <small class="text-muted d-block">طلب مرتبط</small>
+                <a href="{% url 'super_order_detail' ticket.order.order_id %}" class="badge bg-light text-primary border">#{{ ticket.order.order_id }}</a>
+            </div>
+            {% endif %}
+            <div>
+                <small class="text-muted d-block">الحالة الحالية</small>
+                <span class="badge {% if ticket.status == 'OPEN' %}bg-success{% elif ticket.status == 'CLOSED' %}bg-secondary{% else %}bg-warning text-dark{% endif %}">
+                    {{ ticket.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <!-- تغيير الحالة -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-primary text-white">
+            <h6 class="fw-bold mb-3">إجراءات إدارية</h6>
+            <form method="POST">
+                {% csrf_token %}
+                <label class="small text-white-50 mb-1">تحديث الحالة</label>
+                <select name="status" class="form-select border-0 mb-3" onchange="this.form.submit()">
+                    <option value="OPEN" {% if ticket.status == 'OPEN' %}selected{% endif %}>مفتوحة</option>
+                    <option value="IN_PROGRESS" {% if ticket.status == 'IN_PROGRESS' %}selected{% endif %}>قيد المعالجة</option>
+                    <option value="RESOLVED" {% if ticket.status == 'RESOLVED' %}selected{% endif %}>تم الحل</option>
+                    <option value="CLOSED" {% if ticket.status == 'CLOSED' %}selected{% endif %}>مغلقة</option>
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ticketId = "{{ ticket.id }}";
+    const chatBox = document.getElementById('chat-box');
+    
+    // 1. النزول لآخر الشات عند التحميل
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // 2. تحديث الرسائل تلقائياً
+    // نبدأ بعدد الرسائل الحالي (بدون الرسالة الأصلية لأنها ليست في messages)
+    let lastMsgCount = {{ ticket.messages.count }}; 
+
+    function fetchMessages() {
+        fetch(`/support/api/messages/${ticketId}/`)
+            .then(response => response.json())
+            .then(data => {
+                // إذا زاد العدد عن الموجود، نعيد رسم الشات
+                if (data.messages.length > lastMsgCount) {
+                    // نحتفظ بالرسالة الأصلية (التي في بداية div) ونمسح الردود فقط؟
+                    // الأسهل: نعيد بناء الـ HTML للردود فقط، أو نمسح ونبني الكل.
+                    
+                    // هنا سنقوم بمسح الردود فقط (بعد الرسالة الأصلية) وإعادة بنائها
+                    // لكن للتبسيط سنمسح الكل ونعيد البناء (بما فيه الأصلية إذا أردنا، أو نتركها ثابتة)
+                    
+                    // الحل الأذكى: نطلب من السيرفر HTML جاهز (Partial) لكننا نستخدم JSON.
+                    // سنقوم بمسح "الردود" وإعادة إضافتها.
+                    
+                    // سنحذف كل العناصر ما عدا الأول (الأصلية)
+                    while (chatBox.children.length > 1) {
+                        chatBox.removeChild(chatBox.lastChild);
+                    }
+
+                    data.messages.forEach(msg => {
+                        let alignment = msg.sender === 'support' ? 'align-self-end bg-primary text-white' : 'align-self-start bg-white text-dark border';
+                        let radius = msg.sender === 'support' ? 'border-bottom-right-radius: 0;' : 'border-bottom-left-radius: 0;';
+                        let textColor = msg.sender === 'support' ? 'text-white-50' : 'text-muted';
+
+                        let html = `
+                        <div class="${alignment} p-3 rounded-3 mb-3 shadow-sm" style="max-width: 85%; ${radius}">
+                            <p class="mb-1">${msg.text}</p>
+                            <small class="${textColor} d-block text-end" style="font-size: 9px;">${msg.time}</small>
+                        </div>
+                        `;
+                        // إضافة الـ HTML كنص
+                        chatBox.insertAdjacentHTML('beforeend', html);
+                    });
+
+                    lastMsgCount = data.messages.length;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            });
+    }
+
+    setInterval(fetchMessages, 3000);
+</script>
+
+{% endblock %}

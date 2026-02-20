@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',    
     'accounts',
     'store',
+    'support',
     'merchant_panel',
     'supervisor',
 ]

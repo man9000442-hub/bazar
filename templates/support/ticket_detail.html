@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3 sticky-top">
+    <a href="{% url 'my_tickets' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
+    <div class="flex-grow-1">
+        <h5 class="m-0 fw-bold">تذكرة #{{ ticket.id }}</h5>
+        <span class="badge {% if ticket.status == 'OPEN' %}bg-success{% else %}bg-secondary{% endif %} mt-1">
+            {{ ticket.get_status_display }}
+        </span>
+    </div>
+</div>
+
+<div class="container pb-5 mb-5">
+    
+    <!-- منطقة الشات -->
+    <div class="d-flex flex-column gap-3 mb-4" id="chat-container">
+        <!-- الرسالة الأصلية -->
+        <div class="align-self-end bg-primary text-white p-3 rounded-3" style="max-width: 85%; border-bottom-right-radius: 0;">
+            <p class="mb-1 fw-bold small">أنت</p>
+            <p class="mb-0">{{ ticket.message }}</p>
+            <small class="text-white-50 d-block text-end mt-1" style="font-size: 9px;">{{ ticket.created_at|date:"H:i" }}</small>
+        </div>
+
+        <!-- الردود -->
+        {% for msg in ticket.messages.all %}
+            {% if msg.is_support_reply %}
+                <!-- رد الدعم (يسار) -->
+                <div class="align-self-start bg-light text-dark p-3 rounded-3 border" style="max-width: 85%; border-bottom-left-radius: 0;">
+                    <p class="mb-1 fw-bold small text-primary"><i class="fas fa-headset me-1"></i> الدعم الفني</p>
+                    <p class="mb-0">{{ msg.message }}</p>
+                    <small class="text-muted d-block mt-1" style="font-size: 9px;">{{ msg.created_at|date:"H:i" }}</small>
+                </div>
+            {% else %}
+                <!-- رد العميل (يمين) -->
+                <div class="align-self-end bg-primary text-white p-3 rounded-3" style="max-width: 85%; border-bottom-right-radius: 0;">
+                    <p class="mb-0">{{ msg.message }}</p>
+                    <small class="text-white-50 d-block text-end mt-1" style="font-size: 9px;">{{ msg.created_at|date:"H:i" }}</small>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- شريط الكتابة (يظهر فقط إذا كانت التذكرة مفتوحة) -->
+<div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 0; z-index: 1000;">
+    
+    {% if ticket.status == 'CLOSED' or ticket.status == 'RESOLVED' %}
+        <!-- حالة الإغلاق -->
+        <div class="alert alert-secondary mb-0 text-center small d-flex align-items-center justify-content-center">
+            <i class="fas fa-lock me-2"></i>
+            <span>هذه التذكرة مغلقة. لا يمكن الرد عليها.</span>
+            <!-- زر لفتح تذكرة جديدة (اختياري) -->
+            <a href="{% url 'create_ticket' %}" class="btn btn-sm btn-outline-dark ms-3 rounded-pill">تذكرة جديدة</a>
+        </div>
+    
+    {% else %}
+        <!-- حالة الفتح (فورم الكتابة) -->
+        <form method="POST" class="d-flex gap-2 align-items-center">
+            {% csrf_token %}
+            <input type="text" name="message" class="form-control rounded-pill bg-light border-0" placeholder="اكتب ردك هنا..." required autocomplete="off">
+            <button type="submit" class="btn btn-primary rounded-circle shadow-sm" style="width: 45px; height: 45px;">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    {% endif %}
+    
+</div>
+
+<!-- مساحة إضافية -->
+<div style="height: 100px;"></div>
+
+<script>
+    // النزول لآخر الشات تلقائياً
+    window.scrollTo(0, document.body.scrollHeight);
+</script>
+<script>
+    const ticketId = "{{ ticket.id }}";
+    const chatContainer = document.getElementById('chat-container');
+    let lastMsgCount = 0;
+
+    function fetchMessages() {
+        fetch(`/support/api/messages/${ticketId}/`)
+            .then(response => response.json())
+            .then(data => {
+                // إذا زاد عدد الرسائل، نعيد رسم الشات
+                if (data.messages.length > lastMsgCount) {
+                    chatContainer.innerHTML = ''; // مسح القديم
+                    
+                    data.messages.forEach(msg => {
+                        let alignment = msg.sender === 'user' ? 'align-self-end bg-primary text-white' : 'align-self-start bg-light text-dark border';
+                        let radius = msg.sender === 'user' ? 'border-bottom-right-radius: 0;' : 'border-bottom-left-radius: 0;';
+                        let senderName = msg.sender === 'user' ? 'أنت' : '<i class="fas fa-headset me-1"></i> الدعم الفني';
+                        let textColor = msg.sender === 'user' ? 'text-white' : 'text-primary';
+
+                        let html = `
+                        <div class="${alignment} p-3 rounded-3 mb-3" style="max-width: 85%; ${radius}">
+                            <p class="mb-1 fw-bold small ${textColor}">${senderName}</p>
+                            <p class="mb-0">${msg.text}</p>
+                            <small class="${msg.sender === 'user' ? 'text-white-50' : 'text-muted'} d-block text-end mt-1" style="font-size: 9px;">${msg.time}</small>
+                        </div>
+                        `;
+                        chatContainer.innerHTML += html;
+                    });
+
+                    // تحديث العداد والنزول للأسفل
+                    lastMsgCount = data.messages.length;
+                    window.scrollTo(0, document.body.scrollHeight);
+                }
+            });
+    }
+
+    // تشغيل كل 3 ثوانٍ
+    setInterval(fetchMessages, 3000);
+    
+    // تشغيل أول مرة
+    fetchMessages();
+</script>
+<style>
+    /* إخفاء شريط التنقل السفلي في هذه الصفحة فقط */
+    .bottom-nav { display: none !important; }
+    
+    /* إلغاء الهامش السفلي الكبير للـ body */
+    body { padding-bottom: 80px !important; }
+</style>
+
+{% endblock %}
