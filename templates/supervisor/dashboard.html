@@ -47,6 +47,19 @@
         </div>
     </div>
 
+        <!-- في قسم أدوات التحكم أو كرت منفصل -->
+    <div class="card border-0 shadow-sm p-3 mb-4 bg-white">
+        <h6 class="fw-bold mb-2 text-primary">دعوة تاجر جديد</h6>
+        <div class="input-group">
+            <input type="text" id="merchantLink" class="form-control form-control-sm bg-light" readonly
+                value="{{ request.scheme }}://{{ request.get_host }}{% url 'merchant_signup' %}">
+            <button class="btn btn-dark btn-sm" onclick="copyMerchantLink()">
+                <i class="fas fa-copy me-1"></i> نسخ
+            </button>
+        </div>
+        <div class="form-text small text-success" id="copyMsg" style="display: none;">تم نسخ الرابط! أرسله للتاجر.</div>
+    </div>
+
     <!-- تجار للتفعيل -->
     <div class="col-md-3">
         <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-info">
@@ -147,6 +160,18 @@
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+function copyMerchantLink() {
+    var copyText = document.getElementById("merchantLink");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999); 
+    navigator.clipboard.writeText(copyText.value);
+    
+    document.getElementById("copyMsg").style.display = "block";
+    setTimeout(() => { document.getElementById("copyMsg").style.display = "none"; }, 3000);
+}
+</script>
 <script>
     const ctx = document.getElementById('salesChart').getContext('2d');
     
