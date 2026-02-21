@@ -328,7 +328,7 @@ class SiteSetting(models.Model):
     
     # 2. المبلغ المحجوز في المحفظة (لا يمكن سحبه)
     min_wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=200.00, verbose_name="المبلغ المحجوز في المحفظة")
-    
+    referral_reward_limit_orders = models.IntegerField(default=1, verbose_name="عدد الطلبات المؤهلة للمكافأة")    
     # 3. الحد الأدنى لتفعيل المنتجات
     min_active_balance = models.DecimalField(max_digits=10, decimal_places=2, default=-500.00, verbose_name="الحد الأدنى لتفعيل المنتجات")    
     # صور البانر (يمكن زيادتها)

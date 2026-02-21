@@ -38,19 +38,43 @@ def manage_inventory(sender, instance, created, **kwargs):
             )
 @receiver(post_save, sender=Order)
 def apply_referral_reward(sender, instance, created, **kwargs):
-    if instance.status == Order.Status.DELIVERED and instance.is_first_order:
+    # نعمل فقط عند التسليم
+    if instance.status == Order.Status.DELIVERED:
         customer = instance.customer
         inviter = customer.invited_by
         
         if inviter:
             settings = SiteSetting.objects.first()
             reward = settings.referral_reward_amount if settings else Decimal('50.00')
+            limit = settings.referral_reward_limit_orders if settings else 1
             
-            # مكافأة لصاحب الكود
-            inviter.referral_balance += reward
-            inviter.save()
-            Notification.objects.create(recipient=inviter, title="مكافأة جديدة! 💰", message=f"حصلت على {reward} ج.م لأن {customer.first_name} أتم أول طلب.")
+            # 1. نحسب عدد الطلبات المكتملة لهذا العميل
+            completed_orders_count = Order.objects.filter(
+                customer=customer, 
+                status=Order.Status.DELIVERED
+            ).count()
             
+            # 2. هل تجاوزنا الحد؟
+            # (نستخدم <= لأن الطلب الحالي تم عده في completed_orders_count)
+            if completed_orders_count <= limit:
+                
+                # هل تم منح المكافأة لهذا الطلب تحديداً من قبل؟ (منع التكرار)
+                # يمكننا استخدام وصف Notification كعلامة، أو إضافة حقل is_rewarded في Order
+                # الحل الأسهل: Notification
+                already_rewarded = Notification.objects.filter(
+                    recipient=inviter, 
+                    message__contains=f"الطلب #{instance.order_id}"
+                ).exists()
+                
+                if not already_rewarded:
+                    inviter.referral_balance += reward
+                    inviter.save()
+                    
+                    Notification.objects.create(
+                        recipient=inviter, 
+                        title="مكافأة دعوة! 💰", 
+                        message=f"حصلت على {reward} ج.م بفضل الطلب #{instance.order_id} لصديقك {customer.first_name}."
+                    )
             # مكافأة للمستخدم الجديد (اختياري، لو عايز تديله رصيد هو كمان)
             # customer.referral_balance += reward
             # customer.save()
