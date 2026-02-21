@@ -703,3 +703,94 @@ def request_withdrawal(request):
         'min_withdraw': min_withdraw_amount,
         'reserved_balance': reserved_balance
     })
+
+
+
+
+from django.db.models import Sum, Count, F
+from django.db.models.functions import TruncDay, TruncMonth
+import json
+from datetime import timedelta
+from django.utils.dateparse import parse_date
+
+@login_required
+def merchant_reports(request):
+    if not is_merchant(request.user): return redirect('home')
+    
+    merchant = request.user.merchant_profile
+    wallet = merchant.wallet
+
+    # 1. الفلترة الزمنية
+    range_type = request.GET.get('range', 'month')
+    custom_start = request.GET.get('start')
+    custom_end = request.GET.get('end')
+    
+    today = timezone.now().date()
+    start_date = today.replace(day=1)
+    end_date = today
+
+    if range_type == 'today':
+        start_date = today
+    elif range_type == 'week':
+        start_date = today - timedelta(days=7)
+    elif range_type == 'month':
+        start_date = today.replace(day=1)
+    elif range_type == 'year':
+        start_date = today.replace(month=1, day=1)
+    elif range_type == 'custom' and custom_start:
+        try:
+            start_date = parse_date(custom_start)
+            end_date = parse_date(custom_end) or today
+        except: pass
+
+    # 2. الاستعلام الأساسي (المعاملات المالية)
+    # نبحث عن معاملات "SALE" (بيع) أو "PENDING" (معلقة) الخاصة بهذا التاجر في الفترة
+    txs = WalletTransaction.objects.filter(
+        wallet=wallet,
+        transaction_type__in=['SALE', 'PENDING'],
+        amount__gt=0, # الإيداعات فقط (المبيعات)
+        created_at__date__range=[start_date, end_date]
+    )
+
+    total_sales = txs.aggregate(Sum('amount'))['amount__sum'] or 0
+    total_orders = txs.count() # تقريبي (عدد الحركات)
+
+    # 3. المنتجات الأكثر مبيعاً (Best Sellers)
+    # نحتاج للبحث في OrderItem المرتبطة بطلبات تم تسليمها
+    top_products = OrderItem.objects.filter(
+        product_size__product__merchant=merchant,
+        order__status='DELIVERED',
+        order__created_at__date__range=[start_date, end_date]
+    ).values('product_size__product__name').annotate(
+        total_qty=Sum('quantity'),
+        total_revenue=Sum(F('quantity') * F('price_at_purchase'))
+    ).order_by('-total_qty')[:5]
+
+    # 4. الرسم البياني (Chart)
+    trunc_func = TruncMonth if range_type == 'year' else TruncDay
+    fmt = "%b" if range_type == 'year' else "%d %b"
+    
+    chart_data = txs.annotate(period=trunc_func('created_at')).values('period').annotate(total=Sum('amount')).order_by('period')
+    
+    labels = []
+    values = []
+    for item in chart_data:
+        labels.append(item['period'].strftime(fmt))
+        values.append(float(item['total']))
+
+    if not labels:
+        labels = ["لا توجد مبيعات"]
+        values = [0]
+
+    context = {
+        'total_sales': total_sales,
+        'total_orders': total_orders,
+        'top_products': top_products,
+        'chart_labels': json.dumps(labels),
+        'chart_values': json.dumps(values),
+        'current_range': range_type,
+        'start_date': start_date,
+        'end_date': end_date
+    }
+    
+    return render(request, 'merchant/reports.html', context)

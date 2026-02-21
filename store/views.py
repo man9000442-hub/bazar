@@ -265,20 +265,22 @@ from collections import defaultdict
 
 @login_required
 def checkout(request):
-    # 1. المانع
+    # 1. المانع (Blocker)
     pending_conf = check_pending_confirmations(request.user)
     if pending_conf: return redirect('confirm_delivery_view', order_id=pending_conf.id)
 
-    # 2. استقبال المنتجات
+    # 2. استقبال المنتجات المختارة
     selected_ids = request.GET.getlist('selected_items')
     if request.method == 'POST':
         selected_ids = request.POST.getlist('selected_items')
 
     cart = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
-    if not cart or not cart.items.exists(): return redirect('home')
+    if not cart or not cart.items.exists():
+        return redirect('home')
 
+    # فلترة العناصر
     if selected_ids:
-        # فلترة آمنة
+        # تأكد من تحويلها لأرقام
         valid_ids = [int(i) for i in selected_ids if str(i).isdigit()]
         cart_items = cart.items.filter(id__in=valid_ids)
     else:
@@ -290,7 +292,7 @@ def checkout(request):
 
     governorates = Governorate.objects.all()
 
-    # --- 3. التجميع وحساب حدود الخصم ---
+    # --- 3. التجميع وحساب الخصم المتاح ---
     grouped_items = defaultdict(list)
     merchant_totals = defaultdict(int)
     
@@ -302,17 +304,15 @@ def checkout(request):
     for item in cart_items:
         merch = item.product_size.product.merchant
         grouped_items[merch].append(item)
-        
-        # السعر (شاملاً عرض المنصة إن وجد)
         price = item.price_at_purchase
         qty = item.quantity
         merchant_totals[merch] += price * qty
         
-        # حساب الحد الأقصى للخصم لهذا المنتج
+        # حساب حد الخصم للمنتج
         item_limit = (price * Decimal(limit_pct) / 100) * qty
         total_max_discount += item_limit
 
-    # الخصم المتاح (رصيد المستخدم vs الحد الأقصى)
+    # الخصم المتاح
     user_balance = request.user.referral_balance
     applicable_discount = min(user_balance, total_max_discount)
 
@@ -332,7 +332,8 @@ def checkout(request):
         gov_id = request.POST.get('city')
         phone = request.POST.get('phone')
         payment_method = request.POST.get('payment_method')
-        use_wallet = request.POST.get('use_wallet') == 'on' # هل يريد الخصم؟
+        use_wallet = request.POST.get('use_wallet') == 'on'
+        wallet_number = request.POST.get('wallet_number') # للمحفظة فقط
         
         if not (address and gov_id and phone):
             messages.error(request, "البيانات ناقصة.")
@@ -361,7 +362,7 @@ def checkout(request):
                     base_shipping = rate_obj.rate if rate_obj else Decimal(50)
                     extra_shipping = sum(i.product_size.product.shipping_fee * i.quantity for i in items)
                     
-                    # ب. فحص عرض الشحن المجاني
+                    # ب. عرض الشحن المجاني
                     is_free_offer = False
                     for item in items:
                         try:
@@ -380,7 +381,8 @@ def checkout(request):
                         free_shipping_used = True
 
                     # ج. الحالة
-                    initial_status = Order.Status.WAITING_PAYMENT if payment_method == 'ONLINE' else Order.Status.PENDING
+                    # إذا كان الدفع إلكتروني (ONLINE أو WALLET)، الحالة "انتظار دفع"
+                    initial_status = Order.Status.WAITING_PAYMENT if payment_method in ['ONLINE', 'WALLET'] else Order.Status.PENDING
 
                     # د. إنشاء الطلب
                     new_order = Order.objects.create(
@@ -395,21 +397,16 @@ def checkout(request):
                         is_first_order=(shipping_cost == 0 and not is_free_offer)
                     )
                     
-                    # هـ. نقل المنتجات وتطبيق الخصم
+                    # هـ. نقل المنتجات وتوزيع الخصم
                     for item in items:
                         item.order = new_order
                         
-                        # تطبيق الخصم (بدقة)
                         if remaining_discount > 0:
                             item_price = item.price_at_purchase
                             item_limit = (item_price * Decimal(limit_pct) / 100) * item.quantity
-                            
-                            # نخصم الأقل (المتبقي أو حد المنتج)
                             discount_to_apply = min(remaining_discount, item_limit)
                             
-                            # حفظ الخصم في OrderItem (هام جداً للتعويض)
                             item.referral_discount = discount_to_apply
-                            
                             remaining_discount -= discount_to_apply
                             total_discount_used += discount_to_apply
                         else:
@@ -417,17 +414,16 @@ def checkout(request):
                             
                         item.save()
                     
-                    new_order.save() # لتحديث الإجمالي بعد الخصم
+                    new_order.save()
                     created_orders.append(new_order)
                     grand_total_final += new_order.final_total
 
-                # و. خصم الرصيد من المستخدم نهائياً
+                # و. خصم الرصيد
                 if total_discount_used > 0:
                     request.user.referral_balance -= total_discount_used
                     request.user.save()
 
-                # ز. تنظيف السلة (حذف ما تم شراؤه)
-                # بما أننا غيرنا الأب (order=new_order)، فقد خرجوا من السلة تلقائياً
+                # ز. تنظيف السلة (حذف ما تم شراؤه فقط)
                 if not cart.items.exists():
                     cart.delete()
 
@@ -436,10 +432,12 @@ def checkout(request):
             messages.error(request, "حدث خطأ أثناء المعالجة.")
             return redirect('checkout')
 
-        # --- الدفع ---
-        if payment_method == 'ONLINE':
+        # ==========================================
+        # 4. الدفع الإلكتروني (Paymob)
+        # ==========================================
+        if payment_method in ['ONLINE', 'WALLET']:
             try:
-                # إضافة رسوم الدفع
+                # أ. إضافة الرسوم
                 online_fees = 0
                 if settings_obj:
                     fixed = float(settings_obj.platform_fee_fixed)
@@ -448,14 +446,14 @@ def checkout(request):
 
                 total_to_pay = float(grand_total_final) + online_fees
                 
-                # حفظ الرسوم في أول طلب
+                # تحديث أول طلب بالرسوم
                 if created_orders:
                     first_order = created_orders[0]
                     first_order.platform_fees = online_fees
                     first_order.final_total += Decimal(online_fees)
                     first_order.save()
 
-                # Paymob
+                # ب. Paymob Init
                 paymob = PaymobManager()
                 token = paymob.get_token()
                 amount_cents = int(total_to_pay * 100)
@@ -467,16 +465,35 @@ def checkout(request):
                     "city": "Cairo", "country": "EG", "state": "NA", "street": "NA", "building": "NA", "floor": "NA", "apartment": "NA", "postal_code": "NA", "shipping_method": "NA"
                 }
 
-                payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
+                # ج. التوجيه حسب الطريقة
+                if payment_method == 'ONLINE':
+                    # فيزا (Iframe)
+                    payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
+                    iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+                    return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
                 
-                iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
-                return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
+                elif payment_method == 'WALLET':
+                    # محفظة (رقم ورسالة)
+                    if not wallet_number:
+                        messages.error(request, "رقم المحفظة مطلوب.")
+                        return redirect('my_orders')
+                        
+                    billing_data['phone_number'] = wallet_number # تحديث الرقم لرقم المحفظة
+                    
+                    redirect_url = paymob.pay_with_wallet(
+                        token, amount_cents, pm_order_id, 
+                        settings.PAYMOB_INTEGRATION_ID_WALLET, 
+                        billing_data
+                    )
+                    return redirect(redirect_url)
 
             except Exception as e:
-                messages.error(request, "فشل الاتصال بالبنك.")
+                print(f"Paymob Error: {e}")
+                messages.error(request, "فشل الاتصال بالبنك. تم حفظ الطلب، يرجى المحاولة من 'طلباتي'.")
                 return redirect('my_orders')
         
         else:
+            # د. الدفع كاش
             messages.success(request, "تم استلام طلبك بنجاح!")
             return redirect('order_success')
 

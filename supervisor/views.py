@@ -920,3 +920,63 @@ def ban_user(request, user_id):
         
     user.save()
     return redirect('super_users_list') # أو banned_users
+
+
+
+@login_required
+def customers_analytics(request):
+    # 1. التحقق من الصلاحية (users_analytics)
+    user = request.user
+    if not (user.is_superuser or user.role == 'OWNER' or user.has_perm_access('users')):
+        return redirect('supervisor_dashboard')
+
+    # 2. الفلترة الزمنية (للمستخدمين الجدد)
+    range_type = request.GET.get('range', 'month')
+    custom_start = request.GET.get('start')
+    custom_end = request.GET.get('end')
+    
+    today = timezone.now().date()
+    start_date = today.replace(day=1)
+    
+    if range_type == 'today': start_date = today
+    elif range_type == 'week': start_date = today - timedelta(days=7)
+    elif range_type == 'year': start_date = today.replace(month=1, day=1)
+    # ... (باقي المنطق الزمني كما في التقارير السابقة) ...
+
+    # عدد العملاء الجدد في الفترة
+    new_customers_count = User.objects.filter(
+        role='CUSTOMER', 
+        date_joined__date__gte=start_date
+    ).count()
+
+    # 3. أفضل العملاء (Top Spenders)
+    # نحسب مجموع طلباتهم المكتملة (DELIVERED)
+    top_customers = User.objects.filter(role='CUSTOMER').annotate(
+        total_spent=Sum('orders__final_total', filter=Q(orders__status='DELIVERED')),
+        orders_count=Count('orders', filter=Q(orders__status='DELIVERED'))
+    ).order_by('-total_spent')[:10] # أعلى 10
+
+    context = {
+        'new_customers_count': new_customers_count,
+        'top_customers': top_customers,
+        'current_range': range_type,
+        'start_date': start_date,
+    }
+    return render(request, 'supervisor/customers_analytics.html', context)
+
+# صفحة تفاصيل العميل (Customer Profile for Admin)
+@login_required
+def customer_profile_admin(request, user_id):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    customer = get_object_or_404(User, pk=user_id)
+    orders = Order.objects.filter(customer=customer).order_by('-created_at')
+    
+    # إحصائيات فردية
+    total_spent = orders.filter(status='DELIVERED').aggregate(Sum('final_total'))['final_total__sum'] or 0
+    
+    return render(request, 'supervisor/customer_profile.html', {
+        'customer': customer,
+        'orders': orders,
+        'total_spent': total_spent
+    })

@@ -126,6 +126,12 @@
             <div class="nav-title">المستخدمين</div>
             {% endif %}
 
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "users" in request.user.custom_role.permissions or "merchants" in request.user.custom_role.permissions %}
+            <a href="{% url 'super_customers_analytics' %}" class="nav-link">
+                <i class="fas fa-chart-user me-2"></i> سجلات العملاء
+            </a>
+            {% endif %}
+
             {% if request.user.is_superuser or request.user.role == 'OWNER' or "users" in request.user.custom_role.permissions %}
             <a href="{% url 'super_users_list' %}" class="nav-link {% if request.resolver_match.url_name == 'super_users_list' %}active{% endif %}">
                 <i class="fas fa-users"></i> كل الأعضاء

@@ -53,4 +53,6 @@ path('offers/delete/<int:pk>/', views.delete_offer_admin, name='super_delete_off
 path('notifications/send/', views.send_broadcast, name='super_send_broadcast'),
 path('users/banned/', views.banned_users, name='super_banned_users'),
 path('users/ban/<int:user_id>/', views.ban_user, name='super_ban_user'),
+path('analytics/customers/', views.customers_analytics, name='super_customers_analytics'),
+path('analytics/customer/<int:user_id>/', views.customer_profile_admin, name='super_customer_profile'),
 ]

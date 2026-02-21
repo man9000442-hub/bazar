@@ -38,3 +38,21 @@ class PaymobManager:
         }
         resp = requests.post(url, json=data)
         return resp.json().get('token')
+    
+
+    def pay_with_wallet(self, token, amount_cents, order_id, integration_id, billing_data):
+        """الدفع بالمحفظة يتطلب خطوة إضافية: إرسال الرقم"""
+        # 1. الحصول على Payment Key (نفس الخطوة)
+        payment_key = self.get_payment_key(token, order_id, amount_cents, integration_id, billing_data)
+        
+        # 2. طلب الدفع (Pay Request)
+        url = "https://accept.paymob.com/api/acceptance/payments/pay"
+        data = {
+            "source": {
+                "identifier": billing_data['phone_number'], # رقم المحفظة
+                "subtype": "WALLET"
+            },
+            "payment_token": payment_key
+        }
+        resp = requests.post(url, json=data)
+        return resp.json().get('redirect_url') # الرابط الذي يذهب إليه العميل

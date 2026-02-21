@@ -17,4 +17,5 @@ path('products/delete/<int:product_id>/', views.delete_product, name='merchant_d
 path('offer/cancel/<int:offer_id>/', views.cancel_offer, name='merchant_cancel_offer'),
 path('orders/update/<str:order_id>/', views.update_order_status, name='merchant_update_order'),
 path('withdraw/', views.request_withdrawal, name='merchant_request_withdrawal'),
+path('reports/', views.merchant_reports, name='merchant_reports'),
 ]

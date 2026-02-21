@@ -176,7 +176,7 @@ class Order(models.Model):
     class PaymentMethod(models.TextChoices):
         COD = "COD", "الدفع عند الاستلام"
         ONLINE = "ONLINE", "دفع إلكتروني (Paymob)"
-    
+        WALLET = "WALLET", "محفظة إلكترونية" # <--- الجديد    
     payment_method = models.CharField(max_length=10, choices=PaymentMethod.choices, default=PaymentMethod.COD, verbose_name="طريقة الدفع")
     def save(self, *args, **kwargs):
         # توليد Order ID تلقائيًا إذا لم يكن موجودًا
