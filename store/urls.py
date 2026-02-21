@@ -21,4 +21,5 @@ urlpatterns = [
     path('payment/retry/<int:order_id>/', views.retry_payment, name='retry_payment'),
     path('my-orders/<int:order_id>/', views.customer_order_detail, name='customer_order_detail'),
     path('shop/<int:merchant_id>/', views.merchant_shop, name='merchant_shop'),
+    path('referral/', views.referral_center, name='referral_center'),
 ]

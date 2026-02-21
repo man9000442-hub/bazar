@@ -87,6 +87,28 @@
                     <span>رسوم دفع إلكتروني</span>
                     <span id="online-fees-display">0.00 ج.م</span>
                 </div>
+
+                <!-- قسم رصيد الدعوات -->
+                {% if request.user.referral_balance > 0 %}
+                <div class="card border-0 shadow-sm mb-3 p-3 bg-warning-subtle">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1"><i class="fas fa-gift me-2"></i> رصيد الدعوات</h6>
+                            <small class="text-muted">لديك {{ request.user.referral_balance }} ج.م</small>
+                        </div>
+                        
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="use_wallet" id="useWallet" onchange="toggleWalletDiscount()">
+                            <label class="form-check-label fw-bold" for="useWallet">خصم {{ applicable_discount|floatformat:2 }} ج.م</label>
+                        </div>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        * يمكنك استخدام 10% بحد أقصى من قيمة كل منتج.
+                    </div>
+                </div>
+                {% endif %}
+
+
                 
                 <hr>
                 
@@ -132,20 +154,19 @@
 
 <!-- JavaScript Logic -->
 <script>
-    // استقبال متغيرات الرسوم من البايثون
-    const feeFixed = {{ fee_fixed|default:0 }};
-    const feePercent = {{ fee_percent|default:0 }};
+    // 1. استقبال المتغيرات من جانجو بأمان تام
+    const feeFixed = parseFloat("{{ fee_fixed|default:0 }}") || 0;
+    const feePercent = parseFloat("{{ fee_percent|default:0 }}") || 0;
+    const discountValue = parseFloat("{{ applicable_discount|default:0 }}") || 0;
     
-    // متغير لحفظ الإجمالي "الخام" (منتجات + شحن) بدون رسوم
-    let rawGrandTotal = 0;
+    let rawGrandTotal = 0; // سيتم ملؤه من الـ API
 
+    // دالة جلب الشحن
     function updateShipping() {
         const govId = document.getElementById('city-select').value;
         const confirmBtn = document.getElementById('confirm-btn');
         const msgEl = document.getElementById('select-city-msg');
-        
         const totalShippingEl = document.getElementById('total-shipping-display');
-        const grandTotalEl = document.getElementById('grand-total-display');
 
         if (!govId) {
             confirmBtn.disabled = true;
@@ -155,85 +176,117 @@
 
         // Loading
         confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحساب...';
+
+        // تجميع المنتجات المختارة
+        const checkboxes = document.querySelectorAll('input[name="selected_items"]');
+        let selectedIds = [];
+        // إذا كان هناك checkboxes في الصفحة، نأخذ منها، وإلا نأخذ القيم المخفية
+        if (checkboxes.length > 0) {
+            selectedIds = Array.from(checkboxes).map(i => i.value);
+        } else {
+            // حالة الدخول المباشر (hidden inputs)
+            const hiddenInputs = document.querySelectorAll('input[type="hidden"][name="selected_items"]');
+            selectedIds = Array.from(hiddenInputs).map(i => i.value);
+        }
         
-        // استدعاء API (مع تمرير المنتجات المختارة)
-        const selectedIds = Array.from(document.querySelectorAll('input[name="selected_items"]')).map(i => i.value).join(',');
-        
-        fetch(`/api/calc-shipping/?gov_id=${govId}&items=${selectedIds}`)
+        const idsParam = selectedIds.join(',');
+
+        // استدعاء API
+        fetch(`/api/calc-shipping/?gov_id=${govId}&items=${idsParam}`)
             .then(response => response.json())
             .then(data => {
-                // 1. تحديث شحن كل تاجر
-                data.shipping_details.forEach(detail => {
-                    const el = document.getElementById(`shipping-merch-${detail.merchant_id}`);
-                    if (el) {
-                        el.innerHTML = detail.cost == 0 ? '<span class="text-success">مجاني</span>' : detail.cost + " ج.م";
-                    }
-                });
+                // 1. تحديث أسعار الشحن
+                if (data.shipping_details) {
+                    data.shipping_details.forEach(detail => {
+                        const el = document.getElementById(`shipping-merch-${detail.merchant_id}`);
+                        if (el) {
+                            el.innerHTML = detail.cost == 0 ? '<span class="text-success">مجاني</span>' : detail.cost + " ج.م";
+                        }
+                    });
+                }
 
-                // 2. تحديث الإجماليات
-                totalShippingEl.innerText = data.total_shipping + " ج.م";
+                // 2. تحديث إجمالي الشحن
+                if (totalShippingEl) totalShippingEl.innerText = data.total_shipping + " ج.م";
                 
-                // حفظ الرقم الخام
-                rawGrandTotal = data.grand_total;
+                // 3. حفظ الرقم الخام (المهم)
+                rawGrandTotal = parseFloat(data.grand_total) || 0;
                 
-                // تحديث العرض بناءً على طريقة الدفع المختارة حالياً
-                togglePaymentMethod();
+                // 4. إعادة الحساب الشامل
+                recalculateTotal();
 
-                // 3. تفعيل الزر
+                // 5. تفعيل الزر
                 confirmBtn.disabled = false;
                 msgEl.style.display = 'none';
             })
             .catch(err => {
                 console.error(err);
-                confirmBtn.innerText = "حدث خطأ";
+                confirmBtn.innerText = "حدث خطأ - حاول مرة أخرى";
             });
     }
 
-    function togglePaymentMethod() {
+    // دالة إعادة الحساب
+    function recalculateTotal() {
+        // حماية: إذا لم يتم الحساب بعد، لا نفعل شيئاً
+        if (rawGrandTotal === 0) return;
+
+        let finalTotal = rawGrandTotal;
+        const grandTotalEl = document.getElementById('grand-total-display');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const btnText = document.getElementById('btn-text'); // تأكد من وجود span id="btn-text" داخل الزر
+        
+        // 1. خصم المحفظة
+        const useWallet = document.getElementById('useWallet');
+        if (useWallet && useWallet.checked) {
+            finalTotal -= discountValue;
+        }
+
+        // 2. رسوم الأونلاين
         const isOnline = document.getElementById('pay_online').checked;
         const feesRow = document.getElementById('online-fees-row');
         const feesValue = document.getElementById('online-fees-display');
-        const grandTotalEl = document.getElementById('grand-total-display');
-        const btnText = document.getElementById('btn-text');
-        const confirmBtn = document.getElementById('confirm-btn');
-
-        if (rawGrandTotal === 0) return; // لم يتم الحساب بعد
-
-        let finalTotal = rawGrandTotal;
 
         if (isOnline) {
-            // حساب الرسوم: ثابت + نسبة
-            let fees = feeFixed + (rawGrandTotal * feePercent / 100);
+            let fees = feeFixed + (finalTotal * feePercent / 100);
             finalTotal += fees;
 
-            // عرض الرسوم
-            feesRow.style.display = 'flex';
-            feesValue.innerText = fees.toFixed(2) + " ج.م";
+            if (feesRow) feesRow.style.display = 'flex';
+            if (feesValue) feesValue.innerText = fees.toFixed(2) + " ج.م";
             
-            // تغيير الزر
-            btnText.innerText = "الانتقال للدفع الآمن 🔒";
-            confirmBtn.classList.remove('btn-primary-app');
-            confirmBtn.classList.add('btn-success');
+            // تحديث الزر
+            if (confirmBtn) {
+                confirmBtn.classList.remove('btn-primary-app');
+                confirmBtn.classList.add('btn-success');
+                // نستخدم innerHTML للزر مباشرة لو الـ span مش موجود
+                if (btnText) btnText.innerText = "الانتقال للدفع الآمن 🔒";
+                else confirmBtn.innerText = "الانتقال للدفع الآمن 🔒";
+            }
         } else {
-            // إخفاء الرسوم
-            feesRow.style.display = 'none';
+            if (feesRow) feesRow.style.display = 'none';
             
-            // تغيير الزر
-            btnText.innerText = "تأكيد الطلب (دفع عند الاستلام)";
-            confirmBtn.classList.remove('btn-success');
-            confirmBtn.classList.add('btn-primary-app');
+            if (confirmBtn) {
+                confirmBtn.classList.remove('btn-success');
+                confirmBtn.classList.add('btn-primary-app');
+                if (btnText) btnText.innerText = "تأكيد الطلب (دفع عند الاستلام)";
+                else confirmBtn.innerText = "تأكيد الطلب (دفع عند الاستلام)";
+            }
         }
 
-        // تحديث الإجمالي النهائي
-        grandTotalEl.innerText = finalTotal.toFixed(2) + " ج.م";
+        // 3. التحديث النهائي (عدم السماح بالسالب)
+        if (finalTotal < 0) finalTotal = 0;
+        if (grandTotalEl) grandTotalEl.innerText = finalTotal.toFixed(2) + " ج.م";
     }
+
+    // دوال الربط (لحل مشكلة Uncaught ReferenceError)
+    function toggleWalletDiscount() { recalculateTotal(); }
+    function togglePaymentMethod() { recalculateTotal(); }
 
     // تشغيل عند التحميل
     document.addEventListener('DOMContentLoaded', function() {
-        if (document.getElementById('city-select').value) {
+        const citySelect = document.getElementById('city-select');
+        if (citySelect && citySelect.value) {
             updateShipping();
         }
     });
 </script>
-
 {% endblock %}

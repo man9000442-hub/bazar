@@ -7,7 +7,7 @@ from django.db.models import F, Q
 from django.http import JsonResponse
 from collections import defaultdict
 from decimal import Decimal
-
+from accounts.models import User
 # الموديلات
 from .models import (
     Product, Category, Order, OrderItem, ProductSize, 
@@ -64,6 +64,8 @@ def confirm_delivery_view(request, order_id):
 
 # الصفحة الرئيسية
 def home(request):
+    if request.user.is_authenticated and request.user.is_banned:
+        return render(request, 'account/banned.html')
     pending_conf = check_pending_confirmations(request.user)
     if pending_conf:
         # توجيه إجباري لصفحة التأكيد
@@ -273,28 +275,48 @@ def checkout(request):
         selected_ids = request.POST.getlist('selected_items')
 
     cart = Order.objects.filter(customer=request.user, status=Order.Status.CART).first()
-    if not cart: return redirect('home')
+    if not cart or not cart.items.exists(): return redirect('home')
 
     if selected_ids:
-        cart_items = cart.items.filter(id__in=selected_ids)
+        # فلترة آمنة
+        valid_ids = [int(i) for i in selected_ids if str(i).isdigit()]
+        cart_items = cart.items.filter(id__in=valid_ids)
     else:
         cart_items = cart.items.all()
 
     if not cart_items.exists():
-        messages.warning(request, "لا توجد منتجات.")
+        messages.warning(request, "لم تختر منتجات.")
         return redirect('cart_view')
 
     governorates = Governorate.objects.all()
 
-    # --- تجهيز العرض ---
+    # --- 3. التجميع وحساب حدود الخصم ---
     grouped_items = defaultdict(list)
     merchant_totals = defaultdict(int)
+    
+    settings_obj = SiteSetting.objects.first()
+    limit_pct = settings_obj.referral_discount_limit_pct if settings_obj else 10
+    
+    total_max_discount = 0 # أقصى خصم مسموح
     
     for item in cart_items:
         merch = item.product_size.product.merchant
         grouped_items[merch].append(item)
-        merchant_totals[merch] += item.price_at_purchase * item.quantity
+        
+        # السعر (شاملاً عرض المنصة إن وجد)
+        price = item.price_at_purchase
+        qty = item.quantity
+        merchant_totals[merch] += price * qty
+        
+        # حساب الحد الأقصى للخصم لهذا المنتج
+        item_limit = (price * Decimal(limit_pct) / 100) * qty
+        total_max_discount += item_limit
 
+    # الخصم المتاح (رصيد المستخدم vs الحد الأقصى)
+    user_balance = request.user.referral_balance
+    applicable_discount = min(user_balance, total_max_discount)
+
+    # هيكل العرض
     cart_structure = []
     cart_total_display = 0
     for merch, items in grouped_items.items():
@@ -310,16 +332,21 @@ def checkout(request):
         gov_id = request.POST.get('city')
         phone = request.POST.get('phone')
         payment_method = request.POST.get('payment_method')
+        use_wallet = request.POST.get('use_wallet') == 'on' # هل يريد الخصم؟
         
         if not (address and gov_id and phone):
-            messages.error(request, "البيانات غير مكتملة.")
+            messages.error(request, "البيانات ناقصة.")
             return redirect('checkout')
 
         gov = get_object_or_404(Governorate, pk=gov_id)
         
         created_orders = []
-        grand_total_with_shipping = 0
+        grand_total_final = 0
         
+        # متغيرات توزيع الخصم
+        remaining_discount = applicable_discount if use_wallet else Decimal(0)
+        total_discount_used = Decimal(0)
+
         is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CART).exists()
         free_shipping_used = False
 
@@ -329,40 +356,33 @@ def checkout(request):
                     merchant = group['merchant']
                     items = group['items']
                     
-                    # 1. حساب الشحن الأساسي
+                    # أ. حساب الشحن
                     rate_obj = MerchantShippingRate.objects.filter(merchant=merchant, governorate=gov).first()
-                    base_shipping = rate_obj.rate if rate_obj else 50
-                    
-                    # 2. حساب الشحن الإضافي
+                    base_shipping = rate_obj.rate if rate_obj else Decimal(50)
                     extra_shipping = sum(i.product_size.product.shipping_fee * i.quantity for i in items)
                     
-                    # 3. التحقق من عرض الشحن المجاني (Free Shipping Offer)
-                    is_free_shipping_offer_applied = False
+                    # ب. فحص عرض الشحن المجاني
+                    is_free_offer = False
                     for item in items:
                         try:
-                            offer = item.product_size.product.active_offer
-                            # الشرط: العرض مفعل + فيه شحن مجاني + الكمية >= الحد الأدنى
-                            if offer and offer.is_active and offer.free_shipping:
-                                if item.quantity >= offer.free_shipping_threshold:
-                                    is_free_shipping_offer_applied = True
-                                    break # طبقنا العرض على الشحنة
+                            off = item.product_size.product.active_offer
+                            if off and off.is_active and off.free_shipping and item.quantity >= off.free_shipping_threshold:
+                                is_free_offer = True
+                                break
                         except: pass
 
                     shipping_cost = base_shipping + extra_shipping
-
-                    # تطبيق الخصم (الأولوية لعرض التاجر، ثم عرض أول طلب)
-                    if is_free_shipping_offer_applied:
-                        shipping_cost = 0
-                        # (في هذه الحالة التاجر يتحمل الشحن، ولا نعوضه)
                     
+                    if is_free_offer:
+                        shipping_cost = 0
                     elif is_first_order and not free_shipping_used:
                         shipping_cost = 0
                         free_shipping_used = True
-                        # (في هذه الحالة المنصة تعوض التاجر)
 
-                    # الحالة المبدئية
+                    # ج. الحالة
                     initial_status = Order.Status.WAITING_PAYMENT if payment_method == 'ONLINE' else Order.Status.PENDING
 
+                    # د. إنشاء الطلب
                     new_order = Order.objects.create(
                         customer=request.user,
                         merchant=merchant,
@@ -372,47 +392,79 @@ def checkout(request):
                         payment_method=payment_method,
                         status=initial_status,
                         shipping_cost=shipping_cost,
-                        is_first_order=(shipping_cost == 0 and not is_free_shipping_offer_applied) # لتمييز سبب المجاني
+                        is_first_order=(shipping_cost == 0 and not is_free_offer)
                     )
                     
+                    # هـ. نقل المنتجات وتطبيق الخصم
                     for item in items:
                         item.order = new_order
+                        
+                        # تطبيق الخصم (بدقة)
+                        if remaining_discount > 0:
+                            item_price = item.price_at_purchase
+                            item_limit = (item_price * Decimal(limit_pct) / 100) * item.quantity
+                            
+                            # نخصم الأقل (المتبقي أو حد المنتج)
+                            discount_to_apply = min(remaining_discount, item_limit)
+                            
+                            # حفظ الخصم في OrderItem (هام جداً للتعويض)
+                            item.referral_discount = discount_to_apply
+                            
+                            remaining_discount -= discount_to_apply
+                            total_discount_used += discount_to_apply
+                        else:
+                            item.referral_discount = 0
+                            
                         item.save()
                     
-                    new_order.save()
+                    new_order.save() # لتحديث الإجمالي بعد الخصم
                     created_orders.append(new_order)
-                    grand_total_with_shipping += new_order.final_total
+                    grand_total_final += new_order.final_total
 
+                # و. خصم الرصيد من المستخدم نهائياً
+                if total_discount_used > 0:
+                    request.user.referral_balance -= total_discount_used
+                    request.user.save()
+
+                # ز. تنظيف السلة (حذف ما تم شراؤه)
+                # بما أننا غيرنا الأب (order=new_order)، فقد خرجوا من السلة تلقائياً
                 if not cart.items.exists():
                     cart.delete()
 
         except Exception as e:
-            print(f"Error: {e}")
-            messages.error(request, "حدث خطأ.")
+            print(f"Checkout Error: {e}")
+            messages.error(request, "حدث خطأ أثناء المعالجة.")
             return redirect('checkout')
 
         # --- الدفع ---
         if payment_method == 'ONLINE':
             try:
-                settings_obj = SiteSetting.objects.first()
+                # إضافة رسوم الدفع
                 online_fees = 0
                 if settings_obj:
                     fixed = float(settings_obj.platform_fee_fixed)
                     percent = float(settings_obj.platform_fee_percentage) / 100
-                    online_fees = fixed + (float(grand_total_with_shipping) * percent)
+                    online_fees = fixed + (float(grand_total_final) * percent)
 
-                total_to_pay = float(grand_total_with_shipping) + online_fees
-                amount_cents = int(total_to_pay * 100)
+                total_to_pay = float(grand_total_final) + online_fees
                 
+                # حفظ الرسوم في أول طلب
+                if created_orders:
+                    first_order = created_orders[0]
+                    first_order.platform_fees = online_fees
+                    first_order.final_total += Decimal(online_fees)
+                    first_order.save()
+
+                # Paymob
                 paymob = PaymobManager()
                 token = paymob.get_token()
+                amount_cents = int(total_to_pay * 100)
                 pm_order_id = paymob.create_order(token, amount_cents)
                 
                 billing_data = {
                     "first_name": request.user.first_name or "G", "last_name": request.user.last_name or "U",
                     "email": request.user.email or "no@mail.com", "phone_number": phone,
-                    "apartment": "NA", "floor": "NA", "street": "NA", "building": "NA", 
-                    "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
+                    "city": "Cairo", "country": "EG", "state": "NA", "street": "NA", "building": "NA", "floor": "NA", "apartment": "NA", "postal_code": "NA", "shipping_method": "NA"
                 }
 
                 payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
@@ -429,7 +481,6 @@ def checkout(request):
             return redirect('order_success')
 
     # --- GET ---
-    settings_obj = SiteSetting.objects.first()
     fee_fixed = float(settings_obj.platform_fee_fixed) if settings_obj else 0
     fee_percent = float(settings_obj.platform_fee_percentage) if settings_obj else 0
 
@@ -439,9 +490,9 @@ def checkout(request):
         'cart_total': cart_total_display,
         'selected_ids': selected_ids,
         'fee_fixed': fee_fixed,
-        'fee_percent': fee_percent
+        'fee_percent': fee_percent,
+        'applicable_discount': applicable_discount
     })
-
 
 @login_required
 def retry_payment(request, order_id):
@@ -766,4 +817,49 @@ def merchant_shop(request, merchant_id):
         'merchant': merchant,
         'products': products,
         # 'sales_count': sales_count
+    })
+
+
+
+@login_required
+def referral_center(request):
+    user = request.user
+    settings = SiteSetting.objects.first()
+    grace_hours = settings.referral_grace_period_hours if settings else 24
+    
+    # هل ما زال في فترة السماح؟
+    is_eligible = False
+    time_diff = timezone.now() - user.date_joined
+    if time_diff.total_seconds() / 3600 < grace_hours and not user.invited_by:
+        is_eligible = True
+
+    if request.method == 'POST':
+        code = request.POST.get('code')
+        try:
+            inviter = User.objects.get(referral_code=code)
+            
+            if inviter == user:
+                messages.error(request, "لا يمكنك دعوة نفسك!")
+            elif user.invited_by:
+                messages.error(request, "لقد استخدمت كود دعوة مسبقاً.")
+            else:
+                user.invited_by = inviter
+                user.save()
+                
+                # إشعار للمدعو (صاحب الكود)
+                Notification.objects.create(
+                    recipient=inviter,
+                    title="دعوة ناجحة! 🎉",
+                    message=f"قام {user.first_name} باستخدام كود دعوتك. ستحصل على المكافأة عند أول عملية شراء له."
+                )
+                
+                messages.success(request, "تم تفعيل كود الدعوة بنجاح! 🎉")
+                return redirect('referral_center')
+                
+        except User.DoesNotExist:
+            messages.error(request, "كود غير صحيح.")
+
+    return render(request, 'store/referral_center.html', {
+        'is_eligible': is_eligible,
+        'grace_hours': grace_hours
     })

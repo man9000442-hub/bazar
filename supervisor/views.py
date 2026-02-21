@@ -17,7 +17,8 @@ from store.models import (
 )
 
 from store.models import Wallet,WalletTransaction,WithdrawalRequest
-
+from datetime import datetime, timedelta
+from django.utils.dateparse import parse_date
 # دالة التحقق
 def is_supervisor(user):
     return user.is_superuser or user.role in [User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3, User.Role.OWNER]
@@ -221,14 +222,34 @@ def delete_category(request, pk):
 @login_required
 def site_settings_view(request):
     if not is_supervisor(request.user): return redirect('home')
-    settings_obj = SiteSetting.objects.first() or SiteSetting.objects.create()
+    
+    settings_obj = SiteSetting.objects.first()
+    if not settings_obj:
+        settings_obj = SiteSetting.objects.create()
+
     if request.method == 'POST':
+        # البيانات العامة
         settings_obj.site_name = request.POST.get('site_name')
         settings_obj.platform_fee_fixed = request.POST.get('fee_fixed')
         settings_obj.platform_fee_percentage = request.POST.get('fee_percent')
-        if request.FILES.get('banner'): settings_obj.banner_image = request.FILES.get('banner')
+        
+        # السياسات المالية (تأكد من الأسماء هنا!)
+        # في الـ HTML اسميناها: min_withdrawal, reserved_balance, min_active
+        settings_obj.min_withdrawal_amount = request.POST.get('min_withdrawal')
+        settings_obj.min_wallet_balance = request.POST.get('reserved_balance')
+        settings_obj.min_active_balance = request.POST.get('min_active')
+            # قيم الدعوات
+        settings_obj.referral_reward_amount = request.POST.get('ref_reward')
+        settings_obj.referral_discount_limit_pct = request.POST.get('ref_limit')
+        settings_obj.referral_grace_period_hours = request.POST.get('ref_grace')
+        
+        if request.FILES.get('banner'):
+            settings_obj.banner_image = request.FILES.get('banner')
+        
         settings_obj.save()
-        messages.success(request, "تم الحفظ.")
+        messages.success(request, "تم حفظ الإعدادات بنجاح ✅")
+        return redirect('super_site_settings')
+
     return render(request, 'supervisor/site_settings.html', {'settings': settings_obj})
 
 # --- 8. Offers & Team ---
@@ -331,55 +352,113 @@ def team_management(request):
     })
 
 
+from django.db.models.functions import TruncDay, TruncMonth
+from django.db.models import Sum, Q
+import json
+from datetime import timedelta
+from django.utils.dateparse import parse_date
+
 @login_required
 def finance_overview(request):
     if not is_supervisor(request.user): return redirect('home')
     
-    # 1. الحسابات الإجمالية
-    # نستخدم or 0 لضمان عدم وجود None
-    income_val = WalletTransaction.objects.filter(
-        amount__lt=0, description__contains="خصم عمولة"
-    ).aggregate(Sum('amount'))['amount__sum'] or 0
-    income = abs(float(income_val)) # تحويل لـ float
+    # --- 1. تحديد النطاق الزمني ---
+    range_type = request.GET.get('range', 'month') # الافتراضي: هذا الشهر
+    custom_start = request.GET.get('start')
+    custom_end = request.GET.get('end')
+    
+    today = timezone.now().date()
+    # قيم افتراضية
+    start_date = today.replace(day=1) 
+    end_date = today
 
-    expenses_val = WalletTransaction.objects.filter(
-        transaction_type='COMPENSATION'
+    if range_type == 'today':
+        start_date = today
+    elif range_type == 'week':
+        start_date = today - timedelta(days=7)
+    elif range_type == 'month':
+        start_date = today.replace(day=1)
+    elif range_type == 'year':
+        start_date = today.replace(month=1, day=1)
+    elif range_type == 'custom' and custom_start and custom_end:
+        try:
+            start_date = parse_date(custom_start)
+            end_date = parse_date(custom_end)
+        except:
+            pass # في حالة الخطأ، نعود للافتراضي
+
+    # --- 2. فلترة البيانات (QuerySet الأساسي) ---
+    # نستخدم created_at__date__range لتغطية اليوم بالكامل
+    base_qs = WalletTransaction.objects.filter(
+        created_at__date__range=[start_date, end_date]
+    )
+
+    # --- 3. الحسابات المالية (KPIs) ---
+    
+    # أ. الدخل (Income): العمولات (SALE بالسالب)
+    # ملاحظة: في signals.py سجلنا العمولة كـ SALE سالب.
+    # نستخدم abs() لتحويلها لموجب للعرض
+    income_val = base_qs.filter(
+        amount__lt=0, 
+        description__contains="خصم عمولة"
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    income = abs(float(income_val))
+
+    # ب. المصروفات (Expenses): التعويضات (COMPENSATION)
+    expenses_val = base_qs.filter(
+        transaction_type=WalletTransaction.TxType.COMPENSATION
     ).aggregate(Sum('amount'))['amount__sum'] or 0
     expenses = float(expenses_val)
 
+    # ج. صافي الربح
     net_profit = income - expenses
 
+    # د. التزامات التجار (Balance)
+    # هذا الرقم تراكمي ولا يعتمد على التاريخ (نحسب الرصيد الحالي للكل)
     merchants_val = Wallet.objects.aggregate(Sum('balance'))['balance__sum'] or 0
     total_merchants_balance = float(merchants_val)
 
-    # 2. الشارت (البيانات الشهرية)
-    # نجمع الإيرادات لكل شهر
-    chart_data = WalletTransaction.objects.filter(
-        transaction_type__in=['SALE', 'COMPENSATION'],
-        amount__gt=0
-    ).annotate(month=TruncMonth('created_at')).values('month').annotate(total=Sum('amount')).order_by('month')
+    # --- 4. تجهيز الشارت (Chart Data) ---
+    
+    # نحدد طريقة التجميع (يومياً أم شهرياً)
+    trunc_func = TruncMonth if range_type == 'year' else TruncDay
+    date_format = "%b %Y" if range_type == 'year' else "%d %b"
 
-    months = []
-    revenues = []
+    # تجميع الإيرادات (الدخل فقط)
+    chart_qs = base_qs.filter(
+        amount__lt=0, 
+        description__contains="خصم عمولة"
+    ).annotate(period=trunc_func('created_at')).values('period').annotate(total=Sum('amount')).order_by('period')
 
-    for entry in chart_data:
-        # تحويل التاريخ لاسم شهر
-        months.append(entry['month'].strftime('%b')) 
-        # تحويل المبلغ لـ float (مهم جداً!)
-        revenues.append(float(entry['total']))
+    labels = []
+    values = []
 
-    # إذا لم توجد بيانات، نضع قيماً افتراضية لكي لا يظهر الشارت فارغاً
-    if not months:
-        months = ['No Data']
-        revenues = [0]
+    # تحويل البيانات لقوائم
+    for item in chart_qs:
+        labels.append(item['period'].strftime(date_format))
+        # نأخذ القيمة المطلقة لأنها مخزنة بالسالب
+        values.append(abs(float(item['total'])))
 
+    # إذا لم توجد بيانات، نضع قيماً فارغة لكي لا ينهار الشارت
+    if not labels:
+        labels = ["لا توجد بيانات"]
+        values = [0]
+
+    # --- 5. الإرسال للقالب ---
     context = {
         'income': income,
         'expenses': expenses,
         'net_profit': net_profit,
         'total_merchants_balance': total_merchants_balance,
-        'chart_months': json.dumps(months),
-        'chart_revenues': json.dumps(revenues),
+        
+        # بيانات الشارت (JSON)
+        'chart_labels': json.dumps(labels),
+        'chart_values': json.dumps(values),
+        
+        # بيانات الفلتر (لإعادة عرضها في الفورم)
+        'current_range': range_type,
+        'start_date': start_date,
+        'end_date': end_date,
     }
 
     return render(request, 'supervisor/finance_overview.html', context)
@@ -534,22 +613,50 @@ def adjust_wallet(request, wallet_id):
 
 from django.db.models import Count, Q
 
+from django.db.models import F
+
 @login_required
 def all_products(request):
     if not is_supervisor(request.user): return redirect('home')
     
-    # جلب المنتجات مع إحصائيات البيع
+    # 1. الاستعلام الأساسي (مع الحسابات)
     products = Product.objects.all().annotate(
-        total_sold=Count('variations__orderitem', filter=Q(variations__orderitem__order__status='DELIVERED')),
-        total_returned=Count('variations__orderitem', filter=Q(variations__orderitem__order__status='RETURNED'))
-    ).order_by('-created_at')
+        # عدد مرات البيع (عدد الـ OrderItems التي تم تسليمها)
+        sales_count=Count('variations__orderitem', filter=Q(variations__orderitem__order__status='DELIVERED')),
+        
+        # إجمالي الإيرادات من هذا المنتج (اختياري، يحتاج Sum مع ExpressionWrapper معقد قليلاً، للتبسيط سنكتفي بالعدد)
+        # revenue=Sum(F('variations__orderitem__quantity') * F('variations__orderitem__price_at_purchase'), ...)
+    )
 
-    # بحث
+    # 2. الفلترة والترتيب
     q = request.GET.get('q')
+    sort = request.GET.get('sort', '-created_at') # الافتراضي: الأحدث
+    
     if q:
-        products = products.filter(name__icontains=q)
+        products = products.filter(Q(name__icontains=q) | Q(merchant__user__first_name__icontains=q))
+    
+    if sort == 'best_selling':
+        products = products.order_by('-sales_count')
+    elif sort == 'price_high':
+        products = products.order_by('-base_price')
+    elif sort == 'price_low':
+        products = products.order_by('base_price')
+    else:
+        products = products.order_by('-created_at')
 
-    return render(request, 'supervisor/all_products.html', {'products': products})
+    # 3. الإحصائيات العلوية (Top Stats)
+    total_products = Product.objects.count()
+    active_products = Product.objects.filter(is_active=True).count()
+    # المنتج الأكثر مبيعاً (نجلبه من القائمة المرتبة)
+    top_product = products.order_by('-sales_count').first()
+
+    return render(request, 'supervisor/all_products.html', {
+        'products': products,
+        'total_count': total_products,
+        'active_count': active_products,
+        'top_product': top_product,
+        'current_sort': sort
+    })
 
 # دالة الحذف (أدمن)
 @login_required
@@ -642,6 +749,8 @@ AVAILABLE_PERMISSIONS = [
     ('settings', 'إعدادات الموقع'),
     ('support', 'الدعم الفني'),
     ('team', 'فريق العمل'),
+    ('offers', 'إدارة العروض'),
+    ('notifications', 'إرسال إشعارات'),
 ]
 
 @login_required
@@ -673,3 +782,141 @@ def delete_role(request, pk):
     return redirect('super_manage_roles')
 
 # دالة التعديل والحذف بالمثل...
+
+
+
+@login_required
+def manage_offers(request):
+    # التحقق من الصلاحية (offers)
+    user = request.user
+    if not (user.is_superuser or user.role == 'OWNER' or user.has_perm_access('offers')):
+        return redirect('supervisor_dashboard')
+
+    # جلب عروض المنصة فقط
+    offers = Offer.objects.filter(is_platform_offer=True).order_by('-created_at')
+    return render(request, 'supervisor/manage_offers.html', {'offers': offers})
+
+@login_required
+def delete_offer_admin(request, pk):
+    # (نفس التحقق)
+    Offer.objects.filter(pk=pk).delete()
+    messages.success(request, "تم حذف العرض.")
+    return redirect('super_manage_offers')
+
+
+@login_required
+def send_broadcast(request):
+    # التحقق من الصلاحية (notifications)
+    user = request.user
+    if not (user.is_superuser or user.role == 'OWNER' or user.has_perm_access('notifications')):
+        return redirect('supervisor_dashboard')
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        message = request.POST.get('message')
+        target = request.POST.get('target') # ALL, MERCHANTS, CUSTOMERS
+        
+        users = User.objects.all()
+        if target == 'MERCHANTS':
+            users = users.filter(role='MERCHANT')
+        elif target == 'CUSTOMERS':
+            users = users.filter(role='CUSTOMER')
+            
+        # إرسال للكل (Bulk Create للأداء)
+        notifs = [Notification(recipient=u, title=title, message=message) for u in users]
+        Notification.objects.bulk_create(notifs)
+        
+        messages.success(request, f"تم إرسال الإشعار لـ {len(notifs)} مستخدم.")
+        return redirect('supervisor_dashboard')
+
+    return render(request, 'supervisor/send_broadcast.html')
+
+
+
+from django.db.models.functions import TruncDay
+from datetime import timedelta
+
+@login_required
+def supervisor_dashboard(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    # 1. الإحصائيات العامة (Counters)
+    pending_orders = Order.objects.filter(status=Order.Status.PENDING).count()
+    pending_products = Product.objects.filter(is_active=False).count()
+    pending_deposits = DepositRequest.objects.filter(status=DepositRequest.Status.PENDING).count()
+    new_merchants = MerchantProfile.objects.filter(is_approved=False).count()
+
+    # 2. المبيعات (Sales Stats)
+    today = timezone.now().date()
+    start_of_month = today.replace(day=1)
+    
+    # مبيعات اليوم
+    sales_today = WalletTransaction.objects.filter(
+        transaction_type='SALE', amount__gt=0, created_at__date=today
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # مبيعات الشهر
+    sales_month = WalletTransaction.objects.filter(
+        transaction_type='SALE', amount__gt=0, created_at__date__gte=start_of_month
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+
+    # 3. الرسم البياني (آخر 7 أيام)
+    last_7_days = today - timedelta(days=6)
+    chart_data = WalletTransaction.objects.filter(
+        transaction_type='SALE', amount__gt=0, created_at__date__gte=last_7_days
+    ).annotate(day=TruncDay('created_at')).values('day').annotate(total=Sum('amount')).order_by('day')
+
+    # تجهيز القوائم للرسم
+    days_labels = []
+    sales_values = []
+    
+    # نملأ الأيام الفارغة بـ 0 لضمان استمرار الرسم
+    current_date = last_7_days
+    data_dict = {entry['day'].date(): entry['total'] for entry in chart_data}
+    
+    for i in range(7):
+        day_val = data_dict.get(current_date, 0)
+        days_labels.append(current_date.strftime("%d %b")) # 15 Feb
+        sales_values.append(float(day_val))
+        current_date += timedelta(days=1)
+
+    # 4. آخر 5 طلبات (للعرض السريع)
+    recent_orders = Order.objects.all().select_related('customer').order_by('-created_at')[:5]
+
+    context = {
+        'pending_orders': pending_orders,
+        'pending_products': pending_products,
+        'pending_deposits': pending_deposits,
+        'new_merchants': new_merchants,
+        'sales_today': sales_today,
+        'sales_month': sales_month,
+        'chart_labels': json.dumps(days_labels),
+        'chart_data': json.dumps(sales_values),
+        'recent_orders': recent_orders,
+    }
+    
+    return render(request, 'supervisor/dashboard.html', context)
+
+
+@login_required
+def banned_users(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    users = User.objects.filter(is_banned=True)
+    return render(request, 'supervisor/banned_users.html', {'users': users})
+
+@login_required
+def ban_user(request, user_id):
+    if not is_supervisor(request.user): return redirect('home')
+    user = get_object_or_404(User, pk=user_id)
+    
+    action = request.GET.get('action')
+    if action == 'ban':
+        user.is_banned = True
+        messages.warning(request, f"تم حظر {user.username}")
+    elif action == 'unban':
+        user.is_banned = False
+        messages.success(request, f"تم فك حظر {user.username}")
+        
+    user.save()
+    return redirect('super_users_list') # أو banned_users

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>حساب محظور</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>body { background-color: #f8d7da; font-family: 'Tahoma', sans-serif; }</style>
+</head>
+<body class="d-flex align-items-center justify-content-center vh-100">
+    <div class="text-center">
+        <h1 class="display-1 fw-bold text-danger">🚫</h1>
+        <h2 class="text-dark">عفواً، تم حظر حسابك</h2>
+        <p class="text-muted lead">لقد قمت بمخالفة شروط الاستخدام.</p>
+        <p class="small text-muted">للاستفسار، يرجى التواصل مع الإدارة.</p>
+        <div class="d-grid gap-2 d-sm-flex justify-content-center mt-4">
+            <!-- زر التواصل مع الدعم -->
+            <a href="{% url 'create_ticket' %}" class="btn btn-primary px-4 fw-bold shadow-sm">
+                <i class="fas fa-headset me-2"></i> تواصل مع الدعم لفك الحظر
+            </a>
+            
+            <a href="{% url 'account_logout' %}" class="btn btn-outline-danger px-4">تسجيل خروج</a>
+        </div>
+    </div>
+</body>
+</html>

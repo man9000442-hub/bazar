@@ -40,6 +40,21 @@
                 <input type="number" name="min_active" class="form-control" value="{{ settings.min_active_balance }}">
             </div>
         </div>
+        <h6 class="fw-bold text-success mb-3 mt-4"><i class="fas fa-gift me-2"></i> نظام الدعوات</h6>
+        <div class="row g-3">
+            <div class="col-4">
+                <label class="form-label small">قيمة المكافأة (ج.م)</label>
+                <input type="number" name="ref_reward" class="form-control" value="{{ settings.referral_reward_amount }}">
+            </div>
+            <div class="col-4">
+                <label class="form-label small">أقصى نسبة خصم (%)</label>
+                <input type="number" name="ref_limit" class="form-control" value="{{ settings.referral_discount_limit_pct }}">
+            </div>
+            <div class="col-4">
+                <label class="form-label small">مهلة إدخال الكود (ساعة)</label>
+                <input type="number" name="ref_grace" class="form-control" value="{{ settings.referral_grace_period_hours }}">
+            </div>
+        </div>
 
         <h6 class="fw-bold text-primary mb-3 mt-4">المظهر</h6>
         <div class="mb-3">

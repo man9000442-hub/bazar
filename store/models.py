@@ -186,7 +186,16 @@ class Order(models.Model):
 
     def __str__(self):
         return f"{self.order_id} - {self.customer.username}"
-
+    
+    def get_total_referral_discount(self):
+        total = sum(item.referral_discount for item in self.items.all())
+        return total
+    @property
+    def amount_to_collect(self):
+        if self.payment_method == 'ONLINE':
+            return 0
+        discount = self.get_total_referral_discount()
+        return self.final_total - discount
 
 # 7. عناصر الطلب (Order Items)
 # ... داخل class OrderItem ...
@@ -199,7 +208,7 @@ class OrderItem(models.Model):
     # لاحظ: remove blank=True/null=True here is correct, we handle it in save()
     price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="السعر وقت الشراء", blank=True, null=True)
     merchant = models.ForeignKey(MerchantProfile, on_delete=models.PROTECT, verbose_name="التاجر", blank=True, null=True)
-
+    referral_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     def clean(self):
         # هذه الدالة تُستدعى قبل الحفظ للتحقق من الصحة
         super().clean()
@@ -324,7 +333,9 @@ class SiteSetting(models.Model):
     min_active_balance = models.DecimalField(max_digits=10, decimal_places=2, default=-500.00, verbose_name="الحد الأدنى لتفعيل المنتجات")    
     # صور البانر (يمكن زيادتها)
     banner_image = models.ImageField(upload_to='banners/', blank=True, null=True, verbose_name="صورة البانر الرئيسي")
-    
+    referral_grace_period_hours = models.IntegerField(default=24, verbose_name="مهلة إدخال كود الدعوة (ساعة)")
+    referral_reward_amount = models.DecimalField(max_digits=10, decimal_places=2, default=50.00, verbose_name="قيمة المكافأة (لكل طرف)")
+    referral_discount_limit_pct = models.IntegerField(default=10, verbose_name="أقصى نسبة خصم من الرصيد لكل منتج (%)")   
     def __str__(self):
         return "إعدادات الموقع"
 

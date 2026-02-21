@@ -106,6 +106,14 @@
                 <i class="fas fa-box-open"></i> المنتجات
             </a>
             {% endif %}
+            {% if request.user.is_superuser or request.user.role == 'OWNER' or "products" in request.user.custom_role.permissions %}
+            <a href="{% url 'super_all_products' %}" class="nav-link {% if request.resolver_match.url_name == 'super_all_products' %}active{% endif %}">
+                <i class="fas fa-boxes me-2"></i> كل المنتجات
+            </a>
+            {% endif %}
+            {% if request.user.is_superuser or "offers" in request.user.custom_role.permissions %}
+            <a href="{% url 'super_manage_offers' %}" class="nav-link"><i class="fas fa-tags me-2"></i> إدارة العروض</a>
+            {% endif %}
 
             {% if request.user.is_superuser or request.user.role == 'OWNER' or "categories" in request.user.custom_role.permissions %}
             <a href="{% url 'super_categories' %}" class="nav-link {% if request.resolver_match.url_name == 'super_categories' %}active{% endif %}">
@@ -164,6 +172,10 @@
                     </a>
                 </div>
             </div>
+            {% endif %}
+
+            {% if request.user.is_superuser or "notifications" in request.user.custom_role.permissions %}
+            <a href="{% url 'super_send_broadcast' %}" class="nav-link"><i class="fas fa-bullhorn me-2"></i> إشعار عام</a>
             {% endif %}
 
             {% if request.user.is_superuser or request.user.role == 'OWNER' or "settings" in request.user.custom_role.permissions %}

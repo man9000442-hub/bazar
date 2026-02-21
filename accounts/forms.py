@@ -107,8 +107,11 @@ class GoogleCompleteProfileForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ['phone_primary']
+        fields = ['first_name', 'last_name','phone_primary']
         widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+
             'phone_primary': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '01xxxxxxxxx'}),
         }
 

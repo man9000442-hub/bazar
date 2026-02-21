@@ -1,0 +1,32 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}إرسال إشعار عام{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px;">
+    <form method="POST" class="card p-4 border-0 shadow-sm rounded-4">
+        {% csrf_token %}
+        <h6 class="fw-bold text-primary mb-3">رسالة جماعية</h6>
+        
+        <div class="mb-3">
+            <label class="form-label">عنوان الإشعار</label>
+            <input type="text" name="title" class="form-control" required>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">نص الرسالة</label>
+            <textarea name="message" class="form-control" rows="4" required></textarea>
+        </div>
+        
+        <div class="mb-4">
+            <label class="form-label">المستلمون</label>
+            <select name="target" class="form-select">
+                <option value="ALL">الجميع (تجار وعملاء)</option>
+                <option value="MERCHANTS">التجار فقط</option>
+                <option value="CUSTOMERS">العملاء فقط</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-dark w-100 rounded-pill">إرسال <i class="fas fa-paper-plane ms-2"></i></button>
+    </form>
+</div>
+{% endblock %}

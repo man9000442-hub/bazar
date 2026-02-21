@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-sm border-0 p-4 text-center mb-4">
+        <h5 class="fw-bold text-primary mb-3">كود الدعوة الخاص بك</h5>
+        <div class="bg-light p-3 rounded border border-dashed d-flex justify-content-between align-items-center">
+            <h3 class="m-0 fw-bold letter-spacing-2" id="myCode">{{ request.user.referral_code }}</h3>
+            <button class="btn btn-sm btn-outline-primary" onclick="copyCode()">نسخ</button>
+        </div>
+        <p class="text-muted small mt-2">شارك الكود واحصل على رصيد مجاني!</p>
+        <h4 class="fw-bold text-success mt-3">رصيدك الحالي: {{ request.user.referral_balance }} ج.م</h4>
+    </div>
+
+    {% if is_eligible %}
+    <div class="card shadow-sm border-0 p-4 bg-warning-subtle">
+        <h6 class="fw-bold text-dark mb-3">هل لديك كود دعوة من صديق؟</h6>
+        <p class="small">لديك مهلة {{ grace_hours }} ساعة فقط لإدخاله.</p>
+        <form method="POST" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="text" name="code" class="form-control" placeholder="أدخل الكود هنا" required>
+            <button class="btn btn-dark">تفعيل</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function copyCode() {
+    navigator.clipboard.writeText(document.getElementById('myCode').innerText);
+    alert("تم النسخ!");
+}
+</script>
+{% endblock %}

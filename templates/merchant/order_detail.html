@@ -110,6 +110,7 @@
             <span>{{ order.shipping_cost }} ج.م</span>
         </div>
 
+
         <!-- تنبيهات الشحن المجاني -->
         {% if order.shipping_cost == 0 %}
             <div class="alert alert-info py-2 px-2 small mt-2 mb-2 border-info-subtle bg-info-subtle text-info-emphasis">
@@ -121,7 +122,15 @@
                 {% endif %}
             </div>
         {% endif %}
-
+            <!-- إضافة: خصم الدعوات (يظهر فقط لو فيه خصم) -->
+        {% with discount=order.get_total_referral_discount %}
+        {% if discount > 0 %}
+        <div class="d-flex justify-content-between small mb-1 text-success fw-bold">
+            <span>خصم دعوات (مدفوع من المنصة)</span>
+            <span>-{{ discount }} ج.م</span>
+        </div>
+        {% endif %}
+        {% endwith %}
         <hr class="my-2">
         
         <!-- المبلغ المطلوب تحصيله -->
@@ -137,7 +146,7 @@
             {% else %}
                 <!-- كاش (COD) -->
                 <div class="text-end">
-                    <span class="fw-bold text-danger fs-5">{{ order.final_total }} ج.م</span>
+                    <span class="fw-bold text-danger fs-5">{{ order.amount_to_collect }} ج.م</span>
                     <span class="d-block badge bg-secondary mt-1">دفع عند الاستلام</span>
                 </div>
             {% endif %}
