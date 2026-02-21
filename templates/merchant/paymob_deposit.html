@@ -2,28 +2,84 @@
 
 {% block content %}
 <div class="container mt-5">
-    <div class="card shadow border-0 p-4">
-        <h4 class="fw-bold mb-3" style="color: var(--text-coffee);">شحن رصيد (أونلاين) 💳</h4>
-        <p class="text-muted">اشحن محفظتك فوراً باستخدام الفيزا أو المحفظة الإلكترونية.</p>
+    <div class="card shadow border-0 p-4 mx-auto" style="max-width: 500px;">
+        
+        <div class="text-center mb-4">
+            <div class="bg-success-subtle text-success rounded-circle d-inline-flex p-3 mb-2">
+                <i class="fas fa-coins fa-2x"></i>
+            </div>
+            <h4 class="fw-bold mb-1" style="color: var(--text-coffee);">شحن المحفظة</h4>
+            <p class="text-muted small">اشحن رصيدك فوراً وابدأ البيع.</p>
+        </div>
 
         <form method="POST">
             {% csrf_token %}
             
+            <!-- المبلغ -->
             <div class="mb-4">
-                <label class="form-label fw-bold">المبلغ المراد شحنه (ج.م)</label>
-                <input type="number" name="amount" class="form-control form-control-lg" placeholder="مثلاً: 500" required>
+                <label class="form-label fw-bold small text-muted">المبلغ المراد شحنه</label>
+                <div class="input-group">
+                    <input type="number" name="amount" class="form-control form-control-lg fw-bold text-center" placeholder="0.00" min="10" required>
+                    <span class="input-group-text bg-light">ج.م</span>
+                </div>
             </div>
 
-            <!-- يمكن إضافة خيار (فيزا / محفظة) لاحقاً -->
-            
-            <button type="submit" class="btn btn-gold w-100 py-3 fw-bold rounded-pill shadow-sm">
-                الانتقال لصفحة الدفع الآمن <i class="fas fa-lock ms-2"></i>
+            <!-- وسيلة الدفع -->
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-muted">وسيلة الدفع</label>
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="method" id="card" value="CARD" checked onchange="toggleWalletInput()">
+                    <label class="btn btn-outline-primary py-3" for="card">
+                        <i class="fas fa-credit-card d-block mb-1 fs-4"></i>
+                        بطاقة بنكية
+                    </label>
+
+                    <input type="radio" class="btn-check" name="method" id="wallet" value="WALLET" onchange="toggleWalletInput()">
+                    <label class="btn btn-outline-success py-3" for="wallet">
+                        <i class="fas fa-wallet d-block mb-1 fs-4"></i>
+                        محفظة إلكترونية
+                    </label>
+                </div>
+            </div>
+
+            <!-- حقل رقم المحفظة (مخفي) -->
+            <div class="mb-4 bg-light p-3 rounded border border-success-subtle animate__animated animate__fadeIn" id="wallet-field" style="display: none;">
+                <label class="form-label fw-bold small text-success">رقم المحفظة (فودافون/اتصالات/وي)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fas fa-mobile-alt"></i></span>
+                    <input type="tel" name="wallet_number" class="form-control" placeholder="010xxxxxxxx" value="{{ request.user.phone_primary }}">
+                </div>
+            </div>
+
+            <!-- زر الدفع -->
+            <button type="submit" class="btn btn-gold w-100 py-3 fw-bold rounded-pill shadow-sm" id="pay-btn">
+                متابعة للدفع الآمن <i class="fas fa-lock ms-2"></i>
             </button>
         </form>
         
-        <div class="text-center mt-3">
-            <img src="https://accept.paymob.com/public/images/accept_logo.png" width="100" style="opacity: 0.7;">
+        <div class="text-center mt-4 opacity-50">
+            <img src="https://accept.paymob.com/public/images/accept_logo.png" width="80">
         </div>
     </div>
 </div>
+
+<script>
+function toggleWalletInput() {
+    const isWallet = document.getElementById('wallet').checked;
+    const field = document.getElementById('wallet-field');
+    const btn = document.getElementById('pay-btn');
+    
+    if (isWallet) {
+        field.style.display = 'block';
+        btn.classList.remove('btn-gold');
+        btn.classList.add('btn-success');
+        btn.innerHTML = 'إرسال طلب الدفع للمحفظة <i class="fas fa-paper-plane ms-2"></i>';
+    } else {
+        field.style.display = 'none';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-gold');
+        btn.innerHTML = 'متابعة للدفع الآمن <i class="fas fa-lock ms-2"></i>';
+    }
+}
+</script>
 {% endblock %}

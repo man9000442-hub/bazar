@@ -282,6 +282,10 @@ from store.paymob_utils import PaymobManager
 from store.models import PaymobTransaction
 from django.conf import settings
 
+from store.paymob_utils import PaymobManager
+from store.models import PaymobTransaction
+from django.conf import settings
+
 @login_required
 def paymob_deposit(request):
     if not is_merchant(request.user):
@@ -290,29 +294,28 @@ def paymob_deposit(request):
     if request.method == 'POST':
         try:
             amount = float(request.POST.get('amount'))
-            if amount < 10: # حد أدنى
+            method = request.POST.get('method') # CARD or WALLET
+            
+            if amount < 10:
                 messages.error(request, "الحد الأدنى للشحن 10 ج.م")
                 return redirect('paymob_deposit')
 
-            amount_cents = int(amount * 100) # Paymob يتعامل بالقروش
+            amount_cents = int(amount * 100)
             
-            # --- 1. Paymob Setup ---
+            # 1. Paymob Setup
             paymob = PaymobManager()
             token = paymob.get_token()
-            
-            # إنشاء الطلب في Paymob
             pm_order_id = paymob.create_order(token, amount_cents)
             
-            # --- 2. تسجيل المعاملة محلياً (مهم جداً للـ Callback) ---
-            # نحفظ رقم الطلب (pm_order_id) لنعرف لاحقاً أن هذا شحن
+            # 2. تسجيل المعاملة محلياً (للـ Callback)
             PaymobTransaction.objects.create(
                 merchant=request.user.merchant_profile,
-                paymob_order_id=str(pm_order_id), # تأكد أنه string
+                paymob_order_id=str(pm_order_id),
                 amount_cents=amount_cents,
                 is_paid=False
             )
 
-            # --- 3. بيانات الفوترة ---
+            # 3. بيانات المستخدم
             user = request.user
             billing_data = {
                 "first_name": user.first_name or "Merchant",
@@ -323,14 +326,31 @@ def paymob_deposit(request):
                 "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
             }
 
-            # --- 4. الحصول على مفتاح الدفع ---
-            payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
-
-            # --- 5. عرض الـ Iframe ---
-            iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+            # 4. التوجيه حسب الطريقة
+            if method == 'WALLET':
+                wallet_num = request.POST.get('wallet_number')
+                if not wallet_num:
+                    messages.error(request, "رقم المحفظة مطلوب.")
+                    return redirect('paymob_deposit')
+                
+                billing_data['phone_number'] = wallet_num
+                
+                redirect_url = paymob.pay_with_wallet(
+                    token, amount_cents, pm_order_id, 
+                    settings.PAYMOB_INTEGRATION_ID_WALLET, 
+                    billing_data
+                )
+                return redirect(redirect_url)
             
-            # نستخدم نفس قالب الـ Iframe المستخدم في الشراء
-            return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
+            else:
+                # CARD
+                payment_key = paymob.get_payment_key(
+                    token, pm_order_id, amount_cents, 
+                    settings.PAYMOB_INTEGRATION_ID_CARD, 
+                    billing_data
+                )
+                iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+                return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
 
         except Exception as e:
             print(f"Deposit Error: {e}")
