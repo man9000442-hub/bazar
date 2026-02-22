@@ -16,8 +16,8 @@ from pathlib import Path
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
+database_url = os.getenv('DATABASE_URL')
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -105,12 +105,17 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if database_url:
+    DATABASES = {
+        'default': dj_database_url.parse(database_url)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -183,8 +188,8 @@ ACCOUNT_EMAIL_VERIFICATION = 'none' # لا ترسل إيميل تفعيل
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': '162436305938-dgm742mia7glvb61q0hha93bv94bf9cl.apps.googleusercontent.com',  # مفتاح وهمي للتجربة
-            'secret': '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',     # مفتاح وهمي
+            'client_id': os.getenv('GOOGLE_CLIENT_ID'),
+            'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
             'key': ''
         },
         'SCOPE': [
@@ -205,8 +210,8 @@ SOCIALACCOUNT_ADAPTER = 'accounts.adapters.MySocialAccountAdapter'
 # ACCOUNT_ADAPTER = 'allauth.account.adapter.DefaultAccountAdapter' # الافتراضي
 
 # Paymob Configuration
-PAYMOB_API_KEY = "ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmpiR0Z6Y3lJNklrMWxjbU5vWVc1MElpd2ljSEp2Wm1sc1pWOXdheUk2TVRFek16QTBNaXdpYm1GdFpTSTZJbWx1YVhScFlXd2lmUS42R0k4dmt1dkt5bkdLa1RPOHRwaFVqM0VITUd4cUp3MzByZ2pnejJWRVg2MlF4TjhkamRMT0xiaEMzcXJ0cnpUeE1FajFTX055bnVIT1FlQnBmMEYxUQ=="
-PAYMOB_INTEGRATION_ID_CARD = "5548840"  # Online Card Integration ID
-PAYMOB_INTEGRATION_ID_WALLET = "5548854" # Online Wallet Integration ID
-PAYMOB_IFRAME_ID = "1008440" # Iframe ID
+PAYMOB_API_KEY = os.getenv('PAYMOB_API_KEY')
+PAYMOB_INTEGRATION_ID_CARD = os.getenv('PAYMOB_INTEGRATION_ID_CARD')
+PAYMOB_INTEGRATION_ID_WALLET = os.getenv('PAYMOB_INTEGRATION_ID_WALLET')
+PAYMOB_IFRAME_ID = os.getenv('PAYMOB_IFRAME_ID')
 
