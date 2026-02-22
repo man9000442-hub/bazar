@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+from . import api_views
 urlpatterns = [
     path('', views.home, name='home'),
     path('product/<int:pk>/', views.product_detail, name='product_detail'),
@@ -22,4 +22,6 @@ urlpatterns = [
     path('my-orders/<int:order_id>/', views.customer_order_detail, name='customer_order_detail'),
     path('shop/<int:merchant_id>/', views.merchant_shop, name='merchant_shop'),
     path('referral/', views.referral_center, name='referral_center'),
+    path('api/products/', api_views.ProductListAPI.as_view()),
+    path('api/orders/', api_views.OrderListAPI.as_view()),
 ]

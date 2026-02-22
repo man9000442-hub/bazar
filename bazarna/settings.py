@@ -50,9 +50,13 @@ INSTALLED_APPS = [
     'support',
     'merchant_panel',
     'supervisor',
+    'rest_framework',
+    'rest_framework.authtoken', # للمصادقة
+    'corsheaders', # للسماح للتطبيق بالاتصال
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -86,6 +90,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'bazarna.wsgi.application'
 
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+CORS_ALLOW_ALL_ORIGINS = True
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 

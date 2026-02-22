@@ -65,3 +65,8 @@ def merchant_onboarding(request):
     if request.user.role != 'MERCHANT': return redirect('home')
     # ... (نفس كود الفورم السابق لرفع الصور الناقصة) ...
     return render(request, 'account/merchant_onboarding.html')
+
+
+
+def terms_view(request):
+    return render(request, 'terms.html')

@@ -13,4 +13,5 @@ urlpatterns = [
     
     # البروفايل
     path('profile/', views.profile_view, name='profile'),
+    path('terms/', views.terms_view, name='terms_view'),
 ]
