@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-2=@6ne*bhsuw#t^inbg*7fs5h5*@&h)(1f90mp45jp1oh+f(o@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['bazar-production-f1e0.up.railway.app','127.0.0.1','elbazaare.com']
+ALLOWED_HOSTS = ['bazar-production-f1e0.up.railway.app','127.0.0.1','elbazaare.com','147.93.56.140']
 CSRF_TRUSTED_ORIGINS = [
     'https://bazar-production-f1e0.up.railway.app','http://127.0.0.1:8000/','https://elbazaare.com'
 ]
