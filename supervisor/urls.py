@@ -55,4 +55,12 @@ path('users/banned/', views.banned_users, name='super_banned_users'),
 path('users/ban/<int:user_id>/', views.ban_user, name='super_ban_user'),
 path('analytics/customers/', views.customers_analytics, name='super_customers_analytics'),
 path('analytics/customer/<int:user_id>/', views.customer_profile_admin, name='super_customer_profile'),
+path('banners/', views.manage_banners, name='super_manage_banners'),
+path('banners/delete/<int:pk>/', views.delete_banner, name='super_delete_banner'),
+    # Terms & Conditions
+    path('terms/', views.manage_terms, name='super_manage_terms'),
+    path('terms/delete/<int:pk>/', views.delete_term, name='super_delete_term'),
+    path('merchants/reject/<int:pk>/', views.reject_merchant, name='super_reject_merchant'),
+    path('merchants/all/', views.merchants_list, name='super_merchants_list'),
+path('merchants/profile/<int:pk>/', views.merchant_profile_admin, name='super_merchant_profile'),
 ]

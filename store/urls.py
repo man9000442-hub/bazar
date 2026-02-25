@@ -1,6 +1,16 @@
 from django.urls import path
 from . import views
 from . import api_views
+from store.sitemaps import ProductSitemap
+from django.contrib.sitemaps.views import sitemap
+from django.views.generic.base import TemplateView
+from store.sitemaps import ProductSitemap, StaticSitemap
+
+sitemaps = {
+     'static': StaticSitemap,
+     'products': ProductSitemap,
+ }
+
 urlpatterns = [
     path('', views.home, name='home'),
     path('product/<int:pk>/', views.product_detail, name='product_detail'),
@@ -24,4 +34,6 @@ urlpatterns = [
     path('referral/', views.referral_center, name='referral_center'),
     path('api/products/', api_views.ProductListAPI.as_view()),
     path('api/orders/', api_views.OrderListAPI.as_view()),
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
+    path('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain")),
 ]

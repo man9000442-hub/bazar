@@ -120,6 +120,11 @@
                 <i class="fas fa-th-large"></i> الأقسام
             </a>
             {% endif %}
+            {% if request.user.is_superuser or "banners" in request.user.custom_role.permissions %}
+            <a href="{% url 'super_manage_banners' %}" class="nav-link">
+                <i class="fas fa-images me-2"></i> البانرات
+            </a>
+            {% endif %}
 
             <!-- 3. المستخدمين -->
             {% if request.user.is_superuser or request.user.role == 'OWNER' or "users" in request.user.custom_role.permissions or "merchants" in request.user.custom_role.permissions %}
@@ -141,6 +146,9 @@
             {% if request.user.is_superuser or request.user.role == 'OWNER' or "merchants" in request.user.custom_role.permissions %}
             <a href="{% url 'super_pending_merchants' %}" class="nav-link {% if request.resolver_match.url_name == 'super_pending_merchants' %}active{% endif %}">
                 <i class="fas fa-store"></i> تفعيل التجار
+            </a>
+            <a href="{% url 'super_merchants_list' %}" class="nav-link {% if request.resolver_match.url_name == 'super_merchants_list' %}active{% endif %}">
+                <i class="fas fa-list"></i> قائمة التجار
             </a>
             {% endif %}
             
@@ -193,6 +201,12 @@
             {% if request.user.is_superuser or request.user.role == 'OWNER' or "support" in request.user.custom_role.permissions %}
             <a href="{% url 'super_support_tickets' %}" class="nav-link {% if request.resolver_match.url_name == 'super_support_tickets' %}active{% endif %}">
                 <i class="fas fa-headset"></i> الدعم الفني
+            </a>
+            {% endif %}
+            {% if request.user.is_superuser or request.user.role == 'OWNER' %}
+            <!-- (تحت زر إعدادات الموقع) -->
+            <a href="{% url 'super_manage_terms' %}" class="nav-link">
+                <i class="fas fa-file-contract me-2"></i> الشروط والأحكام
             </a>
             {% endif %}
         </div>

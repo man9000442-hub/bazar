@@ -1,26 +1,76 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="bg-white p-3 border-bottom shadow-sm mb-3">
-    <h5 class="m-0 fw-bold">كل الأقسام</h5>
+<!-- Header -->
+<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-4 sticky-top">
+    <a href="javascript:history.back()" class="text-dark me-3"><i class="fas fa-arrow-right fs-5"></i></a>
+    <h5 class="m-0 fw-bold" style="color: var(--text-coffee);">تصفح الأقسام</h5>
 </div>
 
-<div class="container pb-5">
+<div class="container pb-5 mb-5">
+    
+    <!-- Grid: عمود واحد للموبايل (col-12)، وعمودين للتابلت (col-md-6) -->
     <div class="row g-3">
         {% for cat in categories %}
-        <div class="col-4 text-center">
-            <a href="{% url 'home' %}?category={{ cat.id }}" class="text-decoration-none text-dark d-block">
-                <div class="card border-0 shadow-sm mb-2 d-flex align-items-center justify-content-center p-2" style="aspect-ratio: 1/1;">
+        <div class="col-12 col-md-6">
+            <a href="{% url 'home' %}?category={{ cat.id }}" class="text-decoration-none">
+                
+                <!-- الكارت -->
+                <div class="card border-0 shadow-sm overflow-hidden position-relative category-card">
+                    
+                    <!-- الصورة الخلفية -->
                     {% if cat.image %}
-                        <img src="{{ cat.image.url }}" class="img-fluid" style="max-height: 50px;">
+                        <img src="{{ cat.image.url }}" class="card-img w-100" alt="{{ cat.name }}">
                     {% else %}
-                        <i class="fas fa-th-large fa-2x text-muted opacity-50"></i>
+                        <!-- لون افتراضي لو مفيش صورة -->
+                        <div class="w-100 h-100 bg-secondary d-flex align-items-center justify-content-center" style="min-height: 150px;">
+                            <i class="fas fa-th-large fa-3x text-white opacity-25"></i>
+                        </div>
                     {% endif %}
+                    
+                    <!-- طبقة تعتيم (Overlay) عشان الكلام يبان -->
+                    <div class="card-img-overlay d-flex align-items-center justify-content-center" 
+                         style="background: rgba(0, 0, 0, 0.4);">
+                        
+                        <!-- الاسم -->
+                        <h3 class="fw-bold text-white mb-0 text-shadow">{{ cat.name }}</h3>
+                    </div>
                 </div>
-                <small class="fw-bold">{{ cat.name }}</small>
             </a>
         </div>
         {% endfor %}
     </div>
+
+    {% if not categories %}
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-layer-group fa-3x mb-3 opacity-25"></i>
+        <p>لا توجد أقسام حالياً.</p>
+    </div>
+    {% endif %}
 </div>
+
+<!-- CSS -->
+<style>
+    .category-card {
+        height: 150px; /* ارتفاع ثابت للكارت */
+        border-radius: 16px;
+        transition: transform 0.2s;
+    }
+    
+    .category-card img {
+        height: 100%;
+        object-fit: cover; /* ملء المساحة */
+    }
+
+    .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        letter-spacing: 1px;
+    }
+
+    /* تأثير عند الضغط */
+    .category-card:active {
+        transform: scale(0.98);
+    }
+</style>
+
 {% endblock %}

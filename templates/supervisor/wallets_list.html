@@ -1,33 +1,263 @@
-{% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}إدارة المحافظ{% endblock %}
-
-{% block content %}
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="bg-light">
-                <tr>
-                    <th class="ps-4">التاجر</th>
-                    <th>الرصيد المتاح</th>
-                    <th>الرصيد المعلق</th>
-                    <th class="text-end pe-4">تحكم</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for w in wallets %}
-                <tr>
-                    <td class="ps-4 fw-bold">{{ w.merchant.user.first_name }}</td>
-                    <td class="text-success fw-bold">{{ w.balance }} ج.م</td>
-                    <td class="text-warning">{{ w.pending_balance }} ج.م</td>
-                    <td class="text-end pe-4">
-                        <a href="{% url 'super_adjust_wallet' w.id %}" class="btn btn-sm btn-outline-primary rounded-pill">
-                            <i class="fas fa-edit"></i> تعديل
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+{% extends 'supervisor/base_supervisor.html' %} {% block page_title %}إدارة
+المحافظ{% endblock %} {% block content %}
+<!-- فلاتر البحث والترتيب -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="input-group">
+      <span class="input-group-text bg-white border"
+        ><i class="fas fa-search text-muted"></i
+      ></span>
+      <input
+        type="text"
+        id="searchInput"
+        class="form-control border"
+        placeholder="ابحث عن التاجر..."
+      />
     </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="d-flex gap-2">
+      <select id="sortSelect" class="form-select border">
+        <option value="balance_desc" selected>الرصيد: الأعلى أولاً</option>
+        <option value="balance_asc">الرصيد: الأقل أولاً</option>
+        <option value="name_asc">الاسم: أ-ي</option>
+        <option value="name_desc">الاسم: ي-أ</option>
+        <option value="pending_desc">الرصيد المعلق: الأعلى أولاً</option>
+        <option value="pending_asc">الرصيد المعلق: الأقل أولاً</option>
+      </select>
+      <button
+        class="btn btn-outline-secondary"
+        onclick="resetFilters()"
+        title="إعادة تعيين"
+      >
+        <i class="fas fa-redo"></i>
+      </button>
+    </div>
+  </div>
 </div>
+
+<!-- إحصائيات سريعة -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm p-3 bg-success bg-opacity-10">
+      <small class="text-muted">إجمالي الرصيد المتاح</small>
+      <h5 class="fw-bold text-success mb-0">
+        <span id="totalBalance">0</span> ج.م
+      </h5>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm p-3 bg-warning bg-opacity-10">
+      <small class="text-muted">إجمالي الرصيد المعلق</small>
+      <h5 class="fw-bold text-warning mb-0">
+        <span id="totalPending">0</span> ج.م
+      </h5>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm p-3 bg-info bg-opacity-10">
+      <small class="text-muted">عدد التجار</small>
+      <h5 class="fw-bold text-info mb-0">
+        <span id="merchantCount">0</span>
+      </h5>
+    </div>
+  </div>
+</div>
+
+<!-- جدول المحافظ -->
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="bg-light">
+        <tr>
+          <th class="ps-4">
+            <i class="fas fa-user-tie text-muted me-2"></i>التاجر
+          </th>
+          <th class="text-end">
+            <i class="fas fa-wallet text-success me-2"></i>الرصيد المتاح
+          </th>
+          <th class="text-end">
+            <i class="fas fa-hourglass-half text-warning me-2"></i>الرصيد المعلق
+          </th>
+          <th class="text-end">
+            <i class="fas fa-calculator text-info me-2"></i>الإجمالي
+          </th>
+          <th class="text-end pe-4">تحكم</th>
+        </tr>
+      </thead>
+      <tbody id="walletsTableBody">
+        {% for w in wallets %}
+        <tr
+          class="wallet-row"
+          data-merchant-name="{{ w.merchant.user.first_name }}"
+          data-balance="{{ w.balance }}"
+          data-pending="{{ w.pending_balance }}"
+        >
+          <td class="ps-4 fw-bold">
+            {{ w.merchant.user.first_name }} {% if w.merchant.is_verified %}
+            <i class="fas fa-check-circle text-primary ms-1" title="موثّق"></i>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <span
+              class="badge bg-success-subtle text-success-emphasis fw-bold border border-success-subtle px-3"
+            >
+              {{ w.balance }} ج.م
+            </span>
+          </td>
+          <td class="text-end">
+            <span
+              class="badge bg-warning-subtle text-warning-emphasis fw-bold border border-warning-subtle px-3"
+            >
+              {{ w.pending_balance }} ج.م
+            </span>
+          </td>
+          <td class="text-end">
+            <span
+              class="badge bg-info-subtle text-info-emphasis fw-bold border border-info-subtle px-3"
+            >
+              {{ w.balance|add:w.pending_balance }} ج.م
+            </span>
+          </td>
+          <td class="text-end pe-4">
+            <a
+              href="{% url 'super_adjust_wallet' w.id %}"
+              class="btn btn-sm btn-outline-primary rounded-pill"
+            >
+              <i class="fas fa-edit me-1"></i> تعديل
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center py-4">
+            <i class="fas fa-inbox text-muted me-2"></i>
+            <span class="text-muted">لا توجد محافظ</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- رسالة عدم وجود نتائج -->
+<div id="noResults" class="alert alert-info border-0 d-none mt-4" role="alert">
+  <i class="fas fa-search me-2"></i>
+  لم يتم العثور على أي محافظ تطابق معايير البحث
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    updateStats();
+
+    // البحث
+    document
+      .getElementById("searchInput")
+      .addEventListener("keyup", function () {
+        filterAndSort();
+      });
+
+    // الترتيب
+    document
+      .getElementById("sortSelect")
+      .addEventListener("change", function () {
+        filterAndSort();
+      });
+  });
+
+  function filterAndSort() {
+    const searchTerm = document
+      .getElementById("searchInput")
+      .value.toLowerCase();
+    const sortBy = document.getElementById("sortSelect").value;
+    const rows = Array.from(document.querySelectorAll(".wallet-row"));
+
+    // تصفية
+    const filteredRows = rows.filter((row) => {
+      const merchantName = row.dataset.merchantName.toLowerCase();
+      return merchantName.includes(searchTerm);
+    });
+
+    // ترتيب
+    filteredRows.sort((a, b) => {
+      const nameA = a.dataset.merchantName.toLowerCase();
+      const nameB = b.dataset.merchantName.toLowerCase();
+      const balanceA = parseFloat(a.dataset.balance);
+      const balanceB = parseFloat(b.dataset.balance);
+      const pendingA = parseFloat(a.dataset.pending);
+      const pendingB = parseFloat(b.dataset.pending);
+
+      switch (sortBy) {
+        case "balance_desc":
+          return balanceB - balanceA;
+        case "balance_asc":
+          return balanceA - balanceB;
+        case "name_asc":
+          return nameA.localeCompare(nameB);
+        case "name_desc":
+          return nameB.localeCompare(nameA);
+        case "pending_desc":
+          return pendingB - pendingA;
+        case "pending_asc":
+          return pendingA - pendingB;
+        default:
+          return balanceB - balanceA;
+      }
+    });
+
+    // إظهار/إخفاء الصفوف
+    const tbody = document.getElementById("walletsTableBody");
+    tbody.innerHTML = "";
+
+    if (filteredRows.length === 0) {
+      document.getElementById("noResults").classList.remove("d-none");
+    } else {
+      document.getElementById("noResults").classList.add("d-none");
+      filteredRows.forEach((row) => tbody.appendChild(row));
+    }
+
+    updateStats();
+  }
+
+  function updateStats() {
+    const visibleRows = document.querySelectorAll(
+      '.wallet-row:not([style*="display: none"])',
+    );
+    let totalBalance = 0;
+    let totalPending = 0;
+
+    visibleRows.forEach((row) => {
+      totalBalance += parseFloat(row.dataset.balance) || 0;
+      totalPending += parseFloat(row.dataset.pending) || 0;
+    });
+
+    document.getElementById("totalBalance").textContent =
+      totalBalance.toFixed(2);
+    document.getElementById("totalPending").textContent =
+      totalPending.toFixed(2);
+    document.getElementById("merchantCount").textContent = visibleRows.length;
+  }
+
+  function resetFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("sortSelect").value = "balance_desc";
+    filterAndSort();
+  }
+</script>
+
+<style>
+  .wallet-row {
+    animation: fadeIn 0.3s ease-in;
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+</style>
 {% endblock %}

@@ -20,7 +20,7 @@ class MerchantProfile(models.Model):
     is_approved = models.BooleanField(default=False, verbose_name="تمت الموافقة من المشرف")
     created_at = models.DateTimeField(auto_now_add=True)
     tax_register_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="رقم السجل الضريبي")                                           
-
+    is_verified = models.BooleanField(default=False, verbose_name="موثق (علامة زرقاء)")
     goods_quantity = models.CharField(max_length=100, verbose_name="كمية البضاعة المحتملة")
     goods_types = models.TextField(verbose_name="أنواع البضاعة")
     goods_average_price = models.CharField(max_length=100, verbose_name="متوسط الأسعار")
@@ -370,3 +370,26 @@ class ProductReview(models.Model):
 
     class Meta:
         unique_together = ('product', 'user') # تقييم واحد لكل مستخدم للمنتج
+
+
+class Banner(models.Model):
+    image = models.ImageField(upload_to='banners/', verbose_name="صورة البانر")
+    link = models.CharField(max_length=255, blank=True, null=True, verbose_name="رابط التوجيه (اختياري)")
+    is_active = models.BooleanField(default=True, verbose_name="نشط")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Banner {self.id}"
+        
+
+class TermsAndCondition(models.Model):
+    title = models.CharField(max_length=200, verbose_name="عنوان البند")
+    content = models.TextField(verbose_name="نص البند")
+    order = models.PositiveIntegerField(default=0, verbose_name="الترتيب")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title

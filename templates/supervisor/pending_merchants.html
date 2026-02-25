@@ -86,10 +86,16 @@
                         <a href="tel:{{ merchant.user.phone_primary }}" class="btn btn-light border w-50">
                             <i class="fas fa-phone"></i> اتصال
                         </a>
+                            <!-- زر تفعيل + توثيق -->
+                        <a href="{% url 'super_approve_merchant' merchant.pk %}?verify=true" class="btn btn-primary fw-bold rounded-pill">
+                            <i class="fas fa-check-circle me-1"></i> تفعيل وتوثيق 🌟
+                        </a>
                         <!-- زر رفض (يمكن تفعيله لاحقاً) -->
-                        <button class="btn btn-light border w-50 text-danger" onclick="if(confirm('حذف الطلب؟')) location.href='#';">
+                        <a href="{% url 'super_reject_merchant' merchant.pk %}" 
+                        class="btn btn-light border w-50 text-danger" 
+                        onclick="return confirm('هل أنت متأكد من رفض وحذف طلب التاجر؟')">
                             <i class="fas fa-trash"></i> رفض
-                        </button>
+                        </a>
                     </div>
                 </div>
 

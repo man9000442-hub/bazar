@@ -13,8 +13,9 @@ from .models import (
     Product, Category, Order, OrderItem, ProductSize, 
     Wallet, WalletTransaction, MerchantProfile, Governorate, 
     MerchantShippingRate, SiteSetting, Favorite, Offer, 
-    PaymobTransaction, Notification # تأكد أنك أنشأت Notification
+    PaymobTransaction, Notification,Banner # تأكد أنك أنشأت Notification
 )
+from django.http import JsonResponse
 
 # دوال مساعدة (إذا كانت في ملف منفصل)
 from .paymob_utils import PaymobManager
@@ -67,6 +68,7 @@ def home(request):
     if request.user.is_authenticated and request.user.is_banned:
         return render(request, 'account/banned.html')
     pending_conf = check_pending_confirmations(request.user)
+    banners = Banner.objects.filter(is_active=True).order_by('-created_at')
     if pending_conf:
         # توجيه إجباري لصفحة التأكيد
         return redirect('confirm_delivery_view', order_id=pending_conf.id)
@@ -113,7 +115,8 @@ def home(request):
         'selected_category': int(category_id) if category_id else None,
         'search_query': query,
         'offers': offers,
-        'unread_notifications_count': unread_count # لإبقائها في مربع البحث
+        'unread_notifications_count': unread_count,
+        'banners': banners, # لإبقائها في مربع البحث
     })
 
 # تفاصيل المنتج

@@ -1,321 +1,524 @@
-{% extends 'base.html' %}
-
-{% block content %}
+{% extends 'base.html' %} {% block title %}{{ product.name }} | Elbazaar{%
+endblock %} {% block description %}اشترِ {{ product.name }} بسعر {{
+product.base_price }} ج.م. أفضل جودة وتوصيل سريع.{% endblock %} {% block
+og_title %}{{ product.name }}{% endblock %} {% block og_description %}{{
+product.description|truncatewords:20 }}{% endblock %} {% block og_image %}{{
+product.image.url }}{% endblock %} {% block content %}
 
 <!-- 1. Top Bar -->
-<div class="d-flex justify-content-between align-items-center p-3 sticky-top bg-white border-bottom shadow-sm" style="z-index: 1020;">
-    <a href="javascript:history.back()" class="text-dark">
-        <i class="fas fa-arrow-right fs-5"></i>
-    </a>
-    <div class="d-flex gap-3">
-        <button onclick="toggleFavDetail('{{ product.id }}')" class="btn border-0 bg-transparent p-0">
-            <i class="{% if is_fav %}fas text-danger{% else %}far text-muted{% endif %} fa-heart fs-5" id="fav-icon"></i>
-        </button>
-        <button onclick="shareProduct()" class="btn border-0 bg-transparent p-0">
-            <i class="fas fa-share-alt fs-5 text-muted"></i>
-        </button>
-    </div>
+<div
+  class="d-flex justify-content-between align-items-center p-3 sticky-top bg-white border-bottom shadow-sm"
+  style="z-index: 1020"
+>
+  <a href="javascript:history.back()" class="text-dark">
+    <i class="fas fa-arrow-right fs-5"></i>
+  </a>
+  <div class="d-flex gap-3">
+    <button
+      onclick="toggleFavDetail('{{ product.id }}')"
+      class="btn border-0 bg-transparent p-0"
+    >
+      <i
+        class="{% if is_fav %}fas text-danger{% else %}far text-muted{% endif %} fa-heart fs-5"
+        id="fav-icon"
+      ></i>
+    </button>
+    <button onclick="shareProduct()" class="btn border-0 bg-transparent p-0">
+      <i class="fas fa-share-alt fs-5 text-muted"></i>
+    </button>
+  </div>
 </div>
 
 <!-- 2. Images Slider (Click to Zoom) -->
-<div id="productCarousel" class="carousel slide bg-white" data-bs-ride="carousel">
-    <div class="carousel-inner">
-        <!-- الصورة الرئيسية -->
-        <div class="carousel-item active">
-            {% if product.image %}
-                <img src="{{ product.image.url }}" class="d-block w-100" style="height: 380px; object-fit: contain; cursor: zoom-in;" 
-                     data-bs-toggle="modal" data-bs-target="#zoomModal" onclick="slideToIndex(0)">
-            {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 380px;">
-                    <i class="fas fa-camera fa-3x text-muted opacity-25"></i>
-                </div>
-            {% endif %}
-        </div>
-        <!-- الصور الإضافية -->
-        {% for img in product.images.all %}
-        <div class="carousel-item">
-            <img src="{{ img.image.url }}" class="d-block w-100" style="height: 380px; object-fit: contain; cursor: zoom-in;"
-                 data-bs-toggle="modal" data-bs-target="#zoomModal" onclick="slideToIndex({{ forloop.counter }})">
-        </div>
-        {% endfor %}
+<div
+  id="productCarousel"
+  class="carousel slide bg-white"
+  data-bs-ride="carousel"
+>
+  <div class="carousel-inner">
+    <!-- الصورة الرئيسية -->
+    <div class="carousel-item active">
+      {% if product.image %}
+      <img
+        src="{{ product.image.url }}"
+        class="d-block w-100"
+        style="height: 380px; object-fit: contain; cursor: zoom-in"
+        data-bs-toggle="modal"
+        data-bs-target="#zoomModal"
+        onclick="slideToIndex(0)"
+      />
+      {% else %}
+      <div
+        class="bg-light d-flex align-items-center justify-content-center"
+        style="height: 380px"
+      >
+        <i class="fas fa-camera fa-3x text-muted opacity-25"></i>
+      </div>
+      {% endif %}
     </div>
-    
-    {% if product.images.exists %}
-    <div class="carousel-indicators">
-        <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active bg-primary"></button>
-        {% for img in product.images.all %}
-        <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter }}" class="bg-primary"></button>
-        {% endfor %}
+    <!-- الصور الإضافية -->
+    {% for img in product.images.all %}
+    <div class="carousel-item">
+      <img
+        src="{{ img.image.url }}"
+        class="d-block w-100"
+        style="height: 380px; object-fit: contain; cursor: zoom-in"
+        data-bs-toggle="modal"
+        data-bs-target="#zoomModal"
+        onclick="slideToIndex({{ forloop.counter }})"
+      />
     </div>
-    {% endif %}
+    {% endfor %}
+  </div>
+
+  {% if product.images.exists %}
+  <div class="carousel-indicators">
+    <button
+      type="button"
+      data-bs-target="#productCarousel"
+      data-bs-slide-to="0"
+      class="active bg-primary"
+    ></button>
+    {% for img in product.images.all %}
+    <button
+      type="button"
+      data-bs-target="#productCarousel"
+      data-bs-slide-to="{{ forloop.counter }}"
+      class="bg-primary"
+    ></button>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
 
 <!-- Zoom Modal (Full Screen) -->
 <div class="modal fade" id="zoomModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-fullscreen bg-black">
-        <div class="modal-content bg-black border-0">
-            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-4" data-bs-dismiss="modal" style="z-index: 1060;"></button>
-            <div class="modal-body p-0 d-flex align-items-center justify-content-center">
-                <div id="zoomCarousel" class="carousel slide w-100 h-100" data-bs-ride="false">
-                    <div class="carousel-inner h-100">
-                        <div class="carousel-item active h-100">
-                            {% if product.image %}
-                                <img src="{{ product.image.url }}" class="d-block w-100 h-100" style="object-fit: contain;">
-                            {% endif %}
-                        </div>
-                        {% for img in product.images.all %}
-                        <div class="carousel-item h-100">
-                            <img src="{{ img.image.url }}" class="d-block w-100 h-100" style="object-fit: contain;">
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <button class="carousel-control-prev" type="button" data-bs-target="#zoomCarousel" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon p-3 bg-dark rounded-circle" aria-hidden="true"></span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#zoomCarousel" data-bs-slide="next">
-                        <span class="carousel-control-next-icon p-3 bg-dark rounded-circle" aria-hidden="true"></span>
-                    </button>
-                </div>
+  <div class="modal-dialog modal-fullscreen bg-black">
+    <div class="modal-content bg-black border-0">
+      <button
+        type="button"
+        class="btn-close btn-close-white position-absolute top-0 end-0 m-4"
+        data-bs-dismiss="modal"
+        style="z-index: 1060"
+      ></button>
+      <div
+        class="modal-body p-0 d-flex align-items-center justify-content-center"
+      >
+        <div
+          id="zoomCarousel"
+          class="carousel slide w-100 h-100"
+          data-bs-ride="false"
+        >
+          <div class="carousel-inner h-100">
+            <div class="carousel-item active h-100">
+              {% if product.image %}
+              <img
+                src="{{ product.image.url }}"
+                class="d-block w-100 h-100"
+                style="object-fit: contain"
+              />
+              {% endif %}
             </div>
+            {% for img in product.images.all %}
+            <div class="carousel-item h-100">
+              <img
+                src="{{ img.image.url }}"
+                class="d-block w-100 h-100"
+                style="object-fit: contain"
+              />
+            </div>
+            {% endfor %}
+          </div>
+          <button
+            class="carousel-control-prev"
+            type="button"
+            data-bs-target="#zoomCarousel"
+            data-bs-slide="prev"
+          >
+            <span
+              class="carousel-control-prev-icon p-3 bg-dark rounded-circle"
+              aria-hidden="true"
+            ></span>
+          </button>
+          <button
+            class="carousel-control-next"
+            type="button"
+            data-bs-target="#zoomCarousel"
+            data-bs-slide="next"
+          >
+            <span
+              class="carousel-control-next-icon p-3 bg-dark rounded-circle"
+              aria-hidden="true"
+            ></span>
+          </button>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- 3. Product Info -->
-<div class="container bg-white rounded-top-4 p-4 position-relative shadow-sm" style="margin-top: -20px; z-index: 10;">
-    
-    <!-- القسم والتقييم (ديناميكي) -->
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">
-            {{ product.category.name }}
-        </span>
-        <div class="text-warning small fw-bold">
-            {% with ''|center:5 as range %}
-            {% for _ in range %}
-                {% if forloop.counter <= product.average_rating %}
-                    <i class="fas fa-star"></i>
-                {% else %}
-                    <i class="far fa-star"></i>
-                {% endif %}
-            {% endfor %}
-            {% endwith %}
-            <span class="text-dark ms-1">{{ product.average_rating|default:0 }}</span>
-            <span class="text-muted fw-normal">({{ product.reviews_count }} تقييم)</span>
-        </div>
+<div
+  class="container bg-white rounded-top-4 p-4 position-relative shadow-sm"
+  style="margin-top: -20px; z-index: 10"
+>
+  <!-- القسم والتقييم (ديناميكي) -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span
+      class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1"
+    >
+      {{ product.category.name }}
+    </span>
+    <div class="text-warning small fw-bold">
+    {% with ''|center:5 as range %} 
+        {% for _ in range %} 
+            {% if forloop.counter <= product.average_rating %}
+            <i class="fas fa-star"></i>
+            {% else %}
+            <i class="far fa-star"></i>
+            {% endif %} 
+        {% endfor %} 
+    {% endwith %}
+      <span class="text-dark ms-1">{{ product.average_rating|default:0 }}</span>
+      <span class="text-muted fw-normal"
+        >({{ product.reviews_count }} تقييم)</span
+      >
     </div>
+  </div>
 
-    <h5 class="fw-bold mb-2 text-dark">{{ product.name }}</h5>
-    
-    <!-- السعر والعرض -->
-    <div class="d-flex align-items-center mb-3 flex-wrap">
-        {% if product.active_offer and product.active_offer.is_active %}
-            <h3 class="text-danger fw-bold mb-0 me-2">{{ product.active_offer.discounted_price|floatformat:0 }}</h3>
-            <span class="text-danger small fw-bold me-2">ج.م</span>
-            <span class="text-muted text-decoration-line-through small me-2">{{ product.base_price }}</span>
-            <span class="badge bg-danger rounded-pill">-{{ product.active_offer.discount_percentage }}%</span>
+  <h5 class="fw-bold mb-2 text-dark">{{ product.name }}</h5>
+
+  <!-- السعر والعرض -->
+  <div class="d-flex align-items-center mb-3 flex-wrap">
+    {% if product.active_offer and product.active_offer.is_active %}
+    <h3 class="text-danger fw-bold mb-0 me-2">
+      {{ product.active_offer.discounted_price|floatformat:0 }}
+    </h3>
+    <span class="text-danger small fw-bold me-2">ج.م</span>
+    <span class="text-muted text-decoration-line-through small me-2"
+      >{{ product.base_price }}</span
+    >
+    <span class="badge bg-danger rounded-pill"
+      >-{{ product.active_offer.discount_percentage }}%</span
+    >
+    {% else %}
+    <h3 class="text-primary fw-bold mb-0 me-2">{{ product.base_price }}</h3>
+    <span class="text-muted small">ج.م</span>
+    {% endif %}
+  </div>
+
+  <!-- عرض الشحن المجاني -->
+  {% if product.active_offer and product.active_offer.free_shipping %}
+  <div
+    class="alert alert-success border-success py-2 px-3 mb-3 d-flex align-items-center small bg-success-subtle text-success-emphasis"
+  >
+    <i class="fas fa-truck-fast fs-5 me-2"></i>
+    <div>
+      <strong>شحن مجاني</strong>
+      <span class="d-block" style="font-size: 11px"
+        >عند شراء {{ product.active_offer.free_shipping_threshold }} قطع أو
+        أكثر</span
+      >
+    </div>
+  </div>
+  {% elif product.shipping_fee > 0 %}
+  <p class="text-muted small mb-3">
+    <i class="fas fa-truck me-1"></i> مصاريف شحن إضافية: {{ product.shipping_fee
+    }} ج.م
+  </p>
+  {% endif %}
+
+  <!-- رابط التاجر -->
+  <a
+    href="{% url 'merchant_shop' product.merchant.pk %}"
+    class="text-decoration-none"
+  >
+    <div
+      class="d-flex align-items-center bg-light p-2 rounded-3 mb-4 border border-light shadow-sm"
+    >
+      <div class="me-2">
+        {% if product.merchant.shop_image %}
+        <img
+          src="{{ product.merchant.shop_image.url }}"
+          class="rounded-circle border"
+          width="40"
+          height="40"
+          style="object-fit: cover"
+        />
         {% else %}
-            <h3 class="text-primary fw-bold mb-0 me-2">{{ product.base_price }}</h3>
-            <span class="text-muted small">ج.م</span>
+        <div
+          class="rounded-circle bg-white d-flex align-items-center justify-content-center border"
+          style="width: 40px; height: 40px"
+        >
+          <i class="fas fa-store text-muted small"></i>
+        </div>
         {% endif %}
+      </div>
+      <div class="flex-grow-1">
+        <small class="text-muted d-block" style="font-size: 10px"
+          >بواسطة التاجر</small
+        >
+        <h6 class="fw-bold text-dark mb-0">
+          {{ product.merchant.user.first_name }} 
+          {% if product.merchant.is_verified %}
+          <i
+            class="fas fa-check-circle text-primary ms-1"
+            style="font-size: 14px"
+            title="تاجر موثوق"
+          ></i>
+          {% endif %}
+        </h6>
+      </div>
+      <i class="fas fa-chevron-left text-muted small"></i>
+    </div>
+  </a>
+
+  <!-- الوصف -->
+  <h6 class="fw-bold mb-2">الوصف</h6>
+  <p class="text-muted small mb-4" style="line-height: 1.6">
+    {{ product.description|linebreaksbr }}
+  </p>
+
+  <hr class="text-muted opacity-25" />
+
+  <!-- 4. Form (Colors & Sizes) -->
+  <form
+    method="POST"
+    action="{% url 'add_to_cart' product.pk %}"
+    class="pb-5 mb-5"
+  >
+    {% csrf_token %}
+    <input type="hidden" name="size_id" id="selected_variant_id" required />
+
+    <!-- A. اختيار اللون -->
+    <h6 class="fw-bold mb-2">1. اختر اللون</h6>
+    <div class="d-flex flex-wrap gap-2 mb-4">
+      {% for color in available_colors %}
+      <div>
+        <input
+          type="radio"
+          class="btn-check"
+          name="color_option"
+          id="color_{{ forloop.counter }}"
+          value="{{ color }}"
+          onchange="selectColor('{{ color }}')"
+        />
+        <label
+          class="btn btn-outline-secondary rounded-pill px-3 py-1"
+          for="color_{{ forloop.counter }}"
+        >
+          {{ color }}
+        </label>
+      </div>
+      {% empty %}
+      <p class="text-danger small">المنتج غير متوفر حالياً</p>
+      {% endfor %}
     </div>
 
-    <!-- عرض الشحن المجاني -->
-    {% if product.active_offer and product.active_offer.free_shipping %}
-    <div class="alert alert-success border-success py-2 px-3 mb-3 d-flex align-items-center small bg-success-subtle text-success-emphasis">
-        <i class="fas fa-truck-fast fs-5 me-2"></i>
-        <div>
-            <strong>شحن مجاني</strong>
-            <span class="d-block" style="font-size: 11px;">عند شراء {{ product.active_offer.free_shipping_threshold }} قطع أو أكثر</span>
-        </div>
+    <!-- B. اختيار المقاس -->
+    <div id="sizes-section" style="display: none">
+      <h6 class="fw-bold mb-2">2. اختر المقاس</h6>
+      <div class="d-flex flex-wrap gap-2 mb-4" id="sizes-container"></div>
     </div>
-    {% elif product.shipping_fee > 0 %}
-        <p class="text-muted small mb-3"><i class="fas fa-truck me-1"></i> مصاريف شحن إضافية: {{ product.shipping_fee }} ج.م</p>
-    {% endif %}
 
-    <!-- رابط التاجر -->
-    <a href="{% url 'merchant_shop' product.merchant.pk %}" class="text-decoration-none">
-        <div class="d-flex align-items-center bg-light p-2 rounded-3 mb-4 border border-light shadow-sm">
-            <div class="me-2">
-                {% if product.merchant.shop_image %}
-                    <img src="{{ product.merchant.shop_image.url }}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">
-                {% else %}
-                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center border" style="width: 40px; height: 40px;">
-                        <i class="fas fa-store text-muted small"></i>
-                    </div>
-                {% endif %}
-            </div>
-            <div class="flex-grow-1">
-                <small class="text-muted d-block" style="font-size: 10px;">بواسطة التاجر</small>
-                <h6 class="fw-bold text-dark mb-0" style="font-size: 13px;">
-                    {{ product.merchant.user.first_name }} {{ product.merchant.user.last_name }}
-                </h6>
-            </div>
-            <i class="fas fa-chevron-left text-muted small"></i>
+    <!-- 5. Floating Action Bar -->
+    <div
+      class="fixed-bottom bg-white p-3 border-top shadow-lg d-flex align-items-center gap-3"
+      style="bottom: 70px; z-index: 1000"
+    >
+      <div
+        class="bg-light rounded-pill d-flex align-items-center px-2 py-1 border"
+        style="width: 120px; justify-content: space-between"
+      >
+        <button
+          type="button"
+          class="btn btn-sm text-muted"
+          onclick="this.nextElementSibling.stepDown()"
+        >
+          <i class="fas fa-minus"></i>
+        </button>
+        <input
+          type="number"
+          name="quantity"
+          class="form-control form-control-sm border-0 bg-transparent text-center p-0 fw-bold"
+          value="1"
+          min="1"
+          max="10"
+          style="width: 40px"
+        />
+        <button
+          type="button"
+          class="btn btn-sm text-primary"
+          onclick="this.previousElementSibling.stepUp()"
+        >
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+
+      <button
+        type="submit"
+        id="add-to-cart-btn"
+        class="btn btn-secondary w-100 py-2 fw-bold shadow-sm"
+        disabled
+      >
+        إضافة للسلة <i class="fas fa-shopping-bag ms-2"></i>
+      </button>
+    </div>
+  </form>
+
+  <!-- 6. Similar Products -->
+  {% if similar_products %}
+  <hr class="text-muted opacity-25 my-4" />
+  <h6 class="fw-bold mb-3">منتجات قد تعجبك</h6>
+  <div class="d-flex overflow-auto pb-2" style="gap: 10px">
+    {% for sim in similar_products %}
+    <a
+      href="{% url 'product_detail' sim.pk %}"
+      class="text-decoration-none text-dark"
+    >
+      <div class="card border-0 shadow-sm" style="width: 120px">
+        <div
+          style="
+            height: 120px;
+            overflow: hidden;
+            border-radius: 12px 12px 0 0;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          "
+        >
+          {% if sim.image %}
+          <img
+            src="{{ sim.image.url }}"
+            class="w-100 h-100"
+            style="object-fit: contain"
+          />
+          {% else %}
+          <div
+            class="d-flex align-items-center justify-content-center bg-light w-100 h-100"
+          >
+            <i class="fas fa-camera text-muted opacity-25"></i>
+          </div>
+          {% endif %}
         </div>
+        <div class="card-body p-2">
+          <h6 class="text-truncate small fw-bold mb-1">{{ sim.name }}</h6>
+          <span class="text-primary small fw-bold"
+            >{{ sim.base_price }} ج.م</span
+          >
+        </div>
+      </div>
     </a>
-
-    <!-- الوصف -->
-    <h6 class="fw-bold mb-2">الوصف</h6>
-    <p class="text-muted small mb-4" style="line-height: 1.6;">
-        {{ product.description|linebreaksbr }}
-    </p>
-
-    <hr class="text-muted opacity-25">
-
-    <!-- 4. Form (Colors & Sizes) -->
-    <form method="POST" action="{% url 'add_to_cart' product.pk %}" class="pb-5 mb-5">
-        {% csrf_token %}
-        <input type="hidden" name="size_id" id="selected_variant_id" required>
-
-        <!-- A. اختيار اللون -->
-        <h6 class="fw-bold mb-2">1. اختر اللون</h6>
-        <div class="d-flex flex-wrap gap-2 mb-4">
-            {% for color in available_colors %}
-            <div>
-                <input type="radio" class="btn-check" name="color_option" id="color_{{ forloop.counter }}" 
-                       value="{{ color }}" onchange="selectColor('{{ color }}')">
-                <label class="btn btn-outline-secondary rounded-pill px-3 py-1" for="color_{{ forloop.counter }}">
-                    {{ color }}
-                </label>
-            </div>
-            {% empty %}
-            <p class="text-danger small">المنتج غير متوفر حالياً</p>
-            {% endfor %}
-        </div>
-
-        <!-- B. اختيار المقاس -->
-        <div id="sizes-section" style="display: none;">
-            <h6 class="fw-bold mb-2">2. اختر المقاس</h6>
-            <div class="d-flex flex-wrap gap-2 mb-4" id="sizes-container"></div>
-        </div>
-
-        <!-- 5. Floating Action Bar -->
-        <div class="fixed-bottom bg-white p-3 border-top shadow-lg d-flex align-items-center gap-3" style="bottom: 70px; z-index: 1000;">
-            <div class="bg-light rounded-pill d-flex align-items-center px-2 py-1 border" style="width: 120px; justify-content: space-between;">
-                <button type="button" class="btn btn-sm text-muted" onclick="this.nextElementSibling.stepDown()"><i class="fas fa-minus"></i></button>
-                <input type="number" name="quantity" class="form-control form-control-sm border-0 bg-transparent text-center p-0 fw-bold" value="1" min="1" max="10" style="width: 40px;">
-                <button type="button" class="btn btn-sm text-primary" onclick="this.previousElementSibling.stepUp()"><i class="fas fa-plus"></i></button>
-            </div>
-
-            <button type="submit" id="add-to-cart-btn" class="btn btn-secondary w-100 py-2 fw-bold shadow-sm" disabled>
-                إضافة للسلة <i class="fas fa-shopping-bag ms-2"></i>
-            </button>
-        </div>
-    </form>
-    
-    <!-- 6. Similar Products -->
-    {% if similar_products %}
-        <hr class="text-muted opacity-25 my-4">
-        <h6 class="fw-bold mb-3">منتجات قد تعجبك</h6>
-        <div class="d-flex overflow-auto pb-2" style="gap: 10px;">
-            {% for sim in similar_products %}
-            <a href="{% url 'product_detail' sim.pk %}" class="text-decoration-none text-dark">
-                <div class="card border-0 shadow-sm" style="width: 120px;">
-                    <div style="height: 100px; overflow: hidden; border-radius: 12px 12px 0 0;">
-                        {% if sim.image %}
-                            <img src="{{ sim.image.url }}" class="w-100 h-100" style="object-fit: cover;">
-                        {% endif %}
-                    </div>
-                    <div class="card-body p-2">
-                        <h6 class="text-truncate small fw-bold mb-1">{{ sim.name }}</h6>
-                        <span class="text-primary small fw-bold">{{ sim.base_price }} ج.م</span>
-                    </div>
-                </div>
-            </a>
-            {% endfor %}
-        </div>
-        <hr class="text-muted opacity-25 my-4">
-    {% endif %}
+    {% endfor %}
+  </div>
+  <hr class="text-muted opacity-25 my-4" />
+  {% endif %}
 </div>
 
 <!-- مساحة إضافية -->
-<div style="height: 80px;"></div>
+<div style="height: 80px"></div>
 
 <!-- Styles & Scripts -->
 <style>
-    .btn-check:checked + label {
-        background-color: var(--primary-blue);
-        color: white;
-        border-color: var(--primary-blue);
-    }
-    .carousel-indicators [data-bs-target] {
-        background-color: var(--primary-blue);
-        width: 8px; height: 8px; border-radius: 50%;
-    }
+  .btn-check:checked + label {
+    background-color: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
+  }
+  .carousel-indicators [data-bs-target] {
+    background-color: var(--primary-blue);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  /* رفع زر الدعم في هذه الصفحة فقط */
+  #supportBtn {
+    bottom: 140px !important; /* رفعه فوق الشريط السفلي */
+  }
 </style>
 
+{% comment %}
+<style>
+  /* رفع زر الدعم في هذه الصفحة فقط */
+  #supportBtn {
+    bottom: 140px !important; /* رفعه فوق الشريط السفلي */
+  }
+</style>
+{% endcomment %}
+
 <script>
-    const variantsData = {{ variants_json|safe }};
-    const addToCartBtn = document.getElementById('add-to-cart-btn');
-    
-    function selectColor(colorName) {
-        const sizesContainer = document.getElementById('sizes-container');
-        const sizesSection = document.getElementById('sizes-section');
-        const hiddenInput = document.getElementById('selected_variant_id');
-        
-        sizesSection.style.display = 'block';
-        sizesContainer.innerHTML = '';
-        hiddenInput.value = '';
-        
-        addToCartBtn.disabled = true;
-        addToCartBtn.classList.remove('btn-primary-app');
-        addToCartBtn.classList.add('btn-secondary');
+  const variantsData = {{ variants_json|safe }};
+  const addToCartBtn = document.getElementById('add-to-cart-btn');
 
-        const sizes = variantsData[colorName];
-        sizes.forEach(variant => {
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = `
-                <input type="radio" class="btn-check" name="size_option" id="variant_${variant.id}" value="${variant.id}" onchange="selectSize('${variant.id}')">
-                <label class="btn btn-outline-secondary rounded-3 px-3 py-2 d-flex flex-column align-items-center shadow-sm" for="variant_${variant.id}" style="min-width: 60px;">
-                    <span class="fw-bold">${variant.size}</span>
-                    <small style="font-size: 9px;" class="text-muted">متاح: ${variant.qty}</small>
-                </label>
-            `;
-            sizesContainer.appendChild(wrapper);
-        });
-    }
+  function selectColor(colorName) {
+      const sizesContainer = document.getElementById('sizes-container');
+      const sizesSection = document.getElementById('sizes-section');
+      const hiddenInput = document.getElementById('selected_variant_id');
 
-    function selectSize(variantId) {
-        document.getElementById('selected_variant_id').value = variantId;
-        addToCartBtn.disabled = false;
-        addToCartBtn.classList.remove('btn-secondary');
-        addToCartBtn.classList.add('btn-primary-app');
-    }
-    
-    function slideToIndex(index) {
-        var myCarousel = document.getElementById('zoomCarousel');
-        var carousel = new bootstrap.Carousel(myCarousel);
-        carousel.to(index);
-    }
+      sizesSection.style.display = 'block';
+      sizesContainer.innerHTML = '';
+      hiddenInput.value = '';
 
-    function toggleFavDetail(productId) {
-        fetch(`/wishlist/toggle/${productId}/`)
-            .then(response => response.json())
-            .then(data => {
-                const icon = document.getElementById('fav-icon');
-                if (data.added) {
-                    icon.classList.remove('far', 'text-muted');
-                    icon.classList.add('fas', 'text-danger');
-                } else {
-                    icon.classList.remove('fas', 'text-danger');
-                    icon.classList.add('far', 'text-muted');
-                }
-            });
-    }
+      addToCartBtn.disabled = true;
+      addToCartBtn.classList.remove('btn-primary-app');
+      addToCartBtn.classList.add('btn-secondary');
 
-    function shareProduct() {
-        const shareData = {
-            title: '{{ product.name }}',
-            text: 'انظر لهذا المنتج الرائع على Elbazaar!',
-            url: window.location.href
-        };
-        if (navigator.share) {
-            navigator.share(shareData);
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-            alert("تم نسخ الرابط!");
-        }
-    }
+      const sizes = variantsData[colorName];
+      sizes.forEach(variant => {
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = `
+              <input type="radio" class="btn-check" name="size_option" id="variant_${variant.id}" value="${variant.id}" onchange="selectSize('${variant.id}')">
+              <label class="btn btn-outline-secondary rounded-3 px-3 py-2 d-flex flex-column align-items-center shadow-sm" for="variant_${variant.id}" style="min-width: 60px;">
+                  <span class="fw-bold">${variant.size}</span>
+                  <small style="font-size: 9px;" class="text-muted">متاح: ${variant.qty}</small>
+              </label>
+          `;
+          sizesContainer.appendChild(wrapper);
+      });
+  }
+
+  function selectSize(variantId) {
+      document.getElementById('selected_variant_id').value = variantId;
+      addToCartBtn.disabled = false;
+      addToCartBtn.classList.remove('btn-secondary');
+      addToCartBtn.classList.add('btn-primary-app');
+  }
+
+  function slideToIndex(index) {
+      var myCarousel = document.getElementById('zoomCarousel');
+      var carousel = new bootstrap.Carousel(myCarousel);
+      carousel.to(index);
+  }
+
+  function toggleFavDetail(productId) {
+      fetch(`/wishlist/toggle/${productId}/`)
+          .then(response => response.json())
+          .then(data => {
+              const icon = document.getElementById('fav-icon');
+              if (data.added) {
+                  icon.classList.remove('far', 'text-muted');
+                  icon.classList.add('fas', 'text-danger');
+              } else {
+                  icon.classList.remove('fas', 'text-danger');
+                  icon.classList.add('far', 'text-muted');
+              }
+          });
+  }
+
+  function shareProduct() {
+      const shareData = {
+          title: '{{ product.name }}',
+          text: 'انظر لهذا المنتج الرائع على Elbazaar!',
+          url: window.location.href
+      };
+      if (navigator.share) {
+          navigator.share(shareData);
+      } else {
+          navigator.clipboard.writeText(window.location.href);
+          alert("تم نسخ الرابط!");
+      }
+  }
 </script>
 
 {% endblock %}

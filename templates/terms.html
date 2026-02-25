@@ -8,26 +8,16 @@
         </div>
         <div class="card-body p-4" style="line-height: 1.8; text-align: justify;">
             
-            <h5 class="fw-bold mt-3">1. خدمة الدفع والتحصيل الإلكتروني</h5>
-            <p>يوافق التاجر على استخدام خدمة Paymob، التي تسهل معاملات الدفع الإلكتروني بين التاجر وعملائه عبر بطاقات الائتمان وبطاقات الخصم والبطاقات مسبقة الدفع ومحافظهم الإلكترونية...</p>
-            
-            <h5 class="fw-bold mt-4">2. الرسوم والعمولات</h5>
-            <ul class="list-group list-group-flush mb-3">
-                <li class="list-group-item">عمولة بطاقات الدفع: 2.75% + 3 جنيهات (أو حسب المتفق عليه).</li>
-                <li class="list-group-item">رسوم التحويل البنكي: 0.1% (حد أدنى 30ج).</li>
-            </ul>
-
-            <h5 class="fw-bold mt-4">3. التسوية والمستحقات</h5>
-            <p>يتم تحويل الأرباح للتاجر عند بلوغ الرصيد الحد الأدنى (مثلاً 5000 ج.م) وفقاً لجدول التحويلات المعتمد...</p>
-
-            <h5 class="fw-bold mt-4">4. الاسترداد والنزاعات</h5>
-            <p>يحق للمنصة حجز المبالغ المتنازع عليها أو خصم المرتجعات من رصيد التاجر فوراً...</p>
-
-            <!-- ... يمكنك إضافة باقي النص الطويل هنا ... -->
+            {% for term in terms %}
+                <h5 class="fw-bold mt-4 text-dark">{{ forloop.counter }}. {{ term.title }}</h5>
+                <p class="text-muted">{{ term.content|linebreaksbr }}</p>
+            {% empty %}
+                <p class="text-center text-muted py-5">لا توجد شروط حالياً.</p>
+            {% endfor %}
 
             <hr class="my-5">
             <div class="text-center">
-                <a href="javascript:history.back()" class="btn btn-primary-app px-5 rounded-pill fw-bold">عودة للتسجيل</a>
+                <a href="javascript:history.back()" class="btn btn-primary-app px-5 rounded-pill fw-bold shadow-sm">عودة</a>
             </div>
         </div>
     </div>

@@ -20,3 +20,10 @@ class MySocialAccountAdapter(DefaultSocialAccountAdapter):
             sociallogin.connect(request, user)
         except User.DoesNotExist:
             pass # لا يوجد مستخدم، سيقوم allauth بإنشاء واحد جديد
+
+from allauth.account.adapter import DefaultAccountAdapter
+
+class MyAccountAdapter(DefaultAccountAdapter):
+    def get_client_ip(self, request):
+        # نرجع IP وهمي لتجاوز الخطأ
+        return "127.0.0.1"

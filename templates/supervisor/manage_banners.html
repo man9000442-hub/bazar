@@ -1,0 +1,61 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}إدارة البانرات (Slider){% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- إضافة -->
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm border-0 rounded-4">
+            <h6 class="fw-bold mb-3 text-primary">إضافة بانر جديد</h6>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label small">الصورة (يفضل عرضية)</label>
+                    <input type="file" name="image" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">رابط عند الضغط (اختياري)</label>
+                    <input type="url" name="link" class="form-control" placeholder="https://...">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 rounded-pill">نشر</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- القائمة -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <table class="table align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">المعاينة</th>
+                        <th>الرابط</th>
+                        <th>الحالة</th>
+                        <th class="text-end pe-4">حذف</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for banner in banners %}
+                    <tr>
+                        <td class="ps-4">
+                            <img src="{{ banner.image.url }}" class="rounded shadow-sm" style="width: 120px; height: 60px; object-fit: cover;">
+                        </td>
+                        <td class="small text-muted text-truncate" style="max-width: 150px;">
+                            {{ banner.link|default:"-" }}
+                        </td>
+                        <td>
+                            {% if banner.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-secondary">معطل</span>{% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'super_delete_banner' banner.pk %}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('حذف؟')"><i class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center py-4">لا توجد بانرات.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -2,3 +2,20 @@ db.sqlite3
 *.sqlite3
 .env
 *.env
+# Django
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+db.sqlite3
+
+# Virtualenv
+venv/
+.env
+
+# Static & Media
+staticfiles/
+media/
+
+# OS
+.DS_Store

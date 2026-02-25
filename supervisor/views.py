@@ -13,7 +13,7 @@ from decimal import Decimal
 from accounts.models import User,CustomRole
 from store.models import (
     Product, Order, MerchantProfile, DepositRequest, 
-    WithdrawalRequest, Offer, Category, SiteSetting
+    WithdrawalRequest, Offer, Category, SiteSetting,OrderItem
 )
 
 from store.models import Wallet,WalletTransaction,WithdrawalRequest
@@ -110,8 +110,36 @@ def approve_merchant(request, pk):
     if not is_supervisor(request.user): return redirect('home')
     merchant = get_object_or_404(MerchantProfile, pk=pk)
     merchant.is_approved = True
+
+    # هل طلبنا توثيقه أيضاً؟
+    if request.GET.get('verify') == 'true':
+        merchant.is_verified = True
+        msg = f"تم تفعيل وتوثيق التاجر {merchant.user.first_name} بنجاح! 🌟"
+    else:
+        msg = f"تم تفعيل التاجر {merchant.user.first_name}"
+
     merchant.save()
-    messages.success(request, f"تم تفعيل التاجر {merchant.user.first_name}")
+    messages.success(request,msg, f"تم تفعيل التاجر {merchant.user.first_name}")
+    return redirect('super_pending_merchants')
+
+
+@login_required
+def reject_merchant(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    merchant = get_object_or_404(MerchantProfile, pk=pk)
+    
+    # حذف البروفايل (والصور المرتبطة به)
+    # ملاحظة: هل نحذف المستخدم أيضاً؟ أم نترك حسابه كعميل؟
+    # الأفضل: نحذف البروفايل ونعيد دوره لـ "عميل".
+    
+    user = merchant.user
+    merchant.delete()
+    
+    user.role = 'CUSTOMER' # إعادته عميل
+    user.save()
+    
+    messages.warning(request, f"تم رفض طلب التاجر {user.first_name} وحذف بيانات المتجر.")
     return redirect('super_pending_merchants')
 
 # --- 5. Users ---
@@ -128,18 +156,47 @@ def users_list(request):
 @login_required
 def user_edit(request, user_id):
     if not is_supervisor(request.user): return redirect('home')
+    
     user_obj = get_object_or_404(User, pk=user_id)
+    
     if request.method == 'POST':
-        user_obj.first_name = request.POST.get('first_name')
-        user_obj.last_name = request.POST.get('last_name')
-        user_obj.phone_primary = request.POST.get('phone')
-        user_obj.role = request.POST.get('role')
+        # 1. تحديث البيانات (فقط إذا أرسلت)
+        if request.POST.get('first_name'):
+            user_obj.first_name = request.POST.get('first_name')
+            
+        if request.POST.get('last_name'):
+            user_obj.last_name = request.POST.get('last_name')
+            
+        if request.POST.get('phone'):
+            user_obj.phone_primary = request.POST.get('phone')
+            user_obj.username = request.POST.get('phone') # تحديث اليوزرنيم أيضاً
+            
+        if request.POST.get('email'):
+            user_obj.email = request.POST.get('email')
+
+        # 2. تحديث الدور (هام)
+        role = request.POST.get('role')
+        if role:
+            user_obj.role = role
+
+        # 3. تحديث الحالة
         user_obj.is_active = request.POST.get('is_active') == 'on'
-        user_obj.first_name = request.POST.get('first_name')
-        if request.POST.get('password'): user_obj.set_password(request.POST.get('password'))
-        user_obj.save()
-        messages.success(request, "تم التحديث.")
+        user_obj.is_banned = request.POST.get('is_banned') == 'on'
+        
+        # 4. تغيير الباسورد (اختياري)
+        new_pass = request.POST.get('new_password')
+        if new_pass and new_pass.strip():
+            user_obj.set_password(new_pass)
+            messages.warning(request, f"تم تغيير كلمة المرور للمستخدم {user_obj.username}.")
+            
+        try:
+            user_obj.save()
+            messages.success(request, "تم تحديث بيانات المستخدم بنجاح ✅")
+        except Exception as e:
+            messages.error(request, f"حدث خطأ أثناء الحفظ: {e}")
+            
         return redirect('super_users_list')
+        
     return render(request, 'supervisor/user_edit.html', {'user_obj': user_obj})
 
 @login_required
@@ -242,10 +299,14 @@ def site_settings_view(request):
         settings_obj.referral_reward_amount = request.POST.get('ref_reward')
         settings_obj.referral_discount_limit_pct = request.POST.get('ref_limit')
         settings_obj.referral_grace_period_hours = request.POST.get('ref_grace')
-        
+        ref_limit_orders = request.POST.get('ref_orders_limit')  
+
         if request.FILES.get('banner'):
             settings_obj.banner_image = request.FILES.get('banner')
-        
+
+        if ref_limit_orders:
+            settings_obj.referral_reward_limit_orders = int(ref_limit_orders)  
+                 
         settings_obj.save()
         messages.success(request, "تم حفظ الإعدادات بنجاح ✅")
         return redirect('super_site_settings')
@@ -751,6 +812,7 @@ AVAILABLE_PERMISSIONS = [
     ('team', 'فريق العمل'),
     ('offers', 'إدارة العروض'),
     ('notifications', 'إرسال إشعارات'),
+    ('banners', 'إدارة البانرات الإعلانية'),
 ]
 
 @login_required
@@ -799,6 +861,10 @@ def manage_offers(request):
 @login_required
 def delete_offer_admin(request, pk):
     # (نفس التحقق)
+    user = request.user
+    if not (user.is_superuser or user.role == 'OWNER' or user.has_perm_access('offers')):
+        return redirect('supervisor_dashboard')
+    
     Offer.objects.filter(pk=pk).delete()
     messages.success(request, "تم حذف العرض.")
     return redirect('super_manage_offers')
@@ -979,4 +1045,135 @@ def customer_profile_admin(request, user_id):
         'customer': customer,
         'orders': orders,
         'total_spent': total_spent
+    })
+
+
+from store.models import Banner
+
+@login_required
+def manage_banners(request):
+    # التحقق من الصلاحية
+    if not (request.user.is_superuser or request.user.role == 'OWNER' or request.user.has_perm_access('banners')):
+        return redirect('supervisor_dashboard')
+
+    if request.method == 'POST':
+        image = request.FILES.get('image')
+        link = request.POST.get('link')
+        
+        Banner.objects.create(image=image, link=link, is_active=True)
+        messages.success(request, "تم إضافة البانر.")
+        return redirect('super_manage_banners')
+
+    banners = Banner.objects.all().order_by('-created_at')
+    return render(request, 'supervisor/manage_banners.html', {'banners': banners})
+
+@login_required
+def delete_banner(request, pk):
+
+    if not (request.user.is_superuser or request.user.role == 'OWNER' or request.user.has_perm_access('banners')):
+        return redirect('supervisor_dashboard')
+
+    if request.method == 'POST':
+        image = request.FILES.get('image')
+        link = request.POST.get('link')
+    # (نفس التحقق)
+    Banner.objects.filter(pk=pk).delete()
+    messages.success(request, "تم الحذف.")
+    return redirect('super_manage_banners')
+
+from store.models import TermsAndCondition
+
+@login_required
+def manage_terms(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        order = request.POST.get('order', 0)
+        
+        TermsAndCondition.objects.create(title=title, content=content, order=order)
+        messages.success(request, "تم إضافة البند.")
+        return redirect('super_manage_terms')
+
+    terms = TermsAndCondition.objects.all()
+    return render(request, 'supervisor/manage_terms.html', {'terms': terms})
+
+@login_required
+def delete_term(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    TermsAndCondition.objects.filter(pk=pk).delete()
+    return redirect('super_manage_terms')
+
+@login_required
+def toggle_verify_merchant(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    merchant = get_object_or_404(MerchantProfile, pk=pk)
+    merchant.is_verified = not merchant.is_verified
+    merchant.save()
+    status = "تم توثيق" if merchant.is_verified else "إلغاء توثيق"
+    messages.success(request, f"{status} التاجر {merchant.user.first_name}")
+    return redirect('super_users_list') # أو الصفحة التي جئت منها
+
+
+# 1. قائمة التجار
+@login_required
+def merchants_list(request):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    merchants = MerchantProfile.objects.filter(is_approved=True)
+    return render(request, 'supervisor/merchants_list.html', {'merchants': merchants})
+
+# 2. ملف التاجر الشامل (CRM)
+@login_required
+def merchant_profile_admin(request, pk):
+    if not is_supervisor(request.user): return redirect('home')
+    
+    merchant = get_object_or_404(MerchantProfile, pk=pk)
+
+    if request.method == 'POST':
+        # 1. تحديث البيانات النصية
+        merchant.goods_types = request.POST.get('goods_types')
+        merchant.goods_quantity = request.POST.get('goods_quantity')
+        merchant.goods_average_price = request.POST.get('goods_average_price')
+        merchant.goods_sizes = request.POST.get('goods_sizes')
+        merchant.national_id = request.POST.get('national_id')
+        merchant.tax_register_number = request.POST.get('tax_register')
+        
+        # 2. تحديث التوثيق
+        merchant.is_verified = request.POST.get('is_verified') == 'on'
+        
+        # 3. تحديث الصور (إذا تم رفع جديد)
+        if request.FILES.get('shop_image'):
+            merchant.shop_image = request.FILES.get('shop_image')
+        if request.FILES.get('id_card_front'):
+            merchant.id_card_front = request.FILES.get('id_card_front')
+        if request.FILES.get('id_card_back'):
+            merchant.id_card_back = request.FILES.get('id_card_back')
+            
+        merchant.save()
+        messages.success(request, "تم تحديث بيانات التاجر بنجاح ✅")
+        return redirect('super_merchant_profile', pk=pk)
+    
+    wallet = merchant.wallet
+    
+    # المعاملات المالية
+    transactions = WalletTransaction.objects.filter(wallet=wallet).order_by('-created_at')
+    
+    # المنتجات
+    products_count = merchant.products.count()
+    
+    # المبيعات (الطلبات المسلمة)
+    orders_count = OrderItem.objects.filter(
+        product_size__product__merchant=merchant, 
+        order__status='DELIVERED'
+    ).count()
+
+    return render(request, 'supervisor/merchant_profile_admin.html', {
+        'merchant': merchant,
+        'wallet': wallet,
+        'transactions': transactions,
+        'products_count': products_count,
+        'orders_count': orders_count,
+        'merchant': merchant,
     })

@@ -1,0 +1,358 @@
+{% extends 'supervisor/base_supervisor.html' %} {% block page_title %}ملف
+التاجر: {{ merchant.user.first_name }}{% endblock %} {% block content %}
+<!-- أزرار التنقل (Tabs) -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button
+      class="nav-link active"
+      id="view-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#view-content"
+      type="button"
+      role="tab"
+    >
+      <i class="fas fa-eye ms-1"></i> العرض
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button
+      class="nav-link"
+      id="edit-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#edit-content"
+      type="button"
+      role="tab"
+    >
+      <i class="fas fa-edit ms-1"></i> تعديل البيانات
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <!-- TAB 1: عرض البيانات -->
+  <div class="tab-pane fade show active" id="view-content" role="tabpanel">
+    <div class="row g-4">
+      <!-- 1. البيانات الشخصية والوثائق -->
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+          <div class="text-center mb-3">
+            {% if merchant.shop_image %}
+            <img
+              src="{{ merchant.shop_image.url }}"
+              class="rounded-circle border"
+              width="100"
+              height="100"
+            />
+            {% else %}
+            <div class="bg-light rounded-circle d-inline-flex p-4">
+              <i class="fas fa-store fa-2x text-muted"></i>
+            </div>
+            {% endif %}
+            <h5 class="fw-bold mt-2">
+              {{ merchant.user.first_name }} {% if merchant.is_verified %}<i
+                class="fas fa-check-circle text-primary ms-1"
+              ></i
+              >{% endif %}
+            </h5>
+            <p class="text-muted small">{{ merchant.user.phone_primary }}</p>
+          </div>
+
+          <hr />
+
+          <h6 class="fw-bold small text-primary">بيانات المتجر</h6>
+          <p class="small mb-1">
+            <strong>الأنواع:</strong> {{ merchant.goods_types }}
+          </p>
+          <p class="small mb-1">
+            <strong>الكمية:</strong> {{ merchant.goods_quantity }}
+          </p>
+          <p class="small mb-3">
+            <strong>الأسعار:</strong> {{ merchant.goods_average_price }}
+          </p>
+
+          <h6 class="fw-bold small text-primary">الوثائق</h6>
+          <p class="small mb-1">
+            <strong>الرقم القومي:</strong> {{ merchant.national_id }}
+          </p>
+          <p class="small mb-2">
+            <strong>السجل الضريبي:</strong> {{
+            merchant.tax_register_number|default:"-" }}
+          </p>
+
+          <div class="d-flex gap-2">
+            {% if merchant.id_card_front %}
+            <a
+              href="{{ merchant.id_card_front.url }}"
+              target="_blank"
+              class="btn btn-sm btn-outline-dark w-50"
+              >البطاقة (1)</a
+            >
+            {% endif %} {% if merchant.id_card_back %}
+            <a
+              href="{{ merchant.id_card_back.url }}"
+              target="_blank"
+              class="btn btn-sm btn-outline-dark w-50"
+              >البطاقة (2)</a
+            >
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. الإحصائيات والمعاملات -->
+      <div class="col-md-8">
+        <!-- كروت الأرقام -->
+        <div class="row g-3 mb-4">
+          <div class="col-4">
+            <div
+              class="card border-0 shadow-sm p-3 bg-success text-white text-center"
+            >
+              <small>الرصيد الحالي</small>
+              <h4 class="fw-bold mb-0">{{ wallet.balance }}</h4>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card border-0 shadow-sm p-3 bg-white text-center">
+              <small class="text-muted">المبيعات (طلبات)</small>
+              <h4 class="fw-bold mb-0">{{ orders_count }}</h4>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card border-0 shadow-sm p-3 bg-white text-center">
+              <small class="text-muted">المنتجات</small>
+              <h4 class="fw-bold mb-0">{{ products_count }}</h4>
+            </div>
+          </div>
+        </div>
+
+        <!-- سجل المعاملات -->
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-header bg-white py-3 fw-bold">
+            سجل المعاملات المالية
+          </div>
+          <div class="table-responsive" style="max-height: 400px">
+            <table class="table align-middle mb-0">
+              <thead class="bg-light">
+                <tr>
+                  <th class="ps-4">المبلغ</th>
+                  <th>النوع</th>
+                  <th>الوصف</th>
+                  <th>التاريخ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for tx in transactions %}
+                <tr>
+                  <td
+                    class="ps-4 fw-bold {% if tx.amount > 0 %}text-success{% else %}text-danger{% endif %}"
+                  >
+                    {{ tx.amount }}
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border"
+                      >{{ tx.get_transaction_type_display }}</span
+                    >
+                  </td>
+                  <td class="small">{{ tx.description }}</td>
+                  <td class="small text-muted">
+                    {{ tx.created_at|date:"Y-m-d" }}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-4">لا توجد معاملات.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: تعديل البيانات -->
+  <div class="tab-pane fade" id="edit-content" role="tabpanel">
+    <div class="card border-0 shadow-sm rounded-4 p-4">
+      <h6 class="fw-bold mb-4 pb-3 border-bottom">
+        <i class="fas fa-pen-to-square text-primary ms-2"></i>تعديل بيانات
+        التاجر
+      </h6>
+
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="row g-4">
+          <!-- البيانات النصية -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted"
+              >أنواع البضاعة</label
+            >
+            <textarea name="goods_types" class="form-control" rows="2">
+{{ merchant.goods_types }}</textarea
+            >
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted"
+              >كمية البضاعة المحتملة</label
+            >
+            <input
+              type="text"
+              name="goods_quantity"
+              class="form-control"
+              value="{{ merchant.goods_quantity }}"
+            />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted"
+              >متوسط الأسعار</label
+            >
+            <input
+              type="text"
+              name="goods_average_price"
+              class="form-control"
+              value="{{ merchant.goods_average_price }}"
+            />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted"
+              >المقاسات المتاحة</label
+            >
+            <input
+              type="text"
+              name="goods_sizes"
+              class="form-control"
+              value="{{ merchant.goods_sizes }}"
+            />
+          </div>
+
+          <!-- الوثائق -->
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted"
+              >الرقم القومي</label
+            >
+            <input
+              type="text"
+              name="national_id"
+              class="form-control"
+              value="{{ merchant.national_id }}"
+              readonly
+            />
+            <small class="text-muted">لا يمكن تعديل الرقم القومي</small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold small text-muted"
+              >رقم السجل الضريبي</label
+            >
+            <input
+              type="text"
+              name="tax_register"
+              class="form-control"
+              value="{{ merchant.tax_register_number|default:'' }}"
+            />
+          </div>
+
+          <!-- التوثيق -->
+          <div class="col-md-12">
+            <div class="form-check">
+              <input
+                type="checkbox"
+                name="is_verified"
+                class="form-check-input"
+                id="is_verified"
+                {%
+                if
+                merchant.is_verified
+                %}checked{%
+                endif
+                %}
+              />
+              <label class="form-check-label" for="is_verified">
+                <i class="fas fa-check-circle text-primary ms-1"></i>
+                <strong>موثّق</strong> (علامة زرقاء بجانب الاسم)
+              </label>
+            </div>
+          </div>
+
+          <!-- الصور -->
+          <div class="col-md-12">
+            <h6 class="fw-bold mb-3 text-primary">تحديث الصور</h6>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted"
+              >صورة المتجر/الشخصية</label
+            >
+            <input
+              type="file"
+              name="shop_image"
+              class="form-control"
+              accept="image/*"
+            />
+            {% if merchant.shop_image %}
+            <small class="text-success d-block mt-2">
+              <i class="fas fa-check-circle ms-1"></i>الصورة الحالية موجودة
+            </small>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted"
+              >البطاقة الشخصية (الأمام)</label
+            >
+            <input
+              type="file"
+              name="id_card_front"
+              class="form-control"
+              accept="image/*"
+            />
+            {% if merchant.id_card_front %}
+            <small class="text-success d-block mt-2">
+              <i class="fas fa-check-circle ms-1"></i>الصورة الحالية موجودة
+            </small>
+            {% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted"
+              >البطاقة الشخصية (الخلف)</label
+            >
+            <input
+              type="file"
+              name="id_card_back"
+              class="form-control"
+              accept="image/*"
+            />
+            {% if merchant.id_card_back %}
+            <small class="text-success d-block mt-2">
+              <i class="fas fa-check-circle ms-1"></i>الصورة الحالية موجودة
+            </small>
+            {% endif %}
+          </div>
+
+          <!-- أزرار الحفظ -->
+          <div class="col-md-12 mt-4 pt-3 border-top">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary rounded-pill px-4">
+                <i class="fas fa-save ms-2"></i>حفظ التعديلات
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary rounded-pill px-4"
+                data-bs-toggle="tab"
+                data-bs-target="#view-content"
+              >
+                <i class="fas fa-times ms-2"></i>إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

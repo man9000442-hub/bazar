@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /merchant/
+Disallow: /super/
+Disallow: /cart/
+Disallow: /checkout/
+
+Sitemap: https://elbazaare.com/sitemap.xml

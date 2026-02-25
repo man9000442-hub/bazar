@@ -125,11 +125,15 @@
                         <div class="form-text small text-gold"><i class="fas fa-star"></i> يفضل إضافته لزيادة الثقة.</div>
                     </div>
             </div>
-            <div class="form-check mb-4 mt-3">
-                <input class="form-check-input" type="checkbox" id="agreeTerms" required>
-                <label class="form-check-label small text-muted" for="agreeTerms">
-                    أوافق على <a href="{% url 'terms_view' %}" target="_blank" class="text-primary text-decoration-none fw-bold">الشروط والأحكام</a> وسياسات الاستخدام.
-                </label>
+            <!-- Switch الشروط (كبير وواضح) -->
+            <div class="card bg-warning-subtle border-warning mb-4 mt-4 p-3 shadow-sm">
+                <div class="form-check form-switch d-flex align-items-center ps-0">
+                    <input class="form-check-input ms-0 me-3" type="checkbox" id="agreeTerms" required 
+                        style="width: 50px; height: 25px; cursor: pointer;">
+                    <label class="form-check-label fw-bold text-dark lh-sm" for="agreeTerms" style="cursor: pointer;">
+                        لقد قرأت وأوافق على <a href="{% url 'terms_view' %}" target="_blank" class="text-primary text-decoration-underline fw-bolder">الشروط والأحكام</a>
+                    </label>
+                </div>
             </div>
 
             <!-- زر الإرسال -->
@@ -142,8 +146,11 @@
         </div>
     </form>
     
-    <div class="text-center mt-4">
-        <a href="{% url 'signup_choice' %}" class="text-decoration-none text-muted small"><i class="fas fa-arrow-right"></i> تراجع للخلف</a>
+    <div class="text-center mt-5">
+        <!-- هذا الزر يغلق الصفحة إذا فُتحت في تبويب جديد -->
+        <button onclick="window.close()" class="btn btn-primary-app px-5 rounded-pill fw-bold shadow-sm">
+            إغلاق والعودة للتسجيل
+        </button>
     </div>
 </div>
 

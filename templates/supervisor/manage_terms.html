@@ -1,0 +1,48 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% block page_title %}إدارة الشروط والأحكام{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- فورم الإضافة -->
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm border-0 rounded-4">
+            <h6 class="fw-bold mb-3 text-primary">إضافة بند جديد</h6>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label small">العنوان</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">النص</label>
+                    <textarea name="content" class="form-control" rows="5" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">الترتيب</label>
+                    <input type="number" name="order" class="form-control" value="1">
+                </div>
+                <button type="submit" class="btn btn-dark w-100 rounded-pill">حفظ</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- القائمة -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <ul class="list-group list-group-flush">
+                {% for term in terms %}
+                <li class="list-group-item p-3">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="fw-bold">{{ term.title }}</h6>
+                        <a href="{% url 'super_delete_term' term.pk %}" class="text-danger" onclick="return confirm('حذف؟')"><i class="fas fa-trash"></i></a>
+                    </div>
+                    <p class="text-muted small mb-0">{{ term.content }}</p>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-center py-4">لا توجد بنود.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

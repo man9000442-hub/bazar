@@ -123,7 +123,8 @@ def merchant_onboarding(request):
     # 4. عرض الصفحة (GET)
     return render(request, 'account/merchant_onboarding.html')
 
-
+from store.models import TermsAndCondition
 
 def terms_view(request):
-    return render(request, 'terms.html')
+    terms = TermsAndCondition.objects.filter(is_active=True)
+    return render(request, 'terms.html', {'terms': terms})

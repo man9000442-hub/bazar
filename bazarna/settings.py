@@ -14,6 +14,13 @@ import dj_database_url # تحتاج pip install dj-database-url
 from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv()
+
+# إعدادات الأمان للإنتاج (Production)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+ACCOUNT_RATE_LIMITS = {}
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 database_url = os.getenv('DATABASE_URL')
@@ -25,11 +32,12 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = 'django-insecure-2=@6ne*bhsuw#t^inbg*7fs5h5*@&h)(1f90mp45jp1oh+f(o@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['bazar-production-f1e0.up.railway.app','127.0.0.1','elbazaare.com','147.93.56.140']
+ALLOWED_HOSTS = ['elbazaare.com', 'www.elbazaare.com', 'elbazaare.com,elbazaare.com','147.93.56.140' ]
 CSRF_TRUSTED_ORIGINS = [
-    'https://bazar-production-f1e0.up.railway.app','http://127.0.0.1:8000/','https://elbazaare.com'
+    'https://elbazaare.com',
+    'https://www.elbazaare.com',
 ]
 
 # Application definition
@@ -54,7 +62,8 @@ INSTALLED_APPS = [
     'supervisor',
     'rest_framework',
     'rest_framework.authtoken', # للمصادقة
-    'corsheaders', # للسماح للتطبيق بالاتصال
+    'corsheaders',
+     'django.contrib.sitemaps' # للسماح للتطبيق بالاتصال
 ]
 
 MIDDLEWARE = [
@@ -90,7 +99,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'bazarna.wsgi.application'
-
+ACCOUNT_ADAPTER = 'accounts.adapters.MyAccountAdapter'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -105,17 +114,16 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-if database_url:
-    DATABASES = {
-        'default': dj_database_url.parse(database_url)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'bazarna_db',
+        'USER': 'bazarna_user',
+        'PASSWORD': 'BazarnaPass2024',  # الباسورد الجديد الذي وضعناه
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 
 # Password validation
@@ -154,8 +162,8 @@ USE_TZ = True
 
 import os
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')] 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
