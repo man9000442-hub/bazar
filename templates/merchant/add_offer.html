@@ -1,115 +1,119 @@
-{% extends 'base.html' %}
+{% extends 'merchant/base_merchant.html' %} 
+{% load i18n %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block title %}{% trans "إدارة العروض | لوحة التاجر" %}{% endblock %}
 
 {% block content %}
 
-<!-- Header -->
-<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
-    <a href="{% url 'merchant_products' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <h5 class="m-0 fw-bold">إدارة العروض</h5>
-</div>
-
-<div class="container mt-4">
-    <div class="card p-4 shadow-sm border-0 bg-white">
-        
-        <!-- تفاصيل المنتج -->
-        <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
-            {% if product.image %}
-                <img src="{{ product.image.url }}" class="rounded me-3" width="60" height="60" style="object-fit: cover;">
-            {% endif %}
-            <div>
-                <h6 class="fw-bold text-primary mb-1">{{ product.name }}</h6>
-                <p class="small text-muted mb-0">السعر الأصلي: {{ product.base_price }} ج.م</p>
-            </div>
-        </div>
-        
-        <!-- حالة القفل (عرض منصة) -->
-        {% if is_locked %}
-            <div class="text-center py-4">
-                <div class="bg-warning-subtle text-warning-emphasis rounded-circle d-inline-flex p-3 mb-3">
-                    <i class="fas fa-crown fa-2x"></i>
-                </div>
-                <h5 class="fw-bold">عرض خاص من المنصة 👑</h5>
-                <p class="text-muted small">
-                    هذا المنتج عليه عرض نشط تم وضعه بواسطة المشرف.
-                    <br>
-                    <strong class="text-success">سيتم تعويضك بالفرق تلقائياً عند كل عملية بيع.</strong>
-                </p>
-                <div class="alert alert-light border mt-3 d-inline-block px-4">
-                    نسبة الخصم الحالية: <strong>{{ offer.discount_percentage }}%</strong>
-                </div>
-                <div class="mt-3">
-                    <a href="{% url 'merchant_products' %}" class="btn btn-outline-dark rounded-pill px-4">عودة للمنتجات</a>
-                </div>
-            </div>
-
-        {% else %}
-            <!-- الفورم العادي (للتعديل أو الإلغاء) -->
-            <form method="POST">
-                {% csrf_token %}
-                
-                <!-- نسبة الخصم -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">نسبة الخصم (%)</label>
-                    <div class="input-group">
-                        <input type="number" name="percentage" class="form-control" 
-                               min="1" max="99" 
-                               placeholder="مثلاً: 20" 
-                               value="{{ offer.discount_percentage|default:'' }}" 
-                               required>
-                        <span class="input-group-text bg-light">%</span>
-                    </div>
-                </div>
-
-                <hr class="my-3">
-                <h6 class="fw-bold text-success mb-3"><i class="fas fa-truck me-2"></i> عرض الشحن المجاني</h6>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" name="free_shipping" id="freeShip" 
-                        {% if offer.free_shipping %}checked{% endif %}>
-                    <label class="form-check-label" for="freeShip">تفعيل شحن مجاني لهذا المنتج</label>
-                </div>
-
-                <div class="input-group mb-3">
-                    <span class="input-group-text">بشرط شراء</span>
-                    <input type="number" name="threshold" class="form-control" value="{{ offer.free_shipping_threshold|default:1 }}" min="1">
-                    <span class="input-group-text">قطع</span>
-                </div>
-
-                <!-- مدة العرض -->
-                <div class="mb-4">
-                    <label class="form-label fw-bold small">مدة العرض (بالأيام)</label>
-                    <input type="number" name="days" class="form-control" 
-                           min="1" 
-                           placeholder="مثلاً: 7" 
-                           value="7" 
-                           required>
-                    <div class="form-text small text-muted">سيتم احتساب المدة بدءاً من اليوم.</div>
-                </div>
-                
-                <!-- تنبيه -->
-                <div class="alert alert-warning small d-flex align-items-center mb-4">
-                    <i class="fas fa-info-circle fs-5 me-2"></i>
-                    <div>
-                        تنبيه: هذا العرض سيخصم من أرباحك مباشرة، ولن يتم تعويضه من المنصة.
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <!-- زر الحفظ -->
-                    <button type="submit" class="btn btn-primary-app flex-grow-1 fw-bold py-2 shadow-sm">
-                        {% if offer %}تحديث العرض{% else %}تفعيل العرض{% endif %}
-                    </button>
-                    
-                    <!-- زر الإلغاء (يظهر فقط لو فيه عرض) -->
-                    {% if offer %}
-                    <a href="{% url 'merchant_cancel_offer' offer.id %}" class="btn btn-outline-danger fw-bold py-2" onclick="return confirm('هل أنت متأكد من إلغاء العرض؟')">
-                        إلغاء
-                    </a>
-                    {% endif %}
-                </div>
-            </form>
-        {% endif %}
-        
+<div class="d-flex align-items-center mb-4 bg-white p-3 rounded-4 shadow-sm border border-light mt-2">
+    <a href="{% url 'merchant_products' %}" class="btn btn-light rounded-circle p-2 mx-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+        <i class="fas fa-arrow-{% if LANGUAGE_BIDI %}right{% else %}left{% endif %} text-dark"></i>
+    </a>
+    <div>
+        <h5 class="fw-bold mb-0">{% trans "إدارة العروض" %}</h5>
+        <p class="text-muted small mb-0">{% trans "إضافة أو تعديل خصم على المنتج" %}</p>
     </div>
 </div>
+
+<div class="card p-4 shadow-sm border-0 bg-white rounded-4 mb-5">
+    
+    <div class="bg-light p-3 rounded-4 mb-4 d-flex align-items-center border border-light">
+        {% if product.image %}
+            <img src="{{ product.image.url }}" class="rounded-3 shadow-sm mx-3" width="60" height="60" style="object-fit: cover;" />
+        {% else %}
+            <div class="bg-secondary bg-opacity-10 rounded-3 mx-3 d-flex align-items-center justify-content-center text-secondary" style="width: 60px; height: 60px;">
+                <i class="fas fa-box fs-4"></i>
+            </div>
+        {% endif %}
+        <div>
+            <h6 class="fw-bold text-dark mb-2">{{ product.name }}</h6>
+            <span class="badge bg-dark rounded-pill px-3 py-2 shadow-sm" dir="ltr">
+                {% trans "السعر الأصلي:" %} {{ product.base_price|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:'ج.م' }}</small>
+            </span>
+        </div>
+    </div>
+
+    {% if is_locked %}
+    <div class="text-center py-5 bg-warning bg-opacity-10 rounded-4 border border-warning border-opacity-25 mb-2">
+        <div class="bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center p-3 mb-3 shadow-sm" style="width: 70px; height: 70px;">
+            <i class="fas fa-crown fa-2x"></i>
+        </div>
+        <h5 class="fw-bold text-dark">{% trans "عرض خاص من المنصة 👑" %}</h5>
+        <p class="text-muted small px-3 mt-2">
+            {% trans "هذا المنتج عليه عرض نشط تم وضعه بواسطة إدارة المنصة." %}<br />
+            <strong class="text-success">{% trans "سيتم تعويضك بالفرق تلقائياً عند كل عملية بيع." %}</strong>
+        </p>
+        <div class="d-inline-block bg-white px-4 py-2 rounded-pill shadow-sm mt-3 fw-bold text-primary border border-light" dir="ltr">
+            {% trans "نسبة الخصم الحالية:" %} {{ offer.discount_percentage }}%
+        </div>
+    </div>
+
+    {% else %}
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark">{% trans "نسبة الخصم (%)" %}</label>
+            <div class="input-group input-group-lg shadow-sm">
+                <input type="number" name="percentage" class="form-control bg-light border-0" min="0" max="99" placeholder="{% trans 'مثلاً: 20 (اتركه 0 للشحن المجاني فقط)' %}" value="{{ offer.discount_percentage|default:'0' }}" />
+                <span class="input-group-text bg-primary text-white border-0 fw-bold">%</span>
+            </div>
+            <div class="form-text small text-muted mt-2">
+                <i class="fas fa-info-circle mx-1"></i> {% trans "يمكنك إدخال 0 إذا كنت تريد تقديم عرض شحن مجاني فقط." %}
+            </div>
+        </div>
+
+        <hr class="text-muted opacity-25 my-4" />
+        
+        <h6 class="fw-bold text-success mb-3">
+            <i class="fas fa-truck mx-2"></i> {% trans "عرض الشحن المجاني" %}
+        </h6>
+
+        <div class="bg-success bg-opacity-10 p-3 rounded-4 border border-success border-opacity-25 mb-4">
+            <div class="form-check form-switch mb-3 d-flex align-items-center">
+                <input class="form-check-input fs-4 m-0 mx-3" type="checkbox" name="free_shipping" id="freeShip" {% if offer.free_shipping %}checked{% endif %} />
+                <label class="form-check-label fw-bold text-dark pt-1 mx-2" for="freeShip">{% trans "تفعيل شحن مجاني لهذا المنتج" %}</label>
+            </div>
+
+            <label class="form-label fw-bold small text-dark">{% trans "بشرط شراء عدد (قطع)" %}</label>
+            <div class="input-group shadow-sm">
+                <input type="number" name="threshold" class="form-control bg-white border-0" value="{{ offer.free_shipping_threshold|default:1 }}" min="1" />
+                <span class="input-group-text bg-white border-0 text-muted">{% trans "قطعة/قطع" %}</span>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark">{% trans "مدة العرض (بالأيام)" %}</label>
+            <div class="input-group shadow-sm">
+                <span class="input-group-text bg-light border-0"><i class="fas fa-calendar-alt text-muted"></i></span>
+                <input type="number" name="days" class="form-control bg-light border-0" min="1" placeholder="{% trans 'مثلاً: 7' %}" value="7" required />
+            </div>
+            <div class="form-text small text-muted mt-2">
+                {% trans "سيتم احتساب المدة بدءاً من اليوم." %}
+            </div>
+        </div>
+
+        <div class="alert alert-warning small d-flex align-items-center mb-4 border-0 shadow-sm rounded-4">
+            <i class="fas fa-exclamation-triangle fs-4 text-warning mx-3"></i>
+            <div class="fw-bold text-dark opacity-75">
+                {% trans "هذا العرض سيخصم من أرباحك مباشرة، ولن يتم تعويضه من المنصة." %}
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn text-white flex-grow-1 fw-bold py-3 rounded-pill shadow-sm" style="background: linear-gradient(90deg, #ff8c00, #ffb347);">
+                <i class="fas fa-save mx-1"></i> {% if offer %}{% trans "تحديث العرض" %}{% else %}{% trans "تفعيل العرض ⚡" %}{% endif %}
+            </button>
+
+            {% if offer %}
+            <a href="{% url 'merchant_cancel_offer' offer.id %}" class="btn btn-outline-danger fw-bold py-3 px-4 rounded-pill d-flex align-items-center" onclick="return confirm('{% trans "هل أنت متأكد من إلغاء هذا العرض؟" %}');">
+                <i class="fas fa-trash-alt"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+    {% endif %}
+</div>
+
 {% endblock %}

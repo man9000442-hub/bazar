@@ -1,122 +1,195 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}نظرة عامة على المالية{% endblock %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "نظرة عامة على المالية" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "التقارير المالية والأرباح" %}{% endblock %}
 
 {% block content %}
+{% trans "ج.م" as default_currency %}
 
-<!-- 1. شريط الفلترة -->
-<div class="card border-0 shadow-sm p-3 mb-4 rounded-4">
-    <form method="GET" class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        
-        <!-- أزرار سريعة -->
-        <div class="btn-group" role="group">
-            <button type="submit" name="range" value="today" class="btn btn-outline-primary {% if current_range == 'today' %}active{% endif %}">اليوم</button>
-            <button type="submit" name="range" value="week" class="btn btn-outline-primary {% if current_range == 'week' %}active{% endif %}">أسبوع</button>
-            <button type="submit" name="range" value="month" class="btn btn-outline-primary {% if current_range == 'month' %}active{% endif %}">شهر</button>
-            <button type="submit" name="range" value="year" class="btn btn-outline-primary {% if current_range == 'year' %}active{% endif %}">سنة</button>
-        </div>
+<div class="container-fluid p-0">
 
-        <!-- مخصص -->
-        <div class="d-flex gap-2 align-items-center">
-            <input type="date" name="start" class="form-control form-control-sm" value="{{ start_date|date:'Y-m-d' }}">
-            <span class="text-muted">-</span>
-            <input type="date" name="end" class="form-control form-control-sm" value="{{ end_date|date:'Y-m-d' }}">
-            <button type="submit" name="range" value="custom" class="btn btn-dark btn-sm"><i class="fas fa-filter"></i></button>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-chart-line text-success me-2"></i> {% trans "ملخص الإدارة المالية" %}</h5>
+            <small class="text-muted">{% trans "نظرة شاملة على أرباح المنصة، محافظ التجار، والسيولة النقدية." %}</small>
         </div>
-    </form>
-</div>
+    </div>
 
-<!-- 2. الكروت الرئيسية (تتغير حسب الفلتر) -->
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-success">
-            <h6 class="text-muted small fw-bold">العمولات (الفترة المحددة)</h6>
-            <h3 class="fw-bold text-dark mb-0">{{ income }} <span class="fs-6 text-muted">ج.م</span></h3>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-danger">
-            <h6 class="text-muted small fw-bold">التعويضات (الفترة المحددة)</h6>
-            <h3 class="fw-bold text-dark mb-0">{{ expenses }} <span class="fs-6 text-muted">ج.م</span></h3>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm p-3 h-100 text-white bg-success">
-            <h6 class="text-white-50 small fw-bold">صافي الربح</h6>
-            <h3 class="fw-bold mb-0">{{ net_profit }} <span class="fs-6 opacity-75">ج.م</span></h3>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm p-3 h-100 bg-dark text-white">
-            <h6 class="text-white-50 small fw-bold">أرصدة التجار (الإجمالي)</h6>
-            <h3 class="fw-bold mb-0">{{ total_merchants_balance }} <span class="fs-6 opacity-75">ج.م</span></h3>
-        </div>
-    </div>
-</div>
-
-<!-- 3. الرسم البياني -->
-<div class="row g-4">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm p-4 h-100 rounded-4">
-            <h6 class="fw-bold mb-4 text-primary">
-                <i class="fas fa-chart-line me-2"></i> تحليل الإيرادات
-                <span class="badge bg-light text-dark border ms-2">
-                    {{ start_date|date:"d M" }} - {{ end_date|date:"d M" }}
-                </span>
-            </h6>
-            <div style="height: 300px; width: 100%;">
-                <canvas id="financeChart"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm p-4 h-100 rounded-4 bg-primary text-white position-relative overflow-hidden">
-            <i class="fas fa-file-invoice position-absolute top-0 end-0 opacity-10 fa-5x p-3"></i>
-            <h5 class="fw-bold mb-3">تصدير التقرير</h5>
-            <p class="small opacity-75 mb-4">قم بتحميل تفاصيل هذه الفترة كملف Excel.</p>
+    <div class="card border-0 shadow-sm p-3 mb-4 rounded-4 bg-white">
+        <form method="GET" class="d-flex flex-wrap align-items-center justify-content-between gap-3">
             
-            <div class="d-grid gap-3">
-                <a href="{% url 'super_export_profits' %}?range={{ current_range }}&start={{ start_date|date:'Y-m-d' }}&end={{ end_date|date:'Y-m-d' }}" class="btn btn-light text-primary fw-bold py-3 shadow-sm">
-                    <i class="fas fa-download me-2"></i> تحميل التقرير
-                </a>
+            <div class="btn-group shadow-sm" role="group">
+                <button type="submit" name="range" value="today" class="btn btn-outline-primary fw-bold {% if current_range == 'today' %}active{% endif %}">{% trans "اليوم" %}</button>
+                <button type="submit" name="range" value="week" class="btn btn-outline-primary fw-bold {% if current_range == 'week' %}active{% endif %}">{% trans "أسبوع" %}</button>
+                <button type="submit" name="range" value="month" class="btn btn-outline-primary fw-bold {% if current_range == 'month' %}active{% endif %}">{% trans "شهر" %}</button>
+                <button type="submit" name="range" value="year" class="btn btn-outline-primary fw-bold {% if current_range == 'year' %}active{% endif %}">{% trans "سنة" %}</button>
+            </div>
+
+            <div class="d-flex gap-2 align-items-center flex-grow-1" style="max-width: 400px;">
+                <input type="date" name="start" class="form-control bg-light border-0 rounded-3 text-dark fw-bold" value="{{ start_date|date:'Y-m-d' }}">
+                <span class="text-muted fw-bold">-</span>
+                <input type="date" name="end" class="form-control bg-light border-0 rounded-3 text-dark fw-bold" value="{{ end_date|date:'Y-m-d' }}">
+                <button type="submit" name="range" value="custom" class="btn btn-dark rounded-3 shadow-sm px-3"><i class="fas fa-filter"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-3 mb-4">
+        
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-success rounded-4 bg-white transition-hover">
+                <h6 class="text-muted small fw-bold mb-2">{% trans "إجمالي العمولات" %} <i class="fas fa-info-circle text-success ms-1" title="{% trans 'في الفترة المحددة' %}"></i></h6>
+                <h4 class="fw-bolder text-success mb-0">{{ income|floatformat:2|default:"0.00" }} <span class="fs-6 text-muted">{{ request.user.country.currency_symbol|default:default_currency }}</span></h4>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-danger rounded-4 bg-white transition-hover">
+                <h6 class="text-muted small fw-bold mb-2">{% trans "التعويضات / الخصومات" %} <i class="fas fa-info-circle text-danger ms-1" title="{% trans 'في الفترة المحددة' %}"></i></h6>
+                <h4 class="fw-bolder text-danger mb-0">{{ expenses|floatformat:2|default:"0.00" }} <span class="fs-6 text-muted">{{ request.user.country.currency_symbol|default:default_currency }}</span></h4>
+            </div>
+        </div>
+        
+        <div class="col-12 col-md-3">
+            <div class="card border-0 rounded-4 shadow-sm overflow-hidden h-100 transition-hover" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <div class="card-body p-3 text-white position-relative">
+                    <i class="fas fa-chart-pie position-absolute top-50 start-0 translate-middle-y opacity-25 fa-4x ms-n2"></i>
+                    <h6 class="text-white-50 small fw-bold mb-2 z-1 position-relative">{% trans "صافي الربح الفعلي" %}</h6>
+                    <h3 class="fw-bolder mb-0 z-1 position-relative">{{ net_profit|floatformat:2|default:"0.00" }} <span class="fs-6 opacity-75">{{ request.user.country.currency_symbol|default:default_currency }}</span></h3>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-md-3">
+            <div class="card border-0 rounded-4 shadow-sm overflow-hidden h-100 transition-hover bg-dark text-white position-relative">
+                <div class="card-body p-3">
+                    <i class="fas fa-wallet position-absolute top-50 start-0 translate-middle-y opacity-10 fa-4x ms-n2"></i>
+                    <h6 class="text-white-50 small fw-bold mb-2 z-1 position-relative">{% trans "أرصدة التجار (إجمالي المنصة)" %}</h6>
+                    <h3 class="fw-bolder mb-0 z-1 position-relative">{{ total_merchants_balance|floatformat:2|default:"0.00" }} <span class="fs-6 opacity-75">{{ request.user.country.currency_symbol|default:default_currency }}</span></h3>
+                </div>
             </div>
         </div>
     </div>
+
+    <div class="row g-4">
+        
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm p-4 h-100 rounded-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="fw-bold m-0 text-dark">
+                        <i class="fas fa-chart-area text-primary me-2"></i> {% trans "تحليل الإيرادات" %}
+                    </h6>
+                    <span class="badge bg-light text-dark border px-3 py-2 shadow-sm">
+                        {{ start_date|date:"d M Y" }} <i class="fas fa-arrow-left mx-2 text-muted"></i> {{ end_date|date:"d M Y" }}
+                    </span>
+                </div>
+                
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="financeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-xl-4 d-flex flex-column gap-3">
+            
+            <div class="card border-0 shadow-sm p-4 rounded-4 bg-primary text-white position-relative overflow-hidden flex-grow-1">
+                <i class="fas fa-file-invoice position-absolute top-0 end-0 opacity-10 fa-5x p-3"></i>
+                <h5 class="fw-bold mb-2">{% trans "تصدير التقارير" %}</h5>
+                <p class="small opacity-75 mb-4">{% trans "قم بتحميل التفاصيل المالية كملف Excel." %}</p>
+                
+                <div class="d-grid gap-2 mt-auto">
+                    <a href="{% url 'super_export_profits' %}?range={{ current_range }}&start={{ start_date|date:'Y-m-d' }}&end={{ end_date|date:'Y-m-d' }}" class="btn btn-light text-primary fw-bold py-2 shadow-sm rounded-3">
+                        <i class="fas fa-download me-1"></i> {% trans "تحميل تقرير الأرباح" %}
+                    </a>
+                    <a href="{% url 'super_export_debts' %}" class="btn btn-outline-light fw-bold py-2 shadow-sm rounded-3">
+                        <i class="fas fa-users me-1"></i> {% trans "تحميل مديونيات التجار" %}
+                    </a>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-3 rounded-4 bg-white border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark m-0 mb-1">{% trans "طلبات سحب معلقة" %}</h6>
+                        <span class="text-muted small">
+                            {% blocktrans with count=pending_withdrawals_count|default:"0" %}هناك {{ count }} طلبات{% endblocktrans %}
+                        </span>
+                    </div>
+                    <a href="{% url 'super_pending_withdrawals' %}" class="btn btn-warning btn-sm fw-bold rounded-pill px-3 shadow-sm text-dark">
+                        {% trans "مراجعة" %}
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
 </div>
+
+{{ chart_labels|json_script:"labelsData" }}
+{{ chart_values|json_script:"valuesData" }}
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const labels = JSON.parse('{{ chart_labels|safe }}');
-    const values = JSON.parse('{{ chart_values|safe }}');
+document.addEventListener("DOMContentLoaded", function() {
+    // جلب البيانات من JSON Scripts
+    const labelsRaw = document.getElementById('labelsData').textContent;
+    const valuesRaw = document.getElementById('valuesData').textContent;
+    
+    // تعريف نص الإيرادات المترجم
+    const msgRevenues = '{% trans "الإيرادات" %}';
+    
+    // إذا لم تكن البيانات مصفوفة JSON صالحة (فارغة مثلاً) سنضع مصفوفة فارغة لتجنب خطأ الجافاسكريبت
+    let labels = [];
+    let values = [];
+    try {
+        labels = JSON.parse(labelsRaw);
+        values = JSON.parse(valuesRaw);
+    } catch(e) {
+        console.warn("No chart data available.");
+    }
 
-    const ctx = document.getElementById('financeChart').getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(25, 135, 84, 0.5)');
-    gradient.addColorStop(1, 'rgba(25, 135, 84, 0.0)');
+    const canvas = document.getElementById('financeChart');
+    if (canvas && labels.length > 0) {
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); // أخضر شفاف
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)'); // شفاف
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'الإيرادات',
-                data: values,
-                borderColor: '#198754',
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
-                x: { grid: { display: false } }
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: msgRevenues,
+                    data: values,
+                    borderColor: '#10b981', // أخضر
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#10b981',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4 // انحناء سلس
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#f1f5f9' }, ticks: { font: { family: 'Cairo' }, color: '#94a3b8' } },
+                    x: { grid: { display: false }, ticks: { font: { family: 'Cairo' }, color: '#94a3b8' } }
+                }
             }
-        }
-    });
+        });
+    }
+});
 </script>
-
 {% endblock %}

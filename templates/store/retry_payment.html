@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load i18n %} {% block content %}
+
+<style>
+    .dark-header {
+        background-color: var(--dark-bg, #091024);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .dark-card {
+        background-color: var(--dark-surface, #121d3a);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .gold-text {
+        color: var(--gold-accent, #ffc107) !important;
+    }
+    .text-muted-dark {
+        color: #8fa0c1 !important;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: #000;
+        border: none;
+        transition: 0.3s;
+    }
+    .btn-gold:hover {
+        transform: scale(0.98);
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+    .btn-outline-light-dark {
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: transparent;
+        transition: 0.3s;
+    }
+    .btn-outline-light-dark:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #ffc107;
+        border-color: #ffc107;
+    }
+
+    /* أزرار طرق الدفع */
+    .payment-label {
+        background-color: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #8fa0c1;
+        transition: all 0.3s ease;
+        border-radius: 12px;
+    }
+    .payment-label i {
+        color: #6c7c9c;
+        transition: all 0.3s ease;
+    }
+    .btn-check:checked + .payment-label {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-color: #ffc107;
+        color: #ffc107;
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.15);
+    }
+    .btn-check:checked + .payment-label i {
+        color: #ffc107;
+    }
+
+    /* حقل الإدخال */
+    .dark-input {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+    }
+    .dark-input:focus {
+        border-color: var(--gold-accent, #ffc107) !important;
+        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.15) !important;
+    }
+    .dark-input::placeholder { color: #6c7c9c !important; }
+    .dark-input-group-text {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #8fa0c1 !important;
+    }
+</style>
+
+<div class="container py-5 mb-5" style="min-height: 80vh;">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card dark-card shadow-lg rounded-4 p-4 border-0">
+                
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex p-3 mb-3 rounded-circle shadow" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.2);">
+                        <i class="fas fa-wallet fa-2x gold-text"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2 text-white" style="letter-spacing: 0.5px;">{% trans "إكمال الدفع للطلب" %} <span class="gold-text">#{{ order.id }}</span></h5>
+                    <p class="text-muted-dark small mb-0">{% trans "المبلغ المستحق الصافي:" %} <strong class="gold-text fs-6">{{ base_total }} {% trans "ج.م" %}</strong></p>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <h6 class="fw-bold mb-3 text-white"><i class="fas fa-credit-card me-2 gold-text"></i> {% trans "اختر طريقة الدفع الجديدة:" %}</h6>
+                    
+                    <div class="d-flex gap-2 w-100 mb-4" role="group">
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_cod" value="COD" checked onchange="toggleFees()">
+                        <label class="btn payment-label flex-fill py-3 m-0" for="pay_cod">
+                            <i class="fas fa-money-bill-wave d-block mb-1 fs-4"></i>{% trans "كاش" %}
+                        </label>
+
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE" onchange="toggleFees()">
+                        <label class="btn payment-label flex-fill py-3 m-0" for="pay_online">
+                            <i class="fas fa-credit-card d-block mb-1 fs-4"></i>{% trans "فيزا" %}
+                        </label>
+
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_wallet" value="WALLET" onchange="toggleFees()">
+                        <label class="btn payment-label flex-fill py-3 m-0" for="pay_wallet">
+                            <i class="fas fa-wallet d-block mb-1 fs-4"></i>{% trans "محفظة" %}
+                        </label>
+                    </div>
+
+                    <div id="wallet-input-container" style="display: none;" class="p-3 rounded mt-2 mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                        <label class="form-label small fw-bold text-white">{% trans "رقم المحفظة الإلكترونية المحول منها" %}</label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text dark-input-group-text border-end-0"><i class="fas fa-mobile-alt"></i></span>
+                            <input type="tel" name="wallet_number" class="form-control dark-input border-start-0" placeholder="010xxxxxxxx">
+                        </div>
+                        <div class="form-text text-muted-dark small mt-1">{% trans "فودافون كاش، اتصالات، أورانج، وي." %}</div>
+                    </div>
+
+                    <div id="fees-container" style="display: none;" class="p-3 rounded mb-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                        <div class="d-flex justify-content-between small text-muted-dark mb-2">
+                            <span>{% trans "رسوم الدفع الإلكتروني:" %}</span>
+                            <span id="fee-amount" style="color: #ff9800;">0.00 {% trans "ج.م" %}</span>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold text-white border-top pt-2 mt-1" style="border-color: rgba(255,255,255,0.1) !important;">
+                            <span>{% trans "الإجمالي النهائي للدفع:" %}</span>
+                            <span id="grand-total" class="gold-text fs-5" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{{ base_total }} {% trans "ج.م" %}</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="btn btn-gold w-100 py-3 fw-bold rounded-pill shadow-lg mb-3" style="font-size: 16px;">
+                        {% trans "تأكيد الطلب (كاش)" %} <i class="fas fa-check-circle ms-1"></i>
+                    </button>
+                    
+                    <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-outline-light-dark w-100 py-3 rounded-pill fw-bold">{% trans "إلغاء والعودة للطلب" %}</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const baseTotal = parseFloat("{{ base_total }}");
+    const feeFixed = parseFloat("{{ fee_fixed }}");
+    const feePercent = parseFloat("{{ fee_percent }}");
+
+    // تعريف المتغيرات المترجمة للجافاسكريبت
+    const currencyStr = " {% trans 'ج.م' %}";
+    const btnVisaStr = '{% trans "الانتقال للدفع (فيزا)" %} <i class="fas fa-credit-card ms-1"></i>';
+    const btnWalletStr = '{% trans "تأكيد الدفع (محفظة)" %} <i class="fas fa-wallet ms-1"></i>';
+    const btnCashStr = '{% trans "تأكيد الطلب (كاش)" %} <i class="fas fa-check-circle ms-1"></i>';
+
+    function toggleFees() {
+        const isOnline = document.getElementById('pay_online').checked;
+        const isWallet = document.getElementById('pay_wallet').checked;
+        
+        const feesContainer = document.getElementById('fees-container');
+        const walletContainer = document.getElementById('wallet-input-container');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        // إظهار/إخفاء حقل المحفظة
+        walletContainer.style.display = isWallet ? 'block' : 'none';
+
+        if (isOnline || isWallet) {
+            feesContainer.style.display = 'block';
+            const fees = feeFixed + (baseTotal * feePercent / 100);
+            const total = baseTotal + fees;
+            
+            document.getElementById('fee-amount').innerText = fees.toFixed(2) + currencyStr;
+            document.getElementById('grand-total').innerText = total.toFixed(2) + currencyStr;
+            
+            if (isOnline) {
+                submitBtn.innerHTML = btnVisaStr;
+            } else {
+                submitBtn.innerHTML = btnWalletStr;
+            }
+        } else {
+            feesContainer.style.display = 'none';
+            submitBtn.innerHTML = btnCashStr;
+        }
+    }
+</script>
+{% endblock %}

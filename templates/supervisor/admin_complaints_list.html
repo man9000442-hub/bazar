@@ -1,0 +1,213 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "شكاوى ومرتجعات العملاء" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "إدارة الشكاوى والمرتجعات" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-exclamation-triangle text-danger me-2"></i> {% trans "شكاوى العملاء والمرتجعات" %}</h5>
+            <small class="text-muted">{% trans "مراجعة المشاكل بين العملاء والتجار، واتخاذ قرارات التعويض أو الرفض." %}</small>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for complaint in complaints %}
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white overflow-hidden position-relative hover-card">
+                
+                {% if complaint.is_resolved %}
+                    <div class="bg-success text-white px-4 py-2 d-flex justify-content-between align-items-center fw-bold" style="font-size: 12px;">
+                        <span><i class="fas fa-check-circle me-1"></i> {% trans "تمت التسوية والإغلاق" %}</span>
+                        <span dir="ltr">{{ complaint.created_at|date:"d M Y" }}</span>
+                    </div>
+                {% else %}
+                    <div class="bg-danger text-white px-4 py-2 d-flex justify-content-between align-items-center fw-bold" style="font-size: 12px;">
+                        <span><i class="fas fa-clock me-1"></i> {% trans "بانتظار تدخل الإدارة" %}</span>
+                        <span dir="ltr">{{ complaint.created_at|date:"d M Y" }}</span>
+                    </div>
+                {% endif %}
+
+                <div class="card-body p-4">
+                    
+                    <div class="d-flex justify-content-between align-items-start border-bottom border-light pb-3 mb-4">
+                        <div>
+                            <span class="text-muted small d-block mb-1">{% trans "الشكوى بخصوص الطلب" %}</span>
+                            <a href="{% url 'super_order_detail' complaint.order.order_id %}" class="h5 fw-bolder text-primary text-decoration-none m-0 d-block">
+                                #{{ complaint.order.order_id|default:complaint.order.id }}
+                            </a>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if complaint.order.payment_method == 'COD' %}bg-secondary{% else %}bg-primary{% endif %} shadow-sm px-3 py-2 rounded-pill">
+                                <i class="fas fa-money-bill-wave me-1"></i> {{ complaint.order.get_payment_method_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <div class="bg-light rounded-3 p-3 h-100 border border-light">
+                                <span class="badge bg-danger-subtle text-danger mb-2 px-2 rounded-pill" style="font-size: 10px;">{% trans "الطرف الشاكي (العميل)" %}</span>
+                                <h6 class="fw-bold text-dark mb-1">{{ complaint.customer.first_name }} {{ complaint.customer.last_name }}</h6>
+                                <span class="d-block text-muted small mb-2" dir="ltr"><i class="fas fa-phone-alt me-1"></i> {{ complaint.customer.phone_primary }}</span>
+                                {% if complaint.whatsapp_number %}
+                                    <a href="https://wa.me/2{{ complaint.whatsapp_number }}" target="_blank" class="btn btn-sm btn-success rounded-pill fw-bold w-100" style="font-size: 11px;">
+                                        <i class="fab fa-whatsapp me-1"></i> {% trans "محادثة العميل" %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 col-md-6">
+                            <div class="bg-light rounded-3 p-3 h-100 border border-light">
+                                <span class="badge bg-primary-subtle text-primary mb-2 px-2 rounded-pill" style="font-size: 10px;">{% trans "صاحب المتجر (التاجر)" %}</span>
+                                <h6 class="fw-bold text-dark mb-1">{{ complaint.order.merchant.user.first_name }} {{ complaint.order.merchant.user.last_name }}</h6>
+                                <span class="d-block text-muted small mb-2" dir="ltr"><i class="fas fa-store me-1"></i> {{ complaint.order.merchant.user.phone_primary }}</span>
+                                {% if complaint.order.merchant.user.phone_primary %}
+                                    <a href="https://wa.me/2{{ complaint.order.merchant.user.phone_primary|slice:'1:' }}" target="_blank" class="btn btn-sm btn-secondary rounded-pill fw-bold w-100" style="font-size: 11px;">
+                                        <i class="fab fa-whatsapp me-1"></i> {% trans "تواصل مع التاجر" %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-dark mb-2"><i class="fas fa-comment-dots text-primary me-1"></i> {% trans "تفاصيل الشكوى من العميل:" %}</h6>
+                        <div class="bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-3 p-3 text-dark small" style="line-height: 1.6;">
+                            "{{ complaint.complaint_text }}"
+                        </div>
+                    </div>
+
+                    <div class="mb-2 text-center">
+                        {% if complaint.order.merchant_received_return %}
+                            <span class="badge bg-success text-white px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-box-open me-1"></i> {% trans "مندوب الشحن أعاد المنتج للتاجر" %}</span>
+                        {% else %}
+                            <span class="badge bg-danger text-white px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-truck-loading me-1"></i> {% trans "المرتجع لم يصل للتاجر بعد!" %}</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+                
+                <div class="card-footer bg-white border-top border-light p-3">
+                    {% if not complaint.is_resolved %}
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-danger flex-grow-1 fw-bold rounded-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#resolveModal{{ complaint.id }}">
+                                <i class="fas fa-undo me-1"></i> {% trans "قبول (مرتجع)" %}
+                            </button>
+                            <button type="button" class="btn btn-primary flex-grow-1 fw-bold rounded-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#forceDeliverModal{{ complaint.id }}">
+                                <i class="fas fa-check-double me-1"></i> {% trans "رفض (تسليم)" %}
+                            </button>
+                        </div>
+
+                        <div class="modal fade" id="resolveModal{{ complaint.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content rounded-4 border-0 shadow-lg">
+                                    <div class="modal-header bg-danger text-white border-0 rounded-top-4">
+                                        <h5 class="modal-title fw-bold"><i class="fas fa-undo me-2"></i> {% trans "تأكيد عملية المرتجع للطلب" %} #{{ complaint.order.order_id|default:complaint.order.id }}</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{% url 'admin_resolve_complaint' complaint.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="resolution_action" value="refund">
+                                        <div class="modal-body p-4 text-start">
+                                            {% if not complaint.order.merchant_received_return %}
+                                                <div class="alert alert-danger mb-4 border-danger shadow-sm fw-bold small">
+                                                    <i class="fas fa-exclamation-triangle me-2 fs-5"></i> {% trans "تحذير: التاجر لم يقم بتأكيد استلام المنتج المرتجع حتى الآن! يرجى التواصل معه قبل الخصم من حسابه." %}
+                                                </div>
+                                            {% endif %}
+                                            <div class="mb-0">
+                                                <label class="form-label fw-bold text-muted small">{% trans "اكتب ملاحظات الإدارة (لأرشيف الإغلاق)" %}</label>
+                                                <textarea name="admin_notes" class="form-control bg-light border-0 rounded-3 p-3" rows="3" placeholder="{% trans 'مثال: تم التأكد من عيب الصناعة وإرجاع المبلغ...' %}"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-0 px-4 pb-4 gap-2">
+                                            <button type="button" class="btn btn-light border fw-bold flex-grow-1 rounded-3 py-2" data-bs-dismiss="modal">{% trans "إلغاء" %}</button>
+                                            <button type="submit" class="btn btn-danger fw-bold flex-grow-1 rounded-3 py-2 shadow-sm">{% trans "تأكيد المرتجع" %}</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal fade" id="forceDeliverModal{{ complaint.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content rounded-4 border-0 shadow-lg">
+                                    <div class="modal-header bg-primary text-white border-0 rounded-top-4">
+                                        <h5 class="modal-title fw-bold"><i class="fas fa-shield-alt me-2"></i> {% trans "تأكيد التسليم للطلب" %} #{{ complaint.order.order_id|default:complaint.order.id }}</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{% url 'admin_resolve_complaint' complaint.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="resolution_action" value="force_deliver">
+                                        <div class="modal-body p-4 text-start">
+                                            <div class="alert alert-primary mb-4 shadow-sm bg-primary-subtle text-primary-emphasis border-primary-subtle small fw-bold" style="line-height: 1.8;">
+                                                <i class="fas fa-info-circle me-2 fs-5"></i> <strong>{% trans "إجراء حماية التاجر:" %}</strong><br>
+                                                {% trans "هل تأكدت أن العميل استلم الطلب فعلاً ويحاول التلاعب لعدم الدفع؟" %}<br>
+                                                {% trans "بالتأكيد سيتم: (إغلاق الشكوى، تحويل حالة الطلب لتم التسليم، وإضافة الأرباح للتاجر بشكل طبيعي)." %}
+                                            </div>
+                                            <div class="mb-0">
+                                                <label class="form-label fw-bold text-muted small">{% trans "ملاحظات الإدارة (ستظهر للتاجر)" %}</label>
+                                                <textarea name="admin_notes" class="form-control bg-light border-0 rounded-3 p-3" rows="3" placeholder="{% trans 'مثال: تم التأكد من المندوب أن العميل استلم الطلب سليم...' %}"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-0 px-4 pb-4 gap-2">
+                                            <button type="button" class="btn btn-light border fw-bold flex-grow-1 rounded-3 py-2" data-bs-dismiss="modal">{% trans "إلغاء" %}</button>
+                                            <button type="submit" class="btn btn-primary fw-bold flex-grow-1 rounded-3 py-2 shadow-sm">{% trans "تأكيد التسليم (رفض الشكوى)" %}</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-light border text-success fw-bold flex-grow-1 rounded-3 py-2 disabled" style="opacity: 1;">
+                                <i class="fas fa-check me-1"></i> {% trans "مغلقة ومسواة" %}
+                            </button>
+                            <button type="button" class="btn btn-outline-info fw-bold flex-grow-1 rounded-3 py-2" data-bs-toggle="modal" data-bs-target="#viewNotesModal{{ complaint.id }}">
+                                <i class="fas fa-sticky-note me-1"></i> {% trans "عرض ملاحظات الإغلاق" %}
+                            </button>
+                        </div>
+
+                        <div class="modal fade" id="viewNotesModal{{ complaint.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-sm">
+                                <div class="modal-content rounded-4 border-0 shadow-lg">
+                                    <div class="modal-header bg-light border-0 rounded-top-4">
+                                        <h6 class="modal-title fw-bold text-dark"><i class="fas fa-sticky-note text-info me-2"></i> {% trans "ملاحظات الإدارة" %}</h6>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4 text-start bg-white">
+                                        {% trans "لا توجد ملاحظات مسجلة لهذه الشكوى." as no_notes %}
+                                        <p class="mb-0 text-secondary" style="white-space: pre-wrap; font-size: 14px; line-height: 1.6;">{{ complaint.admin_notes|default:no_notes }}</p>
+                                    </div>
+                                    <div class="modal-footer border-top-0 pt-0 px-4 pb-4 bg-white">
+                                        <button type="button" class="btn btn-secondary w-100 fw-bold rounded-3 py-2 shadow-sm" data-bs-dismiss="modal">{% trans "إغلاق" %}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                <i class="fas fa-check-circle text-success mb-3" style="font-size: 4rem; opacity: 0.5;"></i>
+                <h5 class="text-dark fw-bold">{% trans "المنصة مستقرة!" %}</h5>
+                <p class="text-muted small mb-0">{% trans "لا توجد أي شكاوى أو مرتجعات معلقة حالياً." %}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .hover-card { transition: all 0.2s ease-in-out; }
+    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
+</style>
+{% endblock %}

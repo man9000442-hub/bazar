@@ -1,69 +1,130 @@
-{% extends 'base.html' %}
+{% extends 'merchant/base_merchant.html' %}
+{% load i18n %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block title %}{% trans "شحن المحفظة | لوحة التاجر" %}{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="card shadow border-0 p-4 mx-auto" style="max-width: 500px;">
+
+<div class="d-flex align-items-center mb-4 mt-2 bg-white p-3 rounded-4 shadow-sm border border-light">
+    <a href="{% url 'merchant_wallet' %}" class="btn btn-light rounded-circle p-2 mx-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+        <i class="fas fa-arrow-{% if LANGUAGE_BIDI %}right{% else %}left{% endif %} text-dark"></i>
+    </a>
+    <div>
+        <h5 class="m-0 fw-bold text-dark">{% trans "شحن المحفظة 💳" %}</h5>
+        <p class="text-muted small mb-0">{% trans "اشحن رصيدك عبر Paymob الآمن" %}</p>
+    </div>
+</div>
+
+<div class="container pb-5 mb-5">
+    <div class="card shadow-sm border-0 p-4 mx-auto bg-white rounded-4" style="max-width: 500px;">
         
         <div class="text-center mb-4">
-            <div class="bg-success-subtle text-success rounded-circle d-inline-flex p-3 mb-2">
-                <i class="fas fa-coins fa-2x"></i>
+            <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center p-3 mb-3" style="width: 80px; height: 80px;">
+                <i class="fas fa-coins fa-3x"></i>
             </div>
-            <h4 class="fw-bold mb-1" style="color: var(--text-coffee);">شحن المحفظة</h4>
-            <p class="text-muted small">اشحن رصيدك فوراً وابدأ البيع.</p>
+            <h5 class="fw-bold text-dark mb-1">{% trans "أدخل مبلغ الشحن" %}</h5>
+            <p class="text-muted small">{% trans "حدد المبلغ الصافي الذي تريده في محفظتك" %}</p>
         </div>
 
         <form method="POST">
             {% csrf_token %}
             
-            <!-- المبلغ -->
             <div class="mb-4">
-                <label class="form-label fw-bold small text-muted">المبلغ المراد شحنه</label>
-                <div class="input-group">
-                    <input type="number" name="amount" class="form-control form-control-lg fw-bold text-center" placeholder="0.00" min="10" required>
-                    <span class="input-group-text bg-light">ج.م</span>
+                <label class="form-label fw-bold small text-dark">{% trans "المبلغ الصافي" %} ({{ request.user.country.currency_symbol|default:'ج.م' }})</label>
+                <div class="input-group input-group-lg shadow-sm">
+                    <input type="number" name="amount" id="net-input" class="form-control bg-light border-0 fw-bold text-center fs-4 text-primary" placeholder="0" min="10" required>
+                    <span class="input-group-text bg-white border-0 fw-bold text-muted">{{ request.user.country.currency_symbol|default:'ج.م' }}</span>
                 </div>
             </div>
 
-            <!-- وسيلة الدفع -->
+            <div id="fee-breakdown" class="mb-4 text-{% if LANGUAGE_BIDI %}end{% else %}start{% endif %} p-3 bg-light rounded-4 border border-secondary border-opacity-10" style="display: none;">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small fw-bold"><i class="fas fa-wallet mx-2 text-primary"></i>{% trans "سيصل لمحفظتك:" %}</span>
+                    <span class="fw-bold text-success" id="net-display" dir="ltr">0.00 {{ request.user.country.currency_symbol|default:'ج.م' }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small fw-bold"><i class="fas fa-percentage mx-2 text-danger"></i>{% trans "رسوم بوابة الدفع:" %}</span>
+                    <span class="fw-bold text-danger" id="fee-display" dir="ltr">0.00 {{ request.user.country.currency_symbol|default:'ج.م' }}</span>
+                </div>
+                <hr class="my-2 opacity-25">
+                <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded-3 shadow-sm mt-2">
+                    <span class="fw-bold text-dark small">{% trans "الإجمالي المطلوب للدفع:" %}</span>
+                    <span class="fw-bold text-primary fs-5" id="total-display" dir="ltr">0.00 {{ request.user.country.currency_symbol|default:'ج.م' }}</span>
+                </div>
+                <div class="text-muted text-center mt-3" style="font-size: 10px;">
+                    <i class="fas fa-shield-alt text-success mx-1"></i> {% trans "يتم إضافة رسوم بوابة الدفع لضمان وصول المبلغ الصافي كاملاً لمحفظتك." %}
+                </div>
+            </div>
+
             <div class="mb-4">
-                <label class="form-label fw-bold small text-muted">وسيلة الدفع</label>
-                <div class="btn-group w-100" role="group">
-                    <input type="radio" class="btn-check" name="method" id="card" value="CARD" checked onchange="toggleWalletInput()">
-                    <label class="btn btn-outline-primary py-3" for="card">
-                        <i class="fas fa-credit-card d-block mb-1 fs-4"></i>
-                        بطاقة بنكية
-                    </label>
-
-                    <input type="radio" class="btn-check" name="method" id="wallet" value="WALLET" onchange="toggleWalletInput()">
-                    <label class="btn btn-outline-success py-3" for="wallet">
-                        <i class="fas fa-wallet d-block mb-1 fs-4"></i>
-                        محفظة إلكترونية
-                    </label>
+                <label class="form-label fw-bold small text-dark mb-3">{% trans "اختر وسيلة الدفع" %}</label>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <input type="radio" class="btn-check" name="method" id="card" value="CARD" checked onchange="toggleWalletInput()">
+                        <label class="btn btn-outline-primary w-100 py-3 rounded-4 fw-bold" for="card">
+                            <i class="fas fa-credit-card d-block mb-2 fs-3"></i>
+                            {% trans "بطاقة بنكية" %}
+                        </label>
+                    </div>
+                    <div class="col-6">
+                        <input type="radio" class="btn-check" name="method" id="wallet" value="WALLET" onchange="toggleWalletInput()">
+                        <label class="btn btn-outline-success w-100 py-3 rounded-4 fw-bold" for="wallet">
+                            <i class="fas fa-mobile-alt d-block mb-2 fs-3"></i>
+                            {% trans "محفظة إلكترونية" %}
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <!-- حقل رقم المحفظة (مخفي) -->
-            <div class="mb-4 bg-light p-3 rounded border border-success-subtle animate__animated animate__fadeIn" id="wallet-field" style="display: none;">
-                <label class="form-label fw-bold small text-success">رقم المحفظة (فودافون/اتصالات/وي)</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="fas fa-mobile-alt"></i></span>
-                    <input type="tel" name="wallet_number" class="form-control" placeholder="010xxxxxxxx" value="{{ request.user.phone_primary }}">
+            <div class="mb-4 bg-success bg-opacity-10 p-3 rounded-4 border border-success border-opacity-25" id="wallet-field" style="display: none; transition: all 0.3s ease;">
+                <label class="form-label fw-bold small text-success"><i class="fas fa-phone mx-1"></i> {% trans "رقم المحفظة (المحلية)" %}</label>
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-0 text-success"><i class="fas fa-mobile-alt"></i></span>
+                    <input type="tel" name="wallet_number" class="form-control border-0 bg-white fw-bold" placeholder="010xxxxxxxx" value="{{ request.user.phone_primary }}" dir="ltr">
                 </div>
             </div>
 
-            <!-- زر الدفع -->
-            <button type="submit" class="btn btn-gold w-100 py-3 fw-bold rounded-pill shadow-sm" id="pay-btn">
-                متابعة للدفع الآمن <i class="fas fa-lock ms-2"></i>
+            <button type="submit" class="btn text-white w-100 py-3 fw-bold rounded-pill shadow-sm mt-2" id="pay-btn" style="background: linear-gradient(90deg, #ff8c00, #ffb347);">
+                {% trans "متابعة للدفع الآمن" %} <i class="fas fa-lock mx-2"></i>
             </button>
         </form>
         
         <div class="text-center mt-4 opacity-50">
-            <img src="https://accept.paymob.com/public/images/accept_logo.png" width="80">
+            <small class="d-block mb-1 fw-bold text-muted" style="font-size: 10px;">{% trans "مدعوم بواسطة" %}</small>
+            <img src="https://accept.paymob.com/public/images/accept_logo.png" width="80" alt="Paymob">
         </div>
     </div>
 </div>
 
 <script>
+// جلب الرسوم من إعدادات الموقع المرسلة من الـ View
+const fixedFee = parseFloat('{{ fee_fixed|default:"0" }}');
+// النسبة المئوية (مثال: 3% تتحول لـ 0.03)
+const percentFee = parseFloat('{{ fee_percent|default:"0" }}') / 100;
+const currencySymbol = '{{ request.user.country.currency_symbol|default:"ج.م" }}';
+
+document.getElementById('net-input').addEventListener('input', function(e) {
+    const netAmount = parseFloat(e.target.value);
+    const breakdownBox = document.getElementById('fee-breakdown');
+
+    if (!isNaN(netAmount) && netAmount > 0) {
+        // المعادلة الرياضية الصحيحة لضمان وصول المبلغ الصافي كاملاً:
+        let total = (netAmount + fixedFee) / (1 - percentFee);
+        
+        // الرسوم المستقطعة = الإجمالي - الصافي
+        let fees = total - netAmount;
+
+        document.getElementById('net-display').innerText = netAmount.toFixed(2) + ' ' + currencySymbol;
+        document.getElementById('fee-display').innerText = fees.toFixed(2) + ' ' + currencySymbol;
+        document.getElementById('total-display').innerText = total.toFixed(2) + ' ' + currencySymbol;
+
+        breakdownBox.style.display = 'block';
+    } else {
+        breakdownBox.style.display = 'none';
+    }
+});
+
 function toggleWalletInput() {
     const isWallet = document.getElementById('wallet').checked;
     const field = document.getElementById('wallet-field');
@@ -71,14 +132,12 @@ function toggleWalletInput() {
     
     if (isWallet) {
         field.style.display = 'block';
-        btn.classList.remove('btn-gold');
-        btn.classList.add('btn-success');
-        btn.innerHTML = 'إرسال طلب الدفع للمحفظة <i class="fas fa-paper-plane ms-2"></i>';
+        btn.style.background = '#198754'; // لون أخضر للمحافظ
+        btn.innerHTML = '{% trans "إرسال طلب الدفع للمحفظة" %} <i class="fas fa-paper-plane mx-2"></i>';
     } else {
         field.style.display = 'none';
-        btn.classList.remove('btn-success');
-        btn.classList.add('btn-gold');
-        btn.innerHTML = 'متابعة للدفع الآمن <i class="fas fa-lock ms-2"></i>';
+        btn.style.background = 'linear-gradient(90deg, #ff8c00, #ffb347)'; // اللون البرتقالي للبطاقات
+        btn.innerHTML = '{% trans "متابعة للدفع الآمن عبر البطاقة" %} <i class="fas fa-lock mx-2"></i>';
     }
 }
 </script>

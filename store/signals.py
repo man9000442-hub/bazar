@@ -81,13 +81,25 @@ def apply_referral_reward(sender, instance, created, **kwargs):
 # ========================================================
 # 3. النظام المالي (الحاسم) 💸
 # ========================================================
+from decimal import Decimal
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db import transaction
+# تأكد من استدعاء الموديلات الصحيحة مثل Order, Wallet, WalletTransaction في أعلى الملف
+
 @receiver(post_save, sender=Order)
 def distribute_profits(sender, instance, created, **kwargs):
     # العمل فقط عند التسليم النهائي
     if instance.status == Order.Status.DELIVERED:
         
-        # حماية من التكرار
-        if WalletTransaction.objects.filter(related_order_id=instance.order_id).exists():
+        # 1. حماية ذكية من التكرار (تتجاهل عملية خصم العمولة)
+        # نبحث فقط عن العمليات المعلقة (PENDING) أو التعويضات (COMPENSATION) الخاصة بهذا الطلب
+        already_paid = WalletTransaction.objects.filter(
+            description__contains=f"#{instance.order_id}",
+            transaction_type__in=['PENDING', 'COMPENSATION'] # نتجاهل SALE الخاص بخصم العمولة
+        ).exists()
+        
+        if already_paid:
             return
 
         merchant_earnings = {}
@@ -106,23 +118,18 @@ def distribute_profits(sender, instance, created, **kwargs):
                 }
             
             # أ. الأسعار الأساسية
-            # السعر المسجل في الطلب (قد يكون مخفضاً بسبب عرض)
             recorded_price = item.price_at_purchase if item.price_at_purchase else Decimal('0.00')
-            # السعر الأصلي للمنتج (بدون أي خصم)
             base_price = item.product_size.product.base_price
             qty = Decimal(item.quantity)
             
             # ب. خصم الدعوة (Referral)
-            # هذا الخصم تتحمله المنصة بالكامل
             ref_discount = getattr(item, 'referral_discount', Decimal('0.00'))
 
-            # ج. السعر الفعلي الذي دفعه العميل من جيبه
-            # (السعر المسجل * الكمية) - خصم الدعوة
+            # ج. السعر الفعلي الذي دفعه العميل من جيبه للمنتج
             customer_paid_total = (recorded_price * qty) - ref_discount
-            if customer_paid_total < 0: customer_paid_total = 0
+            if customer_paid_total < 0: customer_paid_total = Decimal('0.00')
 
             # د. تعويض "عرض المنصة" (Platform Offer)
-            # إذا كان السعر المسجل أقل من الأصلي، وكان السبب عرض منصة -> نعوض الفرق
             offer_compensation = Decimal('0.00')
             try:
                 offer = item.product_size.product.active_offer
@@ -132,12 +139,16 @@ def distribute_profits(sender, instance, created, **kwargs):
                 pass
 
             # هـ. إجمالي التعويضات المستحقة للتاجر عن هذا المنتج
-            # (تعويض عرض المنصة + تعويض خصم الدعوة)
             total_item_compensation = offer_compensation + ref_discount
 
-            # و. التجميع في القاموس
             merchant_earnings[merchant]['product_revenue'] += customer_paid_total
             merchant_earnings[merchant]['compensation'] += total_item_compensation
+
+        # --- [الجديد] إضافة تعويض "قسيمة الإدارة المخصصة" للتاجر صاحب هذا الطلب ---
+        if hasattr(instance, 'admin_discount') and instance.admin_discount and instance.admin_discount > 0:
+            if instance.merchant in merchant_earnings:
+                merchant_earnings[instance.merchant]['compensation'] += Decimal(str(instance.admin_discount))
+        # --------------------------------------------------------------------------
 
         # ==========================================
         # 2. التنفيذ المالي (المحفظة)
@@ -152,16 +163,16 @@ def distribute_profits(sender, instance, created, **kwargs):
                 # --- حساب الشحن (من يدفعه؟) ---
                 shipping_income = Decimal('0.00')
                 shipping_desc = ""
-                is_shipping_compensated = False # هل المنصة هي من دفعت الشحن؟
+                is_shipping_compensated = False
 
                 # نتأكد أن التاجر هو صاحب الطلب
                 if instance.merchant == merchant:
                     if instance.shipping_cost > 0:
                         # العميل دفع الشحن -> هذا دخل للتاجر
                         shipping_income = instance.shipping_cost
-                        shipping_desc = f"شحن مدفوع (طلب #{instance.order_id})"
+                        shipping_desc = "شحن مدفوع"
                     else:
-                        # الشحن مجاني (0) -> من يتحمل؟
+                        # الشحن مجاني (0) -> من يتحمل التكلفة؟
                         is_platform_funded = False
                         
                         # فحص هل هو عرض منصة؟
@@ -174,7 +185,7 @@ def distribute_profits(sender, instance, created, **kwargs):
                                         break
                             except: pass
                         
-                        # حساب قيمة الشحن الأصلية للتعويض
+                        # حساب قيمة الشحن الأصلية لتعويض التاجر
                         rate_obj = MerchantShippingRate.objects.filter(
                             merchant=merchant, governorate=instance.governorate
                         ).first()
@@ -182,57 +193,83 @@ def distribute_profits(sender, instance, created, **kwargs):
 
                         if is_platform_funded:
                             shipping_income = orig_ship
-                            shipping_desc = f"تعويض شحن (عرض منصة)"
+                            shipping_desc = "تعويض شحن (عرض منصة)"
                             is_shipping_compensated = True
                         
                         elif instance.is_first_order:
                             shipping_income = orig_ship
-                            shipping_desc = f"تعويض شحن (أول طلب)"
+                            shipping_desc = "تعويض شحن (أول طلب)"
                             is_shipping_compensated = True
                         
+                        # --- [الجديد] تعويض الشحن إذا كان بسبب قسيمة الإدارة ---
+                        elif hasattr(instance, 'admin_discount') and instance.admin_discount > 0:
+                            shipping_income = orig_ship
+                            shipping_desc = "تعويض شحن (قسيمة الإدارة)"
+                            is_shipping_compensated = True
+                        # -------------------------------------------------------
+
                         else:
-                            # عرض تاجر -> لا دخل (التاجر يتحمل)
-                            shipping_income = 0
+                            # عرض تاجر -> التاجر يتحمل التكلفة
+                            shipping_income = Decimal('0.00')
+                            shipping_desc = "شحن مجاني (عرض متجرك)"
 
                 # --- الإضافة للمحفظة ---
                 
-                # 1. حالة الدفع أونلاين (ONLINE)
-                # التاجر لم يستلم شيئاً بيده -> نضيف له كل المستحقات
-                if instance.payment_method == Order.PaymentMethod.ONLINE:
-                    # المستحقات = (سعر المنتجات + الشحن + التعويضات)
+                # صياغة وصف احترافي للتاجر
+                extra_desc = f" | {shipping_desc}" if shipping_desc else ""
+                if comp > 0:
+                    extra_desc += f" | يشمل تعويضات {comp} ج.م"
+
+                # فحص طريقة الدفع (أونلاين أو محفظة = دفع إلكتروني)
+                payment_method_str = str(instance.payment_method).upper()
+                is_electronic = payment_method_str in ['ONLINE', 'WALLET']
+
+                if is_electronic:
+                    # حالة الدفع الإلكتروني: التاجر لم يستلم شيء -> نضيف له كل المستحقات
                     total_deposit = prod_rev + shipping_income + comp
                     
                     if total_deposit > 0:
                         wallet.pending_balance += total_deposit
-                        WalletTransaction.objects.create(
-                            wallet=wallet, amount=total_deposit,
+                        
+                        tx = WalletTransaction(
+                            wallet=wallet, 
+                            amount=total_deposit,
                             transaction_type='PENDING',
-                            description=f"مستحقات طلب أونلاين #{instance.order_id}",
-                            balance_after=wallet.balance, is_released=False
+                            description=f"مستحقات طلب إلكتروني #{instance.order_id}{extra_desc}",
+                            balance_after=wallet.balance, 
+                            is_released=False
                         )
+                        # محاولة ربط الطلب إذا كان الحقل موجوداً في الموديل
+                        if hasattr(tx, 'related_order_id'):
+                            tx.related_order_id = instance.order_id
+                        tx.save()
 
-                # 2. حالة الدفع كاش (COD)
-                # التاجر استلم (سعر المنتجات + الشحن المدفوع) في يده
-                # -> نضيف له فقط (التعويضات + الشحن المعوض من المنصة)
                 else:
+                    # حالة الدفع كاش (COD): التاجر استلم ثمن المنتج والشحن من العميل مباشرة
+                    # نضيف له فقط التعويضات والشحن المعوض من المنصة
                     total_comp_only = comp
                     
                     if is_shipping_compensated:
                         total_comp_only += shipping_income
-                        # (ملاحظة: إذا كان الشحن مدفوعاً، التاجر أخذه بيده، فلا نضيفه هنا)
                     
                     if total_comp_only > 0:
                         wallet.pending_balance += total_comp_only
-                        WalletTransaction.objects.create(
-                            wallet=wallet, amount=total_comp_only,
-                            transaction_type=WalletTransaction.TxType.COMPENSATION,
-                            description=f"تعويضات طلب كاش #{instance.order_id}",
-                            balance_after=wallet.balance, is_released=False
+                        
+                        tx = WalletTransaction(
+                            wallet=wallet, 
+                            amount=total_comp_only,
+                            # استخدام COMPENSATION لو موجودة، أو PENDING
+                            transaction_type=getattr(WalletTransaction.TxType, 'COMPENSATION', 'COMPENSATION'),
+                            description=f"تعويضات طلب كاش #{instance.order_id}{extra_desc}",
+                            balance_after=wallet.balance, 
+                            is_released=False
                         )
+                        if hasattr(tx, 'related_order_id'):
+                            tx.related_order_id = instance.order_id
+                        tx.save()
 
-                # --- (العمولة تم خصمها مسبقاً عند الشحن، فلا نخصمها هنا) ---
-                
                 wallet.save()
+
                 # 4. معالجة طلبات شحن الرصيد (الإيداع)
 @receiver(post_save, sender=DepositRequest)
 def process_deposit(sender, instance, **kwargs):

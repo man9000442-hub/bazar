@@ -1,62 +1,139 @@
 {% extends 'base.html' %}
-{% block content %}
+{% load i18n %} {% block content %}
 
-<!-- Header -->
-<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3 sticky-top">
-    <a href="{% url 'profile' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <h5 class="m-0 fw-bold">طلباتي السابقة</h5>
+<style>
+    .dark-header {
+        background-color: var(--dark-bg, #091024);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .dark-card {
+        background-color: var(--dark-surface, #121d3a);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .gold-text {
+        color: var(--gold-accent, #ffc107) !important;
+    }
+    .text-muted-dark {
+        color: #8fa0c1 !important;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: #000;
+        border: none;
+        transition: 0.3s;
+    }
+    .btn-gold:hover { transform: scale(0.98); box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3); }
+    
+    .btn-outline-light-dark {
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: transparent;
+        transition: 0.3s;
+    }
+    .btn-outline-light-dark:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #ffc107;
+        border-color: #ffc107;
+    }
+
+    /* تنسيق خاص للبادجات (الحالات) في الدارك مود */
+    .badge-dark-danger { background: rgba(220, 53, 69, 0.15); color: #ff6b6b; border: 1px solid rgba(220, 53, 69, 0.3); }
+    .badge-dark-success { background: rgba(40, 167, 69, 0.15); color: #4ade80; border: 1px solid rgba(40, 167, 69, 0.3); }
+    .badge-dark-warning { background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
+    .badge-dark-default { background: rgba(255, 255, 255, 0.05); color: #8fa0c1; border: 1px solid rgba(255, 255, 255, 0.1); }
+</style>
+
+<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-4 sticky-top" style="z-index: 1020;">
+    <a href="{% url 'profile' %}" class="text-white me-3 text-decoration-none"><i class="fas fa-arrow-right fs-5"></i></a>
+    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "طلباتي السابقة" %} <span class="gold-text">.</span></h5>
 </div>
 
-<div class="container pb-5">
+<div class="container pb-5 mb-5" style="min-height: 80vh;">
     {% for order in orders %}
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-header bg-white border-0 d-flex justify-content-between pt-3 align-items-center">
-            <span class="fw-bold small">#{{ order.order_id }}</span>
+    <div class="card dark-card shadow-lg mb-4 rounded-4 overflow-hidden">
+        
+        <div class="card-header border-bottom d-flex justify-content-between pt-3 pb-3 align-items-center" style="background-color: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.05) !important;">
+            <span class="text-white fw-bold small">
+                {% blocktrans with order_num=order.order_id|default:order.id %}طلب #{{ order_num }}{% endblocktrans %}
+            </span>
             
-            <!-- Badge الحالة -->
             {% if order.status == 'WAITING_PAYMENT' %}
-                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">بانتظار الدفع</span>
+                <span class="badge badge-dark-danger px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-exclamation-circle me-1"></i> {% trans "بانتظار الدفع" %}</span>
             {% elif order.status == 'DELIVERED' %}
-                <span class="badge bg-success-subtle text-success border border-success-subtle">تم الاستلام</span>
+                <span class="badge badge-dark-success px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-check-double me-1"></i> {% trans "تم التسليم" %}</span>
+            {% elif order.status == 'PENDING' %}
+                <span class="badge badge-dark-warning px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-clock me-1"></i> {% trans "قيد المراجعة" %}</span>
             {% else %}
-                <span class="badge bg-light text-dark border">{{ order.get_status_display }}</span>
+                <span class="badge badge-dark-default px-3 py-2 rounded-pill shadow-sm">{{ order.get_status_display }}</span>
             {% endif %}
         </div>
         
-        <div class="card-body py-2">
-            <!-- صور المنتجات -->
-            <div class="d-flex overflow-auto mb-3" style="gap: 10px;">
+        <div class="card-body py-3">
+            
+            <div class="d-flex overflow-auto mb-3 pb-2" style="gap: 12px;">
                 {% for item in order.items.all %}
-                <img src="{{ item.product_size.product.image.url }}" class="rounded border" style="width: 50px; height: 50px; object-fit: cover; flex-shrink: 0;">
+                <div class="position-relative flex-shrink-0">
+                    <div class="bg-white rounded-3 shadow-sm d-flex align-items-center justify-content-center p-1" style="width: 65px; height: 65px;">
+                        {% if item.product_size.product.image %}
+                            <img src="{{ item.product_size.product.image.url }}" style="max-height: 100%; object-fit: contain;">
+                        {% else %}
+                            <i class="fas fa-image text-muted opacity-25"></i>
+                        {% endif %}
+                    </div>
+                    {% if item.quantity > 1 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill" style="background-color: var(--gold-accent); color: #000; font-size: 0.65rem; border: 2px solid var(--dark-surface);">
+                            x{{ item.quantity }}
+                        </span>
+                    {% endif %}
+                </div>
                 {% endfor %}
             </div>
             
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="text-muted small">
-                    {{ order.created_at|date:"d M Y" }}
+            <div class="rounded-4 p-3 border" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.05) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted-dark small"><i class="fas fa-calendar-alt me-1 gold-text"></i> {{ order.created_at|date:"d M Y" }}</span>
+                    {% trans "كاش" as cash_text %}
+                    <span class="text-muted-dark small"><i class="fas fa-credit-card me-1 gold-text"></i> {{ order.get_payment_method_display|default:cash_text }}</span>
                 </div>
-                <div class="fw-bold text-dark">{{ order.final_total }} ج.م</div>
+                <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1" style="border-color: rgba(255,255,255,0.1) !important;">
+                    <span class="fw-bold text-white small">{% trans "الإجمالي النهائي:" %}</span>
+                    <span class="fw-bold gold-text fs-5" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{{ order.final_total }} <small>{% trans "ج.م" %}</small></span>
+                </div>
             </div>
         </div>
         
-        <div class="card-footer bg-white border-0 pt-0 pb-3">
+        <div class="card-footer border-top p-3" style="background-color: transparent; border-color: rgba(255,255,255,0.05) !important;">
             {% if order.status == 'WAITING_PAYMENT' %}
-                <!-- عدل الرابط هنا ليذهب لصفحة التفاصيل -->
-                <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-primary-app w-100 btn-sm fw-bold">
-                    مراجعة وإكمال الدفع <i class="fas fa-arrow-left ms-1"></i>
-                </a>
+                <div class="row g-2">
+                    <div class="col-8">
+                        <a href="{% url 'retry_payment' order.id %}" class="btn btn-gold w-100 fw-bold rounded-pill shadow-sm">
+                            {% trans "إكمال الدفع" %} <i class="fas fa-lock ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-outline-light-dark w-100 rounded-pill small">
+                            {% trans "التفاصيل" %}
+                        </a>
+                    </div>
+                </div>
             {% else %}
-                <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-outline-dark w-100 btn-sm">
-                    التفاصيل وتتبع الطلب
+                <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-outline-light-dark w-100 rounded-pill fw-bold">
+                    {% trans "التفاصيل وتتبع الطلب" %} <i class="fas fa-search-location ms-1"></i>
                 </a>
             {% endif %}
         </div>
     </div>
+    
     {% empty %}
-    <div class="text-center py-5">
-        <i class="fas fa-box-open fa-3x text-muted opacity-25 mb-3"></i>
-        <p class="text-muted">لم تقم بأي طلبات بعد.</p>
-        <a href="{% url 'home' %}" class="btn btn-primary-app px-4">تسوق الآن</a>
+    <div class="text-center py-5 mt-5">
+        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4 shadow-lg" style="width: 100px; height: 100px; background: rgba(255,255,255,0.05);">
+            <i class="fas fa-box-open fa-3x text-muted-dark opacity-50"></i>
+        </div>
+        <h5 class="fw-bold text-white mb-2">{% trans "لا توجد طلبات سابقة!" %}</h5>
+        <p class="text-muted-dark mb-4 small">{% trans "سلة مشترياتك كانت تنتظر هذه اللحظة، ابدأ التسوق الآن." %}</p>
+        <a href="{% url 'home' %}" class="btn btn-gold px-5 py-3 rounded-pill fw-bold shadow-lg">
+            {% trans "تصفح المنتجات" %} <i class="fas fa-store ms-1"></i>
+        </a>
     </div>
     {% endfor %}
 </div>

@@ -1,0 +1,254 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load supervisor_tags i18n %} 
+
+{% block head_title %}{% trans "إدارة الدول والأسواق" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "إدارة الدول والأسواق" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-globe text-primary me-2"></i> {% trans "الدول المسجلة" %}</h5>
+            <small class="text-muted">{% trans "إدارة الأسواق، العملات، وبوابات الدفع (Paymob) لكل دولة." %}</small>
+        </div>
+        
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'super_manage_governorates' %}" class="btn btn-outline-primary shadow-sm rounded-3 px-4 py-2 fw-bold bg-white">
+                <i class="fas fa-map-marker-alt me-2"></i> {% trans "إدارة المحافظات" %}
+            </a>
+            
+            <button class="btn btn-primary shadow-sm rounded-3 px-4 py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#addCountryModal">
+                <i class="fas fa-plus me-2"></i> {% trans "إضافة دولة جديدة" %}
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for c in countries %}
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 position-relative bg-white overflow-hidden" style="transition: 0.3s;">
+                <div class="position-absolute top-0 start-0 w-100" style="height: 4px; background-color: {% if c.is_active %}#10b981{% else %}#ef4444{% endif %};"></div>
+                
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-primary shadow-sm" style="width: 55px; height: 55px; font-size: 20px; font-weight: 900;">
+                                {{ c.code }}
+                            </div>
+                            <div class="text-start">
+                                <h5 class="fw-bold text-dark m-0">{{ c.name }}</h5>
+                                <span class="badge {% if c.is_active %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} rounded-pill mt-1" style="font-size: 11px;">
+                                    <i class="fas {% if c.is_active %}fa-check-circle{% else %}fa-times-circle{% endif %} me-1"></i>
+                                    {% if c.is_active %}{% trans "سوق نشط" %}{% else %}{% trans "معطل" %}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-light rounded-3 p-3 mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size: 13px;"><i class="fas fa-coins me-1"></i> {% trans "العملة:" %}</span>
+                            <span class="fw-bold text-dark" style="font-size: 13px;">{{ c.currency_name }} ({{ c.currency_symbol }})</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size: 13px;"><i class="fas fa-phone-alt me-1"></i> {% trans "كود الهاتف:" %}</span>
+                            <span class="fw-bold text-dark" dir="ltr" style="font-size: 13px;">{{ c.phone_code }}</span>
+                        </div>
+                        <hr class="my-2 text-muted opacity-25">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size: 13px;"><i class="far fa-credit-card me-1"></i> Paymob Card:</span>
+                            <span class="fw-bold text-primary" dir="ltr" style="font-size: 13px; font-family: monospace;">
+                                {% trans "غير محدد" as not_set %}
+                                {{ c.paymob_integration_id_card|default:not_set }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted" style="font-size: 13px;"><i class="fas fa-wallet me-1"></i> Paymob Wallet:</span>
+                            <span class="fw-bold text-success" dir="ltr" style="font-size: 13px; font-family: monospace;">
+                                {{ c.paymob_integration_id_wallet|default:not_set }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-white border-0 p-3 pt-0 d-flex gap-2">
+                    <button class="btn btn-outline-primary flex-grow-1 rounded-3 fw-bold btn-edit"
+                        data-id="{{ c.id }}"
+                        data-name="{{ c.name }}"
+                        data-code="{{ c.code }}"
+                        data-phone="{{ c.phone_code }}"
+                        data-cname="{{ c.currency_name }}"
+                        data-csymbol="{{ c.currency_symbol }}"
+                        data-pcard="{{ c.paymob_integration_id_card }}"
+                        data-pwallet="{{ c.paymob_integration_id_wallet }}"
+                        data-active="{{ c.is_active|yesno:'true,false' }}"
+                        data-bs-toggle="modal" data-bs-target="#editCountryModal">
+                        <i class="fas fa-edit me-1"></i> {% trans "تعديل" %}
+                    </button>
+                    <a href="{% url 'super_delete_country' c.id %}" class="btn btn-outline-danger rounded-3 px-3" onclick="return confirm('{% trans "هل أنت متأكد من حذف هذه الدولة؟ لا يمكن التراجع عن هذا الإجراء." %}');" title="{% trans "حذف" %}">
+                        <i class="fas fa-trash-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block">
+                <i class="fas fa-globe-africa text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                <h5 class="text-dark fw-bold">{% trans "لا توجد دول مسجلة حالياً" %}</h5>
+                <p class="text-muted small mb-4">{% trans "قم بإضافة دولتك الأولى للبدء في إدارة النظام." %}</p>
+                <button class="btn btn-primary rounded-3 px-4" data-bs-toggle="modal" data-bs-target="#addCountryModal">
+                    <i class="fas fa-plus me-2"></i> {% trans "إضافة دولة" %}
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="addCountryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-light border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-plus-circle text-primary me-2"></i> {% trans "إضافة دولة جديدة" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "اسم الدولة" %}</label>
+                            <input type="text" name="name" class="form-control bg-light border-0 rounded-3" placeholder="{% trans 'مثال: مصر' %}" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "كود الدولة (ISO)" %}</label>
+                            <input type="text" name="code" class="form-control bg-light border-0 rounded-3 text-uppercase" dir="ltr" placeholder="{% trans 'مثال: EG' %}" required maxlength="5">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "كود الاتصال" %}</label>
+                            <input type="text" name="phone_code" class="form-control bg-light border-0 rounded-3" dir="ltr" placeholder="{% trans 'مثال: +20' %}" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "اسم العملة" %}</label>
+                            <input type="text" name="currency_name" class="form-control bg-light border-0 rounded-3" placeholder="{% trans 'مثال: جنيه مصري' %}" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "رمز العملة" %}</label>
+                            <input type="text" name="currency_symbol" class="form-control bg-light border-0 rounded-3" placeholder="{% trans 'مثال: ج.م' %}" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "حالة السوق" %}</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" role="switch" id="addActive" checked>
+                                <label class="form-check-label fw-bold text-success" for="addActive">{% trans "مفعل (يعمل حالياً)" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-2 opacity-25">
+                            <h6 class="fw-bold text-dark fs-6 mb-3"><i class="fas fa-credit-card text-primary me-1"></i> {% trans "إعدادات Paymob (اختياري)" %}</h6>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "Integration ID (البطاقات)" %}</label>
+                            <input type="text" name="paymob_card" class="form-control bg-light border-0 rounded-3 font-monospace" dir="ltr" placeholder="{% trans 'أرقام فقط' %}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "Integration ID (المحافظ)" %}</label>
+                            <input type="text" name="paymob_wallet" class="form-control bg-light border-0 rounded-3 font-monospace" dir="ltr" placeholder="{% trans 'أرقام فقط' %}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="submit" class="btn btn-primary w-100 rounded-3 fw-bold py-2 shadow-sm">{% trans "حفظ وإضافة الدولة" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editCountryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-light border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit text-primary me-2"></i> {% trans "تعديل بيانات الدولة" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="country_id" id="edit_id">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "اسم الدولة" %}</label>
+                            <input type="text" name="name" id="edit_name" class="form-control bg-light border-0 rounded-3" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "كود الدولة (ISO)" %}</label>
+                            <input type="text" name="code" id="edit_code" class="form-control bg-light border-0 rounded-3 text-uppercase" dir="ltr" required maxlength="5">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "كود الاتصال" %}</label>
+                            <input type="text" name="phone_code" id="edit_phone" class="form-control bg-light border-0 rounded-3" dir="ltr" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "اسم العملة" %}</label>
+                            <input type="text" name="currency_name" id="edit_cname" class="form-control bg-light border-0 rounded-3" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "رمز العملة" %}</label>
+                            <input type="text" name="currency_symbol" id="edit_csymbol" class="form-control bg-light border-0 rounded-3" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "حالة السوق" %}</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" role="switch" id="edit_active">
+                                <label class="form-check-label fw-bold text-success" for="edit_active">{% trans "مفعل" %}</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-2 opacity-25">
+                            <h6 class="fw-bold text-dark fs-6 mb-3"><i class="fas fa-credit-card text-primary me-1"></i> {% trans "إعدادات Paymob" %}</h6>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "Integration ID (البطاقات)" %}</label>
+                            <input type="text" name="paymob_card" id="edit_pcard" class="form-control bg-light border-0 rounded-3 font-monospace" dir="ltr">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">{% trans "Integration ID (المحافظ)" %}</label>
+                            <input type="text" name="paymob_wallet" id="edit_pwallet" class="form-control bg-light border-0 rounded-3 font-monospace" dir="ltr">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="submit" class="btn btn-primary w-100 rounded-3 fw-bold py-2 shadow-sm">{% trans "تحديث البيانات" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // سكريبت لملء بيانات مودال التعديل تلقائياً عند الضغط على الزر
+    document.addEventListener('DOMContentLoaded', function() {
+        const editButtons = document.querySelectorAll('.btn-edit');
+        editButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('edit_id').value = this.getAttribute('data-id');
+                document.getElementById('edit_name').value = this.getAttribute('data-name');
+                document.getElementById('edit_code').value = this.getAttribute('data-code');
+                document.getElementById('edit_phone').value = this.getAttribute('data-phone');
+                document.getElementById('edit_cname').value = this.getAttribute('data-cname');
+                document.getElementById('edit_csymbol').value = this.getAttribute('data-csymbol');
+                document.getElementById('edit_pcard').value = this.getAttribute('data-pcard');
+                document.getElementById('edit_pwallet').value = this.getAttribute('data-pwallet');
+                document.getElementById('edit_active').checked = this.getAttribute('data-active') === 'true';
+            });
+        });
+    });
+</script>
+{% endblock %}

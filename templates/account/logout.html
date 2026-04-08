@@ -1,39 +1,22 @@
 {% extends "base.html" %}
 {% load i18n %}
-
 {% block content %}
-<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
-    <div class="col-12 col-md-6 col-lg-4">
-        <div class="card shadow-lg border-0 p-4 text-center" style="background-color: var(--white);">
-            
-            <!-- أيقونة معبرة -->
-            <div class="mb-4">
-                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow-sm" 
-                     style="width: 80px; height: 80px; border: 2px solid var(--primary-gold);">
-                    <i class="fas fa-sign-out-alt fa-3x text-gold"></i>
-                </div>
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="card shadow-sm border-0 p-4 p-md-5 text-center rounded-4 w-100" style="max-width: 400px; background-color: #fff;">
+        <div class="mb-4">
+            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 80px; height: 80px;">
+                <i class="fas fa-sign-out-alt fa-3x text-warning"></i>
             </div>
-
-            <h3 class="fw-bold mb-2" style="color: var(--text-coffee);">تسجيل الخروج</h3>
-            <p class="text-muted mb-4">هل أنت متأكد أنك تريد المغادرة؟</p>
-
-            <form method="post" action="{% url 'account_logout' %}">
-                {% csrf_token %}
-                
-                <div class="d-grid gap-2">
-                    <!-- زر التأكيد -->
-                    <button type="submit" class="btn btn-gold fw-bold py-2 rounded-pill shadow-sm">
-                        نعم، تسجيل الخروج
-                    </button>
-                    
-                    <!-- زر التراجع -->
-                    <a href="{% url 'home' %}" class="btn btn-outline-secondary fw-bold py-2 rounded-pill">
-                        تراجع والبقاء
-                    </a>
-                </div>
-            </form>
-            
         </div>
+        <h4 class="fw-bold mb-2 text-dark">{% trans "تسجيل الخروج" %}</h4>
+        <p class="text-muted mb-4 small">{% trans "هل أنت متأكد أنك تريد المغادرة؟" %}</p>
+        <form method="post" action="{% url 'account_logout' %}">
+            {% csrf_token %}
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-danger fw-bold py-3 rounded-pill shadow-sm">{% trans "نعم، تسجيل الخروج" %}</button>
+                <a href="{% url 'home' %}" class="btn btn-light border fw-bold py-3 rounded-pill text-dark mt-2">{% trans "تراجع والبقاء" %}</a>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

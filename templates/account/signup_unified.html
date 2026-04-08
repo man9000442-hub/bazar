@@ -1,22 +1,27 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% block content %}
 <div class="container text-center py-5" style="min-height: 80vh;">
-    <h3 class="fw-bold mb-5">كيف تريد التسجيل؟ 🤔</h3>
+    <h3 class="fw-bold mb-5">{% trans "كيف تريد التسجيل؟" %} 🤔</h3>
     <div class="row g-4 justify-content-center">
-        <div class="col-md-5">
-            <a href="{% url 'customer_signup' %}" class="card p-5 text-decoration-none border-0 shadow-sm h-100 hover-up">
+        <div class="col-12 col-md-5">
+            <a href="{% url 'customer_signup' %}" class="card p-4 p-md-5 text-decoration-none border-0 shadow-sm h-100 hover-up transition-hover rounded-4">
                 <i class="fas fa-shopping-bag fa-4x text-primary mb-3"></i>
-                <h4 class="text-dark">أنا عميل</h4>
-                <p class="text-muted small">أريد تصفح وشراء المنتجات</p>
+                <h4 class="text-dark fw-bold">{% trans "أنا عميل" %}</h4>
+                <p class="text-muted small mb-0">{% trans "أريد تصفح وشراء المنتجات" %}</p>
             </a>
         </div>
-        <div class="col-md-5">
-            <a href="{% url 'merchant_signup' %}" class="card p-5 text-decoration-none border-0 shadow-sm h-100 hover-up">
+        <div class="col-12 col-md-5">
+            <a href="{% url 'merchant_signup' %}" class="card p-4 p-md-5 text-decoration-none border-0 shadow-sm h-100 hover-up transition-hover rounded-4">
                 <i class="fas fa-store fa-4x text-warning mb-3"></i>
-                <h4 class="text-dark">أنا تاجر</h4>
-                <p class="text-muted small">أريد بيع منتجاتي على المنصة</p>
+                <h4 class="text-dark fw-bold">{% trans "أنا تاجر" %}</h4>
+                <p class="text-muted small mb-0">{% trans "أريد بيع منتجاتي على المنصة" %}</p>
             </a>
         </div>
     </div>
 </div>
+<style>
+    .transition-hover { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .transition-hover:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; }
+</style>
 {% endblock %}

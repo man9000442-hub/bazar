@@ -141,3 +141,30 @@ admin.site.register(Favorite)
 admin.site.register(PaymobTransaction)
 admin.site.register(Notification)
 admin.site.register(SiteSetting)
+
+
+from django.contrib import admin
+from .models import PromoPopup
+from django.utils import timezone
+
+from django.contrib import admin
+from django.utils import timezone
+from .models import PromoPopup
+
+@admin.register(PromoPopup)
+class PromoPopupAdmin(admin.ModelAdmin):
+    # غيرنا الحقول اللي بتتعرض عشان تناسب التعديلات الجديدة
+    list_display = ['title', 'offer', 'is_active', 'start_time', 'end_time', 'is_currently_running']
+    list_editable = ['is_active'] 
+    
+    # دالة ذكية تظهر علامة صح أو خطأ لو الإعلان شغال دلوقتي فعلاً
+    def is_currently_running(self, obj):
+        now = timezone.now()
+        if obj.is_active and obj.start_time and obj.end_time:
+            # شغال لو هو متفعل، ووقت البداية جه، ووقت النهاية لسه مجاش
+            return obj.start_time <= now < obj.end_time
+        return False
+    is_currently_running.boolean = True
+    is_currently_running.short_description = "يظهر للعملاء الآن؟"
+
+

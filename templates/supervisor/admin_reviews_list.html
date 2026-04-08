@@ -1,0 +1,136 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "إدارة تقييمات المنتجات" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "تقييمات وآراء العملاء" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-star text-warning me-2"></i> {% trans "إدارة تقييمات المنتجات" %}</h5>
+            <small class="text-muted">{% trans "متابعة آراء العملاء في المنتجات ومراقبة جودة البضائع المعروضة." %}</small>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-3">
+            <form class="row g-2 align-items-center" method="GET">
+                <div class="col-12 col-lg-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0 ps-3 rounded-end-3"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control bg-light border-0 rounded-start-3 px-2" placeholder="{% trans 'بحث باسم المنتج، العميل، أو التعليق...' %}" value="{{ request.GET.q }}">
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <select name="merchant" class="form-select bg-light border-0 rounded-3 text-dark fw-bold">
+                        <option value="">{% trans "كل التجار" %}</option>
+                        {% for m in merchants %}
+                            <option value="{{ m.id }}" {% if request.GET.merchant == m.id|stringformat:"s" %}selected{% endif %}>
+                                {{ m.user.first_name }} {{ m.user.last_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <select name="rating" class="form-select bg-light border-0 rounded-3 text-warning fw-bold">
+                        <option value="" class="text-dark">{% trans "كل التقييمات" %}</option>
+                        <option value="5" {% if request.GET.rating == '5' %}selected{% endif %}>{% trans "5 نجوم ⭐️⭐️⭐️⭐️⭐️" %}</option>
+                        <option value="4" {% if request.GET.rating == '4' %}selected{% endif %}>{% trans "4 نجوم ⭐️⭐️⭐️⭐️" %}</option>
+                        <option value="3" {% if request.GET.rating == '3' %}selected{% endif %}>{% trans "3 نجوم ⭐️⭐️⭐️" %}</option>
+                        <option value="2" {% if request.GET.rating == '2' %}selected{% endif %}>{% trans "نجمتين ⭐️⭐️" %}</option>
+                        <option value="1" {% if request.GET.rating == '1' %}selected{% endif %}>{% trans "نجمة واحدة ⭐️" %}</option>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-2">
+                    <button type="submit" class="btn btn-dark w-100 fw-bold rounded-3 shadow-sm">{% trans "تصفية وبحث" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {% for review in reviews %}
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card overflow-hidden">
+                <div class="card-body p-4">
+                    
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="https://ui-avatars.com/api/?name={{ review.user.first_name|default:review.user.username }}&background=f1f5f9&color=3b82f6&bold=true" class="rounded-circle shadow-sm" width="45" height="45">
+                            <div>
+                                <h6 class="fw-bold text-dark m-0 mb-1">{{ review.user.first_name }} {{ review.user.last_name|default:"" }}</h6>
+                                <span class="text-muted small d-block" dir="ltr"><i class="fas fa-phone-alt me-1" style="font-size: 10px;"></i>{{ review.user.phone_primary }}</span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="text-warning fs-6 mb-1" dir="ltr">
+                                {% with ''|center:5 as range %} 
+                                    {% for _ in range %} 
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-muted opacity-25"></i>
+                                        {% endif %} 
+                                    {% endfor %} 
+                                {% endwith %}
+                            </div>
+                            <span class="text-muted" style="font-size: 11px;">{{ review.created_at|date:"d M Y" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-light rounded-4 p-3 mb-3 position-relative">
+                        <i class="fas fa-quote-right position-absolute top-0 end-0 m-2 opacity-10 text-primary fs-3"></i>
+                        <p class="mb-0 text-dark fw-bold position-relative z-1" style="font-size: 14px; line-height: 1.6;">
+                            "{{ review.comment }}"
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center p-2 rounded-3 border border-light">
+                        {% if review.product.image %}
+                            <img src="{{ review.product.image.url }}" class="rounded-3 shadow-sm me-3" width="50" height="50" style="object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-3 d-flex align-items-center justify-content-center me-3 border" style="width: 50px; height: 50px;">
+                                <i class="fas fa-image text-muted opacity-50"></i>
+                            </div>
+                        {% endif %}
+                        <div class="flex-grow-1 overflow-hidden">
+                            <span class="text-muted d-block" style="font-size: 10px;">{% trans "تم تقييم المنتج:" %}</span>
+                            <a href="{% url 'product_detail' review.product.id %}" target="_blank" class="fw-bold text-primary text-decoration-none d-block text-truncate mb-1" style="font-size: 13px;">
+                                {{ review.product.name }}
+                            </a>
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px;">
+                                <i class="fas fa-store me-1"></i> {% trans "متجر:" %} {{ review.product.merchant.user.first_name }}
+                            </span>
+                        </div>
+                        
+                        <div class="ps-2 border-start border-light ms-2">
+                            <button class="btn btn-light btn-sm text-danger rounded-circle shadow-sm" style="width: 35px; height: 35px;" title="{% trans 'حذف التقييم (قريباً)' %}" onclick="alert('{% trans 'لبرمجة دالة الحذف، أنشئ view يقوم بمسح review.delete() واربطه بهذا الزر.' %}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                <i class="fas fa-star-half-alt text-warning mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                <h5 class="text-dark fw-bold">{% trans "لا توجد تقييمات" %}</h5>
+                <p class="text-muted small mb-0">{% trans "لم يقم أي عميل بتقييم المنتجات حتى الآن بناءً على بحثك." %}</p>
+                {% if request.GET.q or request.GET.merchant or request.GET.rating %}
+                    <a href="{% url 'super_reviews_list' %}" class="btn btn-outline-primary rounded-pill mt-3 px-4 fw-bold">{% trans "إلغاء الفلترة" %}</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<style>
+    .hover-card { transition: all 0.2s ease-in-out; }
+    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; }
+</style>
+{% endblock %}

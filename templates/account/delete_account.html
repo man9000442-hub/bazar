@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+{% load i18n %}
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "طلب حذف الحساب | تطبيق البازار" %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { font-family: 'Cairo', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased p-4 flex items-center justify-center min-h-screen">
+    <div class="max-w-xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-red-100 text-center">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🗑️</div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">{% trans "طلب حذف الحساب والبيانات" %}</h2>
+        <p class="text-slate-500 text-sm mb-6">{% trans "لإزالة بياناتك بشكل نهائي من منصة البازار، يرجى إرسال طلب من بريدك الإلكتروني المسجل أو من خلال تذاكر الدعم الفني داخل التطبيق." %}</p>
+        
+        <div class="bg-slate-50 rounded-xl p-4 text-right border border-slate-200 mb-6">
+            <ul class="list-disc pr-5 space-y-2 text-sm text-slate-700">
+                <li>{% trans "عبر البريد: أرسل لـ support@elbazaare.com" %}</li>
+                <li>{% trans "عبر التطبيق: افتح تذكرة دعم بعنوان 'حذف حساب'." %}</li>
+            </ul>
+        </div>
+        <a href="mailto:support@elbazaare.com" class="block w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-full transition-colors">{% trans "إرسال طلب الآن" %}</a>
+    </div>
+</body>
+</html>

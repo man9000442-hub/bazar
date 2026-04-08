@@ -31,9 +31,26 @@ urlpatterns = [
     path('payment/retry/<int:order_id>/', views.retry_payment, name='retry_payment'),
     path('my-orders/<int:order_id>/', views.customer_order_detail, name='customer_order_detail'),
     path('shop/<int:merchant_id>/', views.merchant_shop, name='merchant_shop'),
-    path('referral/', views.referral_center, name='referral_center'),
-    path('api/products/', api_views.ProductListAPI.as_view()),
-    path('api/orders/', api_views.OrderListAPI.as_view()),
+    path('referral-center/', views.referral_center, name='referral_center'),  
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     path('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain")),
+    path('legal/<str:doc_type>/<str:user_type>/', views.legal_document, name='legal_document'),
+    path('about-us/', views.about_us, name='about_us'),
+    path('product/<int:product_id>/submit-review/', views.submit_review, name='submit_review'),
+    path('privacy-policy/', views.customer_privacy_policy, name='privacy-policy'),
+    path('set-country/', views.set_user_country, name='set_country'),
+
+    
+
+  #path('api/products/', api_views.ProductListAPI.as_view()),    
+    path('api/terms/customer/', api_views.api_customer_terms, name='api_customer_terms'),
+    path('api/customer/home/', api_views.home_api, name='api_customer_home'),
+    path('api/customer/product/<int:product_id>/', api_views.product_detail_api, name='api_customer_product_detail'),
+    path('api/customer/wishlist/toggle/<int:product_id>/', api_views.toggle_favorite_api, name='api_customer_toggle_fav'),
+    path('api/customer/cart/', api_views.cart_data_api, name='api_customer_cart_data'),
+    path('api/customer/checkout/place-order/', api_views.place_order_api, name='api_customer_place_order'),
+    path('api/customer/orders/', api_views.my_orders_api, name='api_customer_my_orders'),
+    path('api/customer/orders/<int:order_id>/action/', api_views.confirm_delivery_action_api, name='api_customer_order_action'),
+    path('api/customer/referral/', api_views.referral_center_api, name='api_customer_referral'),
+
 ]

@@ -1,97 +1,110 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}إعدادات الموقع{% endblock %}
+{% load i18n %}
+
+{% block page_title %}{% trans "إعدادات الموقع" %}{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 800px;">
+<div class="container" style="max-width: 850px;">
+    <div class="mb-4 d-flex align-items-center justify-content-between">
+        <h4 class="fw-bold mb-0">{% trans "إعدادات المنصة" %}</h4>
+        <span class="badge bg-primary rounded-pill px-3 py-2">
+            <i class="fas fa-globe me-1"></i> 
+            {% if settings.country %}{{ settings.country.name }}{% else %}{% trans "الإعدادات العامة" %}{% endif %}
+        </span>
+    </div>
+
     <form method="POST" enctype="multipart/form-data" class="card border-0 shadow-sm p-4 rounded-4 bg-white">
         {% csrf_token %}
         
-        <!-- 1. المظهر والأساسيات -->
-        <h6 class="fw-bold text-primary mb-3"><i class="fas fa-paint-brush me-2"></i> الهوية</h6>
-        <div class="mb-3">
-            <label class="form-label small text-muted fw-bold">اسم الموقع</label>
-            <input type="text" name="site_name" class="form-control" value="{{ settings.site_name }}">
+        <h6 class="fw-bold text-primary mb-3"><i class="fas fa-paint-brush me-2"></i> {% trans "الهوية والبصرية" %}</h6>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold">{% trans "اسم الموقع / الفرع" %}</label>
+                <input type="text" name="site_name" class="form-control" value="{{ settings.site_name }}" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold">{% trans "البانر الرئيسي" %}</label>
+                <input type="file" name="banner" class="form-control" accept="image/*">
+                {% if settings.banner_image %}
+                    <div class="mt-2 small text-success"><i class="fas fa-image"></i> {% trans "يوجد ملف مرفوع حالياً" %}</div>
+                {% endif %}
+            </div>
         </div>
         
+        <hr class="opacity-25 mt-4">
 
-        <hr class="opacity-25">
-
-        <!-- 2. السياسات المالية -->
-        <h6 class="fw-bold text-success mb-3 mt-4"><i class="fas fa-coins me-2"></i> المالية والعمولات</h6>
+        <h6 class="fw-bold text-success mb-3 mt-4"><i class="fas fa-coins me-2"></i> {% trans "المالية والعمولات" %}</h6>
         <div class="row g-3">
-            <div class="col-6">
-                <label class="form-label small text-muted fw-bold">رسوم ثابتة (أونلاين)</label>
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold">{% trans "الرسوم الثابتة" %}</label>
                 <div class="input-group">
-                    <input type="number" name="fee_fixed" class="form-control" step="0.5" value="{{ settings.platform_fee_fixed }}">
-                    <span class="input-group-text bg-light">ج.م</span>
+                    <input type="number" name="fee_fixed" class="form-control" step="0.01" value="{{ settings.platform_fee_fixed }}" required>
+                    <span class="input-group-text bg-light">{% trans "ج.م" %}</span>
                 </div>
             </div>
-            <div class="col-6">
-                <label class="form-label small text-muted fw-bold">نسبة العمولة (أونلاين)</label>
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold">{% trans "نسبة العمولة" %}</label>
                 <div class="input-group">
-                    <input type="number" name="fee_percent" class="form-control" step="0.1" value="{{ settings.platform_fee_percentage }}">
+                    <input type="number" name="fee_percent" class="form-control" step="0.01" min="0" max="100" value="{{ settings.platform_fee_percentage }}" required>
                     <span class="input-group-text bg-light">%</span>
                 </div>
             </div>
         </div>
 
-        <h6 class="fw-bold text-warning mb-3 mt-4"><i class="fas fa-wallet me-2"></i> سياسات السحب</h6>
+        <h6 class="fw-bold text-warning mb-3 mt-4"><i class="fas fa-wallet me-2"></i> {% trans "سياسات السحب والأرباح" %}</h6>
         <div class="row g-3">
-            <div class="col-4">
-                <label class="form-label small text-muted fw-bold">الحد الأدنى للسحب</label>
-                <input type="number" name="min_withdrawal" class="form-control" value="{{ settings.min_withdrawal_amount }}">
+            <div class="col-md-4">
+                <label class="form-label small text-muted fw-bold">{% trans "الحد الأدنى للسحب" %}</label>
+                <input type="number" name="min_withdrawal" class="form-control" step="0.01" value="{{ settings.min_withdrawal_amount }}" required>
             </div>
-            <div class="col-4">
-                <label class="form-label small text-muted fw-bold">المبلغ المحجوز</label>
-                <input type="number" name="reserved_balance" class="form-control" value="{{ settings.min_wallet_balance }}">
+            <div class="col-md-4">
+                <label class="form-label small text-muted fw-bold">{% trans "المبلغ المحجوز" %}</label>
+                <input type="number" name="reserved_balance" class="form-control" step="0.01" value="{{ settings.min_wallet_balance }}" required>
             </div>
-            <div class="col-4">
-                <label class="form-label small text-muted fw-bold">حد تفعيل المنتجات</label>
-                <input type="number" name="min_active" class="form-control" value="{{ settings.min_active_balance }}">
+            <div class="col-md-4">
+                <label class="form-label small text-muted fw-bold">{% trans "حد المديونية" %}</label>
+                <input type="number" name="min_active" class="form-control" step="0.01" value="{{ settings.min_active_balance }}" required>
+            </div>
+            <div class="col-md-12">
+                <label class="form-label small text-muted fw-bold">{% trans "مدة تعليق الأرباح (بالساعات)" %}</label>
+                <div class="input-group">
+                    <input type="number" name="release_hours" class="form-control" min="0" value="{{ settings.pending_balance_release_hours }}" required>
+                    <span class="input-group-text bg-light"><i class="fas fa-clock me-1"></i> {% trans "ساعة" %}</span>
+                </div>
+                <div class="form-text small">{% trans "الوقت اللازم لتحويل الرصيد من معلق إلى متاح للتاجر بعد تسليم الطلب." %}</div>
             </div>
         </div>
 
         <hr class="opacity-25 mt-4">
 
-        <!-- 3. نظام الدعوات (الجديد) -->
-        <h6 class="fw-bold text-danger mb-3 mt-4"><i class="fas fa-gift me-2"></i> إعدادات الدعوات (Referrals)</h6>
+        <h6 class="fw-bold text-danger mb-3 mt-4"><i class="fas fa-gift me-2"></i> {% trans "نظام المكافآت والدعوات" %}</h6>
         <div class="row g-3">
-            <div class="col-6">
-                <label class="form-label small text-muted fw-bold">قيمة المكافأة </label>
-                <div class="input-group">
-                    <input type="number" name="ref_reward" class="form-control" value="{{ settings.referral_reward_amount }}">
-                    <span class="input-group-text bg-light">ج.م</span>
-                </div>
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold">{% trans "قيمة مكافأة الدعوة" %}</label>
+                <input type="number" name="ref_reward" class="form-control" step="0.01" value="{{ settings.referral_reward_amount }}" required>
             </div>
-            <div class="col-6">
-                <label class="form-label small text-muted fw-bold">مهلة إدخال الكود</label>
-                <div class="input-group">
-                    <input type="number" name="ref_grace" class="form-control" value="{{ settings.referral_grace_period_hours }}">
-                    <span class="input-group-text bg-light">ساعة</span>
-                </div>
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold">{% trans "مهلة الكود (بالساعات)" %}</label>
+                <input type="number" name="ref_grace" class="form-control" value="{{ settings.referral_grace_period_hours }}" required>
             </div>
-            <div class="col-6">
-                <label class="form-label small text-muted fw-bold">أقصى نسبة خصم للمنتج</label>
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold">{% trans "أقصى نسبة خصم" %}</label>
                 <div class="input-group">
-                    <input type="number" name="ref_limit" class="form-control" value="{{ settings.referral_discount_limit_pct }}">
+                    <input type="number" name="ref_limit" class="form-control" min="0" max="100" value="{{ settings.referral_discount_limit_pct }}" required>
                     <span class="input-group-text bg-light">%</span>
                 </div>
             </div>
-            
-            <!-- الحقل الجديد 👇 -->
-            <div class="col-6">
-                <label class="form-label small text-muted fw-bold">عدد مرات المكافأة</label>
-                <div class="input-group">
-                    <input type="number" name="ref_orders_limit" class="form-control" min="1" value="{{ settings.referral_reward_limit_orders|default:1 }}">
-                    <span class="input-group-text bg-light">طلب</span>
-                </div>
-                <div class="form-text small" style="font-size: 10px;">كم مرة يحصل صاحب الكود على مكافأة من نفس الشخص؟</div>
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold">{% trans "مرات الاستفادة من الدعوة" %}</label>
+                <input type="number" name="ref_orders_limit" class="form-control" min="1" value="{{ settings.referral_reward_limit_orders }}" required>
             </div>
         </div>
 
-        <button type="submit" class="btn btn-dark w-100 py-3 rounded-pill mt-5 fw-bold shadow-sm">
-            <i class="fas fa-save me-2"></i> حفظ التغييرات
-        </button>
+        <div class="mt-5">
+            <button type="submit" class="btn btn-dark w-100 py-3 rounded-pill fw-bold shadow-sm">
+                <i class="fas fa-save me-2"></i> {% trans "حفظ جميع الإعدادات" %}
+            </button>
+        </div>
     </form>
 </div>
 {% endblock %}

@@ -1,100 +1,106 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}تذكرة #{{ ticket.id }}{% endblock %}
+{% load i18n %}
+{% block head_title %}{% blocktrans with ticket_id=ticket.id %}تذكرة #{{ ticket_id }} | Elbazaar{% endblocktrans %}{% endblock %}
+{% block page_title %}{% trans "متابعة التذكرة" %}{% endblock %}
 
 {% block content %}
-<div class="row g-4">
-    
-    <!-- 1. منطقة الشات -->
-    <div class="col-md-8">
-        <div class="card border-0 shadow-sm rounded-4 h-100" style="min-height: 500px;">
-            <div class="card-header bg-white py-3">
-                <h6 class="fw-bold m-0"><i class="fas fa-comments me-2 text-primary"></i> المحادثة</h6>
-            </div>
-            
-            <div class="card-body overflow-auto d-flex flex-column bg-light" id="chat-box" style="max-height: 450px;">
+<div class="container-fluid p-0">
+    <div class="row g-4">
+        
+        <div class="col-12 col-xl-8 order-2 order-xl-1">
+            <div class="card border-0 shadow-sm rounded-4 h-100 d-flex flex-column" style="min-height: 600px;">
+                <div class="card-header bg-white py-3 border-light">
+                    <h6 class="fw-bold m-0 text-dark"><i class="fas fa-comments me-2 text-primary"></i> {% trans "المحادثة والدعم الفني" %}</h6>
+                </div>
                 
-                <!-- رسالة العميل الأصلية (تظهر دائماً في البداية) -->
-                <div class="align-self-start bg-white p-3 rounded-3 mb-3 shadow-sm border border-start border-4 border-primary" style="max-width: 85%;">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small class="fw-bold text-primary">{{ ticket.customer.first_name }}</small>
-                        <small class="text-muted" style="font-size: 10px;">{{ ticket.created_at|date:"d M, H:i" }}</small>
+                <div class="card-body overflow-auto d-flex flex-column bg-light flex-grow-1 p-4" id="chat-box" style="max-height: 500px;">
+                    
+                    <div class="align-self-start bg-white p-3 rounded-4 mb-3 shadow-sm border-start border-4 border-primary" style="max-width: 85%;">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-light">
+                            <span class="fw-bold text-primary small"><i class="fas fa-user-circle me-1"></i> {{ ticket.customer.first_name }}</span>
+                            <span class="text-muted" style="font-size: 11px;" dir="ltr"><i class="far fa-clock me-1"></i> {{ ticket.created_at|date:"d M, H:i" }}</span>
+                        </div>
+                        <p class="mb-0 text-dark" style="line-height: 1.6; white-space: pre-wrap;">{{ ticket.message }}</p>
                     </div>
-                    <p class="mb-0 text-dark">{{ ticket.message }}</p>
+
+                    {% for msg in ticket.messages.all %}
+                        {% if msg.is_support_reply %}
+                            <div class="align-self-end bg-primary text-white p-3 rounded-4 mb-3 shadow-sm" style="max-width: 85%; border-bottom-right-radius: 0;">
+                                <p class="mb-1" style="line-height: 1.6; white-space: pre-wrap;">{{ msg.message }}</p>
+                                <span class="text-white-50 d-block text-end" style="font-size: 10px;" dir="ltr">{{ msg.created_at|date:"H:i" }}</span>
+                            </div>
+                        {% else %}
+                            <div class="align-self-start bg-white text-dark p-3 rounded-4 mb-3 shadow-sm border border-light" style="max-width: 85%; border-bottom-left-radius: 0;">
+                                <p class="mb-1" style="line-height: 1.6; white-space: pre-wrap;">{{ msg.message }}</p>
+                                <span class="text-muted d-block text-start" style="font-size: 10px;" dir="ltr">{{ msg.created_at|date:"H:i" }}</span>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                </div>
+                
+                <div class="card-footer bg-white p-3 border-top border-light">
+                    <form method="POST" class="d-flex gap-2 align-items-center">
+                        {% csrf_token %}
+                        <input type="text" name="message" class="form-control rounded-pill bg-light border-0 px-4 py-2" placeholder="{% trans 'اكتب ردك هنا...' %}" required autocomplete="off">
+                        <button type="submit" class="btn btn-primary rounded-circle shadow-sm d-flex justify-content-center align-items-center flex-shrink-0 transition-hover" style="width: 45px; height: 45px;" title="{% trans 'إرسال' %}">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-4 order-1 order-xl-2">
+            <div class="sticky-top" style="top: 90px;">
+                
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                    <h6 class="fw-bold mb-4 border-bottom border-light pb-3 text-dark"><i class="fas fa-info-circle text-primary me-2"></i> {% trans "بيانات التذكرة" %}</h6>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">{% trans "العميل" %}</small>
+                        <span class="fw-bold text-dark"><i class="fas fa-user me-1 text-primary"></i> {{ ticket.customer.first_name }} {{ ticket.customer.last_name|default:"" }}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">{% trans "رقم الهاتف" %}</small>
+                        <a href="tel:{{ ticket.customer.phone_primary }}" class="text-decoration-none fw-bold text-dark" dir="ltr"><i class="fas fa-phone-alt me-1 text-success"></i> {{ ticket.customer.phone_primary }}</a>
+                    </div>
+                    
+                    {% if ticket.order %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">{% trans "طلب مرتبط" %}</small>
+                        <a href="{% url 'super_order_detail' ticket.order.order_id %}" class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill text-decoration-none">
+                            <i class="fas fa-box-open me-1"></i> {% trans "الطلب #" %}{{ ticket.order.order_id }}
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <small class="text-muted d-block mb-1">{% trans "الحالة الحالية" %}</small>
+                        <span class="badge {% if ticket.status == 'OPEN' %}bg-success{% elif ticket.status == 'CLOSED' %}bg-secondary{% else %}bg-warning text-dark{% endif %} px-3 py-2 rounded-pill">
+                            {% trans ticket.get_status_display %}
+                        </span>
+                    </div>
                 </div>
 
-                <!-- الردود السابقة (من السيرفر) -->
-                {% for msg in ticket.messages.all %}
-                    {% if msg.is_support_reply %}
-                        <!-- رد المشرف (أنا) -> يمين -->
-                        <div class="align-self-end bg-primary text-white p-3 rounded-3 mb-3 shadow-sm" style="max-width: 85%; border-bottom-right-radius: 0;">
-                            <p class="mb-1">{{ msg.message }}</p>
-                            <small class="text-white-50 d-block text-end" style="font-size: 9px;">{{ msg.created_at|date:"H:i" }}</small>
-                        </div>
-                    {% else %}
-                        <!-- رد العميل -> يسار -->
-                        <div class="align-self-start bg-white text-dark p-3 rounded-3 mb-3 shadow-sm border" style="max-width: 85%; border-bottom-left-radius: 0;">
-                            <p class="mb-1">{{ msg.message }}</p>
-                            <small class="text-muted d-block" style="font-size: 9px;">{{ msg.created_at|date:"H:i" }}</small>
-                        </div>
-                    {% endif %}
-                {% endfor %}
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                    <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-sliders-h me-2"></i> {% trans "إجراءات إدارية" %}</h6>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <label class="small text-muted fw-bold mb-2">{% trans "تحديث حالة التذكرة" %}</label>
+                        <select name="status" class="form-select bg-white border-0 shadow-sm rounded-3 py-2 fw-bold text-dark" onchange="this.form.submit()">
+                            <option value="OPEN" {% if ticket.status == 'OPEN' %}selected{% endif %}>{% trans "مفتوحة" %}</option>
+                            <option value="IN_PROGRESS" {% if ticket.status == 'IN_PROGRESS' %}selected{% endif %}>{% trans "قيد المعالجة" %}</option>
+                            <option value="RESOLVED" {% if ticket.status == 'RESOLVED' %}selected{% endif %}>{% trans "تم الحل" %}</option>
+                            <option value="CLOSED" {% if ticket.status == 'CLOSED' %}selected{% endif %}>{% trans "مغلقة" %}</option>
+                        </select>
+                    </form>
+                </div>
                 
             </div>
-            
-            <!-- فورم الرد -->
-            <div class="card-footer bg-white p-3 border-0">
-                <form method="POST" class="d-flex gap-2">
-                    {% csrf_token %}
-                    <input type="text" name="message" class="form-control rounded-pill bg-light border-0" placeholder="اكتب ردك هنا..." required autocomplete="off">
-                    <button class="btn btn-primary rounded-circle shadow-sm" style="width: 45px; height: 45px;">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </form>
-            </div>
         </div>
-    </div>
-
-    <!-- 2. معلومات وتحكم -->
-    <div class="col-md-4">
-        <!-- بيانات التذكرة -->
-        <div class="card border-0 shadow-sm rounded-4 p-3 mb-3">
-            <h6 class="fw-bold mb-3 border-bottom pb-2">بيانات التذكرة</h6>
-            <div class="mb-2">
-                <small class="text-muted d-block">العميل</small>
-                <span class="fw-bold">{{ ticket.customer.first_name }} {{ ticket.customer.last_name }}</span>
-            </div>
-            <div class="mb-2">
-                <small class="text-muted d-block">رقم الهاتف</small>
-                <a href="tel:{{ ticket.customer.phone_primary }}" class="text-decoration-none">{{ ticket.customer.phone_primary }}</a>
-            </div>
-            {% if ticket.order %}
-            <div class="mb-2">
-                <small class="text-muted d-block">طلب مرتبط</small>
-                <a href="{% url 'super_order_detail' ticket.order.order_id %}" class="badge bg-light text-primary border">#{{ ticket.order.order_id }}</a>
-            </div>
-            {% endif %}
-            <div>
-                <small class="text-muted d-block">الحالة الحالية</small>
-                <span class="badge {% if ticket.status == 'OPEN' %}bg-success{% elif ticket.status == 'CLOSED' %}bg-secondary{% else %}bg-warning text-dark{% endif %}">
-                    {{ ticket.get_status_display }}
-                </span>
-            </div>
-        </div>
-
-        <!-- تغيير الحالة -->
-        <div class="card border-0 shadow-sm rounded-4 p-3 bg-primary text-white">
-            <h6 class="fw-bold mb-3">إجراءات إدارية</h6>
-            <form method="POST">
-                {% csrf_token %}
-                <label class="small text-white-50 mb-1">تحديث الحالة</label>
-                <select name="status" class="form-select border-0 mb-3" onchange="this.form.submit()">
-                    <option value="OPEN" {% if ticket.status == 'OPEN' %}selected{% endif %}>مفتوحة</option>
-                    <option value="IN_PROGRESS" {% if ticket.status == 'IN_PROGRESS' %}selected{% endif %}>قيد المعالجة</option>
-                    <option value="RESOLVED" {% if ticket.status == 'RESOLVED' %}selected{% endif %}>تم الحل</option>
-                    <option value="CLOSED" {% if ticket.status == 'CLOSED' %}selected{% endif %}>مغلقة</option>
-                </select>
-            </form>
-        </div>
+        
     </div>
 </div>
 
@@ -106,7 +112,6 @@
     chatBox.scrollTop = chatBox.scrollHeight;
 
     // 2. تحديث الرسائل تلقائياً
-    // نبدأ بعدد الرسائل الحالي (بدون الرسالة الأصلية لأنها ليست في messages)
     let lastMsgCount = {{ ticket.messages.count }}; 
 
     function fetchMessages() {
@@ -115,42 +120,44 @@
             .then(data => {
                 // إذا زاد العدد عن الموجود، نعيد رسم الشات
                 if (data.messages.length > lastMsgCount) {
-                    // نحتفظ بالرسالة الأصلية (التي في بداية div) ونمسح الردود فقط؟
-                    // الأسهل: نعيد بناء الـ HTML للردود فقط، أو نمسح ونبني الكل.
                     
-                    // هنا سنقوم بمسح الردود فقط (بعد الرسالة الأصلية) وإعادة بنائها
-                    // لكن للتبسيط سنمسح الكل ونعيد البناء (بما فيه الأصلية إذا أردنا، أو نتركها ثابتة)
-                    
-                    // الحل الأذكى: نطلب من السيرفر HTML جاهز (Partial) لكننا نستخدم JSON.
-                    // سنقوم بمسح "الردود" وإعادة إضافتها.
-                    
-                    // سنحذف كل العناصر ما عدا الأول (الأصلية)
+                    // مسح جميع العناصر داخل صندوق الشات باستثناء رسالة العميل الأصلية (أول عنصر)
                     while (chatBox.children.length > 1) {
                         chatBox.removeChild(chatBox.lastChild);
                     }
 
+                    // إعادة بناء الردود
                     data.messages.forEach(msg => {
-                        let alignment = msg.sender === 'support' ? 'align-self-end bg-primary text-white' : 'align-self-start bg-white text-dark border';
+                        let alignment = msg.sender === 'support' ? 'align-self-end bg-primary text-white' : 'align-self-start bg-white text-dark border border-light';
                         let radius = msg.sender === 'support' ? 'border-bottom-right-radius: 0;' : 'border-bottom-left-radius: 0;';
-                        let textColor = msg.sender === 'support' ? 'text-white-50' : 'text-muted';
+                        let textColor = msg.sender === 'support' ? 'text-white-50 text-end' : 'text-muted text-start';
 
                         let html = `
-                        <div class="${alignment} p-3 rounded-3 mb-3 shadow-sm" style="max-width: 85%; ${radius}">
-                            <p class="mb-1">${msg.text}</p>
-                            <small class="${textColor} d-block text-end" style="font-size: 9px;">${msg.time}</small>
+                        <div class="${alignment} p-3 rounded-4 mb-3 shadow-sm" style="max-width: 85%; ${radius}">
+                            <p class="mb-1" style="line-height: 1.6; white-space: pre-wrap;">${msg.text}</p>
+                            <span class="${textColor} d-block" style="font-size: 10px;" dir="ltr">${msg.time}</span>
                         </div>
                         `;
-                        // إضافة الـ HTML كنص
                         chatBox.insertAdjacentHTML('beforeend', html);
                     });
 
                     lastMsgCount = data.messages.length;
                     chatBox.scrollTop = chatBox.scrollHeight;
                 }
-            });
+            })
+            .catch(error => console.error('Error fetching messages:', error));
     }
 
+    // التحديث كل 3 ثواني
     setInterval(fetchMessages, 3000);
 </script>
 
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: scale(1.05); }
+    /* تحسين شكل شريط التمرير داخل صندوق الشات */
+    #chat-box::-webkit-scrollbar { width: 6px; }
+    #chat-box::-webkit-scrollbar-track { background: transparent; }
+    #chat-box::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 10px; }
+</style>
 {% endblock %}

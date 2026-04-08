@@ -1,22 +1,77 @@
 {% extends 'base.html' %}
+{% load i18n %} {% block content %}
 
-{% block content %}
-<div class="d-flex flex-column align-items-center justify-content-center text-center py-5 mt-4">
-    <div class="mb-4">
-        <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm mx-auto" 
-             style="width: 100px; height: 100px; background-color: #e8f5e9;">
-            <i class="fas fa-check fa-3x text-success"></i>
+<style>
+    .dark-card {
+        background-color: var(--dark-surface, #121d3a);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .gold-text {
+        color: var(--gold-accent, #ffc107) !important;
+    }
+    .text-muted-dark {
+        color: #8fa0c1 !important;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: #000;
+        border: none;
+        transition: 0.3s;
+    }
+    .btn-gold:hover {
+        transform: scale(0.98);
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+    .btn-outline-light-dark {
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: transparent;
+        transition: 0.3s;
+    }
+    .btn-outline-light-dark:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #ffc107;
+        border-color: #ffc107;
+    }
+    
+    /* توهج أيقونة النجاح */
+    .success-glow {
+        background: rgba(40, 167, 69, 0.1);
+        border: 2px solid rgba(40, 167, 69, 0.3);
+        box-shadow: 0 0 30px rgba(40, 167, 69, 0.2) !important;
+    }
+    .success-icon {
+        color: #4ade80; /* أخضر نيون هادي */
+        text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+    }
+</style>
+
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 85vh;">
+    <div class="card dark-card shadow-lg border-0 rounded-4 p-5 text-center w-100" style="max-width: 500px;">
+        
+        <div class="mb-4 animate__animated animate__zoomIn">
+            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto success-glow" style="width: 110px; height: 110px;">
+                <i class="fas fa-check fa-4x success-icon"></i>
+            </div>
         </div>
-    </div>
-    
-    <h3 class="fw-bold text-coffee mb-2">تم الطلب بنجاح! 🎉</h3>
-    <p class="text-muted mb-4" style="max-width: 300px;">
-        شكراً لتسوقك معنا. رقم طلبك محفوظ، وسيتم التواصل معك قريباً لتأكيد الشحن.
-    </p>
-    
-    <div class="d-grid gap-2 col-8 mx-auto">
-        <a href="{% url 'home' %}" class="btn btn-gold fw-bold rounded-pill">عودة للرئيسية</a>
-        <a href="{% url 'customer_order_detail' %}" class="btn btn-outline-secondary fw-bold rounded-pill">تتبع الطلب</a>
+        
+        <h3 class="fw-bold text-white mb-3 animate__animated animate__fadeInUp animate__delay-1s" style="letter-spacing: 0.5px;">{% trans "تم الطلب بنجاح! 🎉" %}</h3>
+        
+        <p class="text-muted-dark mb-5 mx-auto animate__animated animate__fadeInUp animate__delay-1s" style="max-width: 320px; line-height: 1.8; font-size: 15px;">
+            {% trans "شكراً لتسوقك في" %} <span class="gold-text fw-bold">{% trans "البازار" %}</span>{% trans ". رقم طلبك محفوظ بأمان، وسيتم تجهيزه وشحنه في أسرع وقت." %}
+        </p>
+        
+        <div class="d-grid gap-3 col-12 mx-auto animate__animated animate__fadeInUp animate__delay-2s">
+            <a href="{% url 'my_orders' %}" class="btn btn-gold py-3 fw-bold rounded-pill shadow-lg" style="font-size: 16px;">
+                <i class="fas fa-box-open me-2"></i> {% trans "تتبع طلبي" %}
+            </a>
+            
+            <a href="{% url 'home' %}" class="btn btn-outline-light-dark py-3 fw-bold rounded-pill" style="font-size: 16px;">
+                <i class="fas fa-store me-2"></i> {% trans "عودة للرئيسية" %}
+            </a>
+        </div>
+        
     </div>
 </div>
+
 {% endblock %}

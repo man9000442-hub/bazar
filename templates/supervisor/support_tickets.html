@@ -1,51 +1,116 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}تذاكر الدعم الفني{% endblock %}
+{% load i18n supervisor_tags %}
+{% block head_title %}{% trans "تذاكر الدعم الفني | Elbazaar" %}{% endblock %}
+{% block page_title %}{% trans "تذاكر الدعم الفني" %}{% endblock %}
 
 {% block content %}
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <div class="btn-group">
-            <a href="?status=OPEN" class="btn btn-outline-dark btn-sm rounded-pill me-2">مفتوحة</a>
-            <a href="?status=IN_PROGRESS" class="btn btn-outline-primary btn-sm rounded-pill me-2">جارية</a>
-            <a href="?status=CLOSED" class="btn btn-outline-secondary btn-sm rounded-pill">مغلقة</a>
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-headset text-primary me-2"></i> {% trans "مركز مساعدة العملاء والتجار" %}</h5>
+            <small class="text-muted">{% trans "متابعة الشكاوى، الاستفسارات، والرد على تذاكر الدعم الفني." %}</small>
         </div>
-        <span class="badge bg-light text-dark border">{{ tickets.count }} تذكرة</span>
+        
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 fs-6 shadow-sm">
+            <i class="fas fa-inbox me-1"></i>
+            {% blocktrans count counter=tickets.count %}{{ counter }} تذكرة إجمالية{% plural %}{{ counter }} تذاكر إجمالية{% endblocktrans %}
+        </span>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="bg-light">
-                <tr>
-                    <th class="ps-4">الموضوع</th>
-                    <th>العميل</th>
-                    <th>الحالة</th>
-                    <th>التاريخ</th>
-                    <th class="text-end pe-4">عرض</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in tickets %}
-                <tr>
-                    <td class="ps-4">
-                        <div class="fw-bold">#{{ t.id }} {{ t.subject }}</div>
-                        <div class="small text-muted text-truncate" style="max-width: 200px;">{{ t.message }}</div>
-                    </td>
-                    <td>{{ t.customer.first_name }}</td>
-                    <td>
-                        {% if t.status == 'OPEN' %}<span class="badge bg-success">جديدة</span>
-                        {% elif t.status == 'CLOSED' %}<span class="badge bg-secondary">مغلقة</span>
-                        {% else %}<span class="badge bg-warning text-dark">جارية</span>{% endif %}
-                    </td>
-                    <td>{{ t.created_at|timesince }}</td>
-                    <td class="text-end pe-4">
-                        <a href="{% url 'super_ticket_detail' t.pk %}" class="btn btn-sm btn-primary rounded-pill px-3">رد</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="text-center py-5 text-muted">لا توجد تذاكر.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="card border-0 shadow-sm p-2 mb-4 bg-white rounded-pill d-inline-flex" style="max-width: 100%; overflow-x: auto; white-space: nowrap;">
+        <div class="d-flex flex-nowrap gap-1">
+            <a href="?status=" class="btn rounded-pill px-4 fw-bold {% if not request.GET.status %}btn-dark shadow-sm{% else %}btn-light text-muted{% endif %}">
+                <i class="fas fa-layer-group me-1"></i> {% trans "الكل" %}
+            </a>
+            <a href="?status=OPEN" class="btn rounded-pill px-4 fw-bold {% if request.GET.status == 'OPEN' %}btn-success shadow-sm text-white{% else %}btn-light text-muted{% endif %}">
+                <i class="fas fa-envelope-open-text me-1"></i> {% trans "جديدة (مفتوحة)" %}
+            </a>
+            <a href="?status=IN_PROGRESS" class="btn rounded-pill px-4 fw-bold {% if request.GET.status == 'IN_PROGRESS' %}btn-warning shadow-sm text-dark{% else %}btn-light text-muted{% endif %}">
+                <i class="fas fa-spinner fa-spin me-1"></i> {% trans "قيد المعالجة" %}
+            </a>
+            <a href="?status=CLOSED" class="btn rounded-pill px-4 fw-bold {% if request.GET.status == 'CLOSED' %}btn-secondary shadow-sm text-white{% else %}btn-light text-muted{% endif %}">
+                <i class="fas fa-check-double me-1"></i> {% trans "مغلقة / محلولة" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+                <div class="list-group list-group-flush">
+                    {% for t in tickets %}
+                    
+                    <div class="list-group-item p-3 p-md-4 border-light hover-bg-light transition-hover position-relative {% if t.status == 'OPEN' %}bg-success bg-opacity-10{% endif %}">
+                        
+                        <div class="position-absolute top-0 bottom-0 start-0" style="width: 4px; background-color: 
+                            {% if t.status == 'OPEN' %}#10b981
+                            {% elif t.status == 'CLOSED' %}#6c757d
+                            {% else %}#f59e0b{% endif %};">
+                        </div>
+
+                        <div class="row align-items-center g-3 ms-2">
+                            
+                            <div class="col-12 col-md-3 col-lg-2 d-flex align-items-center gap-3">
+                                <div class="bg-primary-subtle text-primary rounded-circle d-flex justify-content-center align-items-center shadow-sm fw-bolder fs-5 flex-shrink-0" style="width: 50px; height: 50px;">
+                                    {{ t.customer.first_name|slice:":1" }}
+                                </div>
+                                <div class="overflow-hidden">
+                                    <h6 class="fw-bold text-dark m-0 text-truncate" title="{{ t.customer.first_name }}">{{ t.customer.first_name }} {{ t.customer.last_name|default:"" }}</h6>
+                                    <small class="text-muted" dir="ltr">{{ t.created_at|timesince }}</small>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6 col-lg-7">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-dark-subtle text-dark border border-dark-subtle rounded-pill" style="font-size: 10px;">#{{ t.id }}</span>
+                                    <h6 class="fw-bold text-dark m-0 text-truncate">{{ t.subject }}</h6>
+                                </div>
+                                <p class="text-muted small m-0 text-truncate" style="max-width: 100%;">
+                                    {{ t.message }}
+                                </p>
+                            </div>
+
+                            <div class="col-12 col-md-3 col-lg-3 d-flex flex-row flex-md-column justify-content-between align-items-md-end gap-2">
+                                <div>
+                                    {% if t.status == 'OPEN' %}
+                                        <span class="badge bg-success shadow-sm rounded-pill px-3 py-2"><i class="fas fa-asterisk me-1"></i> {% trans "تذكرة جديدة" %}</span>
+                                    {% elif t.status == 'CLOSED' %}
+                                        <span class="badge bg-secondary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-lock me-1"></i> {% trans "مغلقة" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark shadow-sm rounded-pill px-3 py-2"><i class="fas fa-spinner fa-spin me-1"></i> {% trans "جارية" %}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <a href="{% url 'super_ticket_detail' t.pk %}" class="btn btn-primary btn-sm rounded-3 px-4 fw-bold shadow-sm d-flex align-items-center gap-1">
+                                    {% if t.status == 'CLOSED' %}
+                                        <i class="fas fa-eye"></i> {% trans "عرض التفاصيل" %}
+                                    {% else %}
+                                        <i class="fas fa-reply"></i> {% trans "رد ومتابعة" %}
+                                    {% endif %}
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <div class="bg-white rounded-4 p-5 d-inline-block w-100" style="max-width: 500px;">
+                            <i class="fas fa-check-circle text-success mb-3" style="font-size: 4rem; opacity: 0.5;"></i>
+                            <h5 class="text-dark fw-bold">{% trans "صندوق الوارد فارغ" %}</h5>
+                            <p class="text-muted small mb-0">{% trans "لا توجد تذاكر دعم فني مطابقة للبحث في الوقت الحالي." %}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .hover-bg-light:hover { background-color: #f8fafc !important; }
+</style>
 {% endblock %}

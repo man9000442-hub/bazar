@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load i18n %} {% block page_title %}{% trans "من نحن" %}{% endblock %}
+
+{% block content %}
+<style>
+  .dark-card {
+    background-color: #121d3a; /* كحلي فاتح يبرز عن الخلفية الأساسية */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .gold-text {
+    color: #ffc107;
+  }
+  .text-muted-dark {
+    color: #8fa0c1; /* رمادي مريح للعين للقراءة */
+  }
+  .btn-gold-outline {
+    color: #ffc107;
+    border: 1px solid #ffc107;
+    background: transparent;
+    transition: 0.3s;
+  }
+  .btn-gold-outline:hover {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    transform: scale(0.98);
+  }
+</style>
+
+<div class="container py-5 mb-5" style="min-height: 70vh;">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card dark-card shadow-lg rounded-4 p-4 p-md-5">
+                
+                <div class="text-center mb-5">
+                    <div class="d-inline-flex rounded-circle p-4 mb-3 shadow" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.2);">
+                        <i class="fas fa-info fa-2x gold-text"></i>
+                    </div>
+                    
+                    <h3 class="fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "من نحن" %}</h3>
+                    
+                    <div class="mx-auto mt-3" style="width: 60px; height: 4px; border-radius: 10px; background: linear-gradient(135deg, #ffc107, #ff9800);"></div>
+                </div>
+                
+                <div class="text-start text-muted-dark" style="line-height: 2.2; font-size: 16px;">
+                    {% if about.content %}
+                        <div style="color: #e0e6ed;">
+                            {{ about.content|linebreaksbr }}
+                        </div>
+                    {% else %}
+                        <p class="text-center" style="opacity: 0.5;">{% trans "جاري تحديث البيانات... يرجى العودة لاحقاً." %}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="text-center mt-5 pt-4" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                    <button onclick="history.back()" class="btn btn-gold-outline rounded-pill px-5 py-2 shadow-sm fw-bold">
+                        <i class="fas fa-arrow-right me-2"></i> {% trans "عودة" %}
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

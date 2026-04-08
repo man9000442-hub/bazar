@@ -1,35 +1,112 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}تعديل المنتج: {{ product.name }}{% endblock %}
+{% load i18n supervisor_tags %}
+{% block head_title %}{% blocktrans with name=product.name %}تعديل المنتج: {{ name }} | Elbazaar{% endblocktrans %}{% endblock %}
+{% block page_title %}{% trans "إدارة المنتج وتحديد العمولة" %}{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 500px;">
-    <form method="POST" class="card p-4 shadow-sm border-0 rounded-4">
-        {% csrf_token %}
+<div class="container-fluid p-0 d-flex justify-content-center">
+    
+    <div class="w-100" style="max-width: 600px;">
         
-        <div class="mb-3 text-center">
-            {% if product.image %}
-                <img src="{{ product.image.url }}" class="rounded mb-2" width="100">
-            {% endif %}
-            <h5>{{ product.name }}</h5>
-            <p class="text-muted small">التاجر: {{ product.merchant.user.first_name }}</p>
-        </div>
-
-        <div class="form-check form-switch mb-3 p-3 bg-light rounded">
-            <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if product.is_active %}checked{% endif %}>
-            <label class="form-check-label fw-bold" for="isActive">المنتج نشط (يظهر للعملاء)</label>
-        </div>
-
-        <div class="mb-4">
-            <label class="form-label fw-bold">نسبة عمولة المنصة</label>
-            <div class="input-group">
-                <input type="number" name="commission" class="form-control" 
-                    value="{{ product.commission_pct }}" step="0.1" min="0" max="100">
-                <span class="input-group-text">%</span>
+        <div class="d-flex align-items-center mb-4 gap-3">
+            <a href="javascript:history.back()" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-arrow-right text-dark"></i>
+            </a>
+            <div>
+                <h5 class="fw-bold text-dark m-0"><i class="fas fa-clipboard-check text-primary me-2"></i> {% trans "مراجعة واعتماد المنتج" %}</h5>
+                <small class="text-muted">{% trans "قم بمراجعة المنتج وتحديد نسبة العمولة الخاصة بالمنصة." %}</small>
             </div>
-            <div class="form-text text-muted small">يتم خصم هذه النسبة من كل عملية بيع لهذا المنتج.</div>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 rounded-pill">حفظ التغييرات</button>
-    </form>
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            
+            <div class="bg-light p-4 border-bottom border-light text-center position-relative">
+                {% if not product.is_active %}
+                    <span class="position-absolute top-0 start-0 m-3 badge bg-warning text-dark shadow-sm rounded-pill px-3 py-2"><i class="fas fa-clock me-1"></i> {% trans "بانتظار التفعيل" %}</span>
+                {% endif %}
+                
+                <div class="d-inline-block bg-white p-2 rounded-4 shadow-sm mb-3">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="rounded-3" width="100" height="100" style="object-fit: cover;" alt="{{ product.name }}">
+                    {% else %}
+                        <div class="bg-light rounded-3 d-flex justify-content-center align-items-center text-muted" style="width: 100px; height: 100px;">
+                            <i class="fas fa-image fa-2x opacity-25"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <h5 class="fw-bold text-dark mb-1">{{ product.name }}</h5>
+                <span class="badge bg-white text-dark border shadow-sm rounded-pill px-3 py-2 mt-2">
+                    <i class="fas fa-store text-primary me-1"></i> {% trans "التاجر:" %} <span class="fw-bold">{{ product.merchant.user.first_name }} {{ product.merchant.user.last_name|default:"" }}</span>
+                </span>
+            </div>
+
+            <form method="POST" class="card-body p-4">
+                {% csrf_token %}
+                
+                <div class="form-check form-switch mb-4 p-3 {% if product.is_active %}bg-success bg-opacity-10 border-success{% else %}bg-secondary bg-opacity-10 border-secondary{% endif %} rounded-4 border border-opacity-25 d-flex align-items-center justify-content-between transition-all" id="activationContainer">
+                    <div>
+                        <label class="form-check-label fw-bold {% if product.is_active %}text-success{% else %}text-secondary{% endif %} m-0 fs-6" for="isActive" id="activationLabel">
+                            <i class="fas {% if product.is_active %}fa-eye{% else %}fa-eye-slash{% endif %} me-1" id="activationIcon"></i> 
+                            {% trans "المنتج نشط (يظهر للعملاء في المتجر)" %}
+                        </label>
+                        <small class="d-block text-muted mt-1" style="font-size: 11px;">{% trans "أغلق هذا الخيار لإخفاء المنتج أو إيقافه مؤقتاً." %}</small>
+                    </div>
+                    <input class="form-check-input m-0" type="checkbox" name="is_active" id="isActive" {% if product.is_active %}checked{% endif %} style="transform: scale(1.4); cursor: pointer;" onchange="toggleActivationStyles()">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-dark"><i class="fas fa-percentage text-danger me-1"></i> {% trans "نسبة عمولة المنصة" %} <span class="text-danger">*</span></label>
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                        <span class="input-group-text bg-light border-0 text-danger"><i class="fas fa-hand-holding-usd"></i></span>
+                        <input type="number" name="commission" class="form-control bg-light border-0 fw-bolder fs-4 text-center text-dark py-3" value="{{ product.commission_pct }}" step="0.1" min="0" max="100" required>
+                        <span class="input-group-text bg-danger text-white border-0 fw-bold px-4 fs-5">%</span>
+                    </div>
+                    <div class="form-text mt-3 text-muted bg-light p-2 rounded-3 small border border-light">
+                        <i class="fas fa-info-circle text-primary me-1"></i> 
+                        {% trans "يتم خصم هذه النسبة كعمولة للمنصة من كل عملية بيع ناجحة لهذا المنتج، وتضاف الباقي لمحفظة التاجر." %}
+                    </div>
+                </div>
+
+                <hr class="opacity-25 my-4">
+
+                <button type="submit" class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm fs-5 d-flex justify-content-center align-items-center gap-2 transition-hover">
+                    <i class="fas fa-save"></i> {% trans "حفظ التعديلات واعتماد المنتج" %}
+                </button>
+            </form>
+            
+        </div>
+    </div>
 </div>
+
+<script>
+    // تغيير ألوان صندوق التفعيل بناءً على حالة المفتاح ليعطي تجربة مستخدم (UX) ممتازة
+    function toggleActivationStyles() {
+        const checkbox = document.getElementById('isActive');
+        const container = document.getElementById('activationContainer');
+        const label = document.getElementById('activationLabel');
+        const icon = document.getElementById('activationIcon');
+
+        if (checkbox.checked) {
+            container.className = "form-check form-switch mb-4 p-3 bg-success bg-opacity-10 border-success rounded-4 border border-opacity-25 d-flex align-items-center justify-content-between transition-all";
+            label.className = "form-check-label fw-bold text-success m-0 fs-6";
+            icon.className = "fas fa-eye me-1";
+        } else {
+            container.className = "form-check form-switch mb-4 p-3 bg-secondary bg-opacity-10 border-secondary rounded-4 border border-opacity-25 d-flex align-items-center justify-content-between transition-all";
+            label.className = "form-check-label fw-bold text-secondary m-0 fs-6";
+            icon.className = "fas fa-eye-slash me-1";
+        }
+    }
+</script>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-3px); filter: brightness(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .transition-all { transition: all 0.3s ease; }
+    
+    /* إخفاء أسهم زيادة وتقليل الأرقام من حقل العمولة ليكون شكله أنظف */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+</style>
 {% endblock %}

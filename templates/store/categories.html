@@ -1,40 +1,91 @@
 {% extends 'base.html' %}
-{% block content %}
+{% load i18n %} {% block content %}
 
-<!-- Header -->
-<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-4 sticky-top">
-    <a href="javascript:history.back()" class="text-dark me-3"><i class="fas fa-arrow-right fs-5"></i></a>
-    <h5 class="m-0 fw-bold" style="color: var(--text-coffee);">تصفح الأقسام</h5>
+<style>
+    .dark-header {
+        background-color: var(--dark-bg, #091024);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .dark-card {
+        background-color: var(--dark-surface, #121d3a);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .gold-text {
+        color: var(--gold-accent, #ffc107) !important;
+    }
+    .text-muted-dark {
+        color: #8fa0c1 !important;
+    }
+    
+    .category-card {
+        height: 160px; /* ارتفاع مناسب للكارت */
+        border-radius: 18px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .category-card img {
+        height: 100%;
+        object-fit: cover; /* ملء المساحة بدون تشويه */
+    }
+
+    .category-overlay {
+        background: linear-gradient(to top, rgba(9, 16, 36, 0.95), rgba(9, 16, 36, 0.2));
+        border-radius: 18px;
+    }
+
+    .text-shadow {
+        text-shadow: 0 4px 8px rgba(0,0,0,0.8);
+        letter-spacing: 1px;
+    }
+
+    /* تأثير عند الضغط */
+    .category-card:active {
+        transform: scale(0.96);
+    }
+
+    /* لمسة ذهبية أسفل الكارت */
+    .card-bottom-accent {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        opacity: 0.9;
+    }
+</style>
+
+<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-4 sticky-top" style="z-index: 1020;">
+    <a href="javascript:history.back()" class="text-white me-3 text-decoration-none">
+        <i class="fas fa-arrow-right fs-5"></i>
+    </a>
+    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">
+        {% trans "تصفح الأقسام" %} <span class="gold-text">.</span>
+    </h5>
 </div>
 
-<div class="container pb-5 mb-5">
+<div class="container pb-5 mb-5" style="min-height: 80vh;">
     
-    <!-- Grid: عمود واحد للموبايل (col-12)، وعمودين للتابلت (col-md-6) -->
     <div class="row g-3">
         {% for cat in categories %}
         <div class="col-12 col-md-6">
             <a href="{% url 'home' %}?category={{ cat.id }}" class="text-decoration-none">
                 
-                <!-- الكارت -->
-                <div class="card border-0 shadow-sm overflow-hidden position-relative category-card">
+                <div class="card dark-card overflow-hidden position-relative category-card shadow-lg">
                     
-                    <!-- الصورة الخلفية -->
                     {% if cat.image %}
                         <img src="{{ cat.image.url }}" class="card-img w-100" alt="{{ cat.name }}">
                     {% else %}
-                        <!-- لون افتراضي لو مفيش صورة -->
-                        <div class="w-100 h-100 bg-secondary d-flex align-items-center justify-content-center" style="min-height: 150px;">
-                            <i class="fas fa-th-large fa-3x text-white opacity-25"></i>
+                        <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background-color: var(--dark-surface);">
+                            <i class="fas fa-th-large fa-4x text-white opacity-25"></i>
                         </div>
                     {% endif %}
                     
-                    <!-- طبقة تعتيم (Overlay) عشان الكلام يبان -->
-                    <div class="card-img-overlay d-flex align-items-center justify-content-center" 
-                         style="background: rgba(0, 0, 0, 0.4);">
-                        
-                        <!-- الاسم -->
+                    <div class="card-img-overlay category-overlay d-flex align-items-end justify-content-center pb-4">
                         <h3 class="fw-bold text-white mb-0 text-shadow">{{ cat.name }}</h3>
                     </div>
+
+                    <div class="card-bottom-accent"></div>
                 </div>
             </a>
         </div>
@@ -42,35 +93,14 @@
     </div>
 
     {% if not categories %}
-    <div class="text-center py-5 text-muted">
-        <i class="fas fa-layer-group fa-3x mb-3 opacity-25"></i>
-        <p>لا توجد أقسام حالياً.</p>
+    <div class="text-center py-5 mt-5">
+        <div class="dark-card rounded-circle d-inline-flex p-4 shadow-lg mb-3">
+            <i class="fas fa-layer-group fa-3x" style="color: var(--text-muted);"></i>
+        </div>
+        <h5 class="fw-bold text-white mb-2">{% trans "لا توجد أقسام حالياً!" %}</h5>
+        <p class="text-muted-dark small">{% trans "سيتم إضافة أقسام ومنتجات جديدة قريباً." %}</p>
     </div>
     {% endif %}
 </div>
-
-<!-- CSS -->
-<style>
-    .category-card {
-        height: 150px; /* ارتفاع ثابت للكارت */
-        border-radius: 16px;
-        transition: transform 0.2s;
-    }
-    
-    .category-card img {
-        height: 100%;
-        object-fit: cover; /* ملء المساحة */
-    }
-
-    .text-shadow {
-        text-shadow: 0 2px 4px rgba(0,0,0,0.6);
-        letter-spacing: 1px;
-    }
-
-    /* تأثير عند الضغط */
-    .category-card:active {
-        transform: scale(0.98);
-    }
-</style>
 
 {% endblock %}

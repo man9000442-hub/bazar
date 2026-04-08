@@ -1,41 +1,69 @@
 {% extends 'base.html' %}
-{% load i18n %}
-{% load account socialaccount %}
+{% load i18n account socialaccount %}
 
 {% block content %}
-<div class="container d-flex flex-column justify-content-center" style="min-height: 80vh;">
+<div class="container d-flex flex-column justify-content-center py-5" style="min-height: 80vh;">
     
-    <div class="text-center mb-5">
-        <h2 class="fw-bold text-primary mb-1">مرحباً بعودتك! 👋</h2>
-        <p class="text-muted">سجل الدخول للمتابعة</p>
+    <div id="app-only-message" class="text-center" style="display: none;">
+        <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex p-4 mb-3 shadow-sm">
+            <i class="fas fa-user-circle fa-4x"></i>
+        </div>
+        <h3 class="fw-bold text-dark mt-3">{% trans "عذراً!" %}</h3>
+        <p class="text-muted fs-5 mt-3">
+            {% trans "اضغط على خانة" %} <b class="text-primary">{% trans "البروفايل" %}</b> {% trans "أسفل الشاشة لتسجيل الدخول." %}
+        </p>
     </div>
 
-    <form class="login" method="POST" action="{% url 'account_login' %}">
-        {% csrf_token %}
-        
-        <!-- في حقل الـ login -->
-        <div class="mb-3">
-            <!-- تغيير النص التوضيحي -->
-            <input type="text" name="login" class="form-control form-control-lg bg-light border-0" 
-                placeholder="رقم الهاتف / الإيميل / اسم المستخدم" required>
-        </div>
-        
-        <div class="mb-4">
-            <input type="password" name="password" class="form-control form-control-lg bg-light border-0" placeholder="كلمة المرور" required>
+    <div id="web-only-form">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-primary mb-1">{% trans "مرحباً بعودتك! 👋" %}</h2>
+            <p class="text-muted">{% trans "سجل الدخول للمتابعة والتسوق" %}</p>
         </div>
 
-        <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold shadow-sm mb-3">دخول</button>
-        
-        <!-- زر جوجل -->
-        <a href="{% provider_login_url 'google' %}" class="btn btn-light w-100 py-3 fw-bold border d-flex align-items-center justify-content-center gap-2">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="16" height="16" alt="Google Logo">
-            الدخول باستخدام Google
-        </a>
-    </form>
-    
-    <div class="text-center mt-4">
-        <span class="text-muted">ليس لديك حساب؟</span>
-        <a href="{% url 'signup_choice' %}" class="fw-bold text-primary text-decoration-none">سجل الآن</a>
+        <form class="login card border-0 shadow-sm p-4 p-md-5 rounded-4 mx-auto bg-white" method="POST" action="{% url 'account_login' %}" style="max-width: 450px;">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted">{% trans "اسم المستخدم أو رقم الهاتف" %}</label>
+                <input type="text" name="login" class="form-control form-control-lg bg-light border-0 px-3 fw-bold" 
+                    placeholder="{% trans 'أدخل بيانات الدخول' %}" required>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">{% trans "كلمة المرور" %}</label>
+                <input type="password" name="password" class="form-control form-control-lg bg-light border-0 px-3" placeholder="******" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm mb-3 rounded-pill fs-5">{% trans "تسجيل الدخول" %}</button>
+            
+            <div class="position-relative text-center my-3">
+                <hr class="text-muted opacity-25">
+                <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 small text-muted fw-bold">{% trans "أو" %}</span>
+            </div>
+
+            <a href="{% provider_login_url 'google' %}" class="btn btn-light w-100 py-3 fw-bold border rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 hover-bg-light">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" height="20" alt="Google Logo">
+                {% trans "الدخول باستخدام Google" %}
+            </a>
+            
+            <div class="text-center mt-4">
+                <span class="text-muted small">{% trans "ليس لديك حساب؟" %}</span>
+                <a href="{% url 'signup_choice' %}" class="fw-bold text-primary text-decoration-none">{% trans "سجل الآن مجاناً" %}</a>
+            </div>
+        </form>
     </div>
+
 </div>
+
+<script>
+    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    if (userAgent.indexOf("ElbazaarApp-Flutter") > -1) {
+        document.getElementById('web-only-form').style.display = 'none';
+        document.getElementById('app-only-message').style.display = 'block';
+    }
+</script>
+<style>
+    .form-control:focus { background-color: #fff; box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15); }
+    .hover-bg-light:hover { background-color: #f8f9fa !important; border-color: #ccc !important; }
+</style>
 {% endblock %}

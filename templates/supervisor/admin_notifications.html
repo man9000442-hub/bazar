@@ -1,0 +1,56 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "إشعارات النظام" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "الإشعارات والتنبيهات" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-bell text-primary me-2"></i> {% trans "أحدث الإشعارات" %}</h5>
+            <small class="text-muted">{% trans "متابعة التنبيهات والأحداث الهامة في المنصة لحظة بلحظة." %}</small>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+        <div class="list-group list-group-flush">
+            {% for note in notifications %}
+            <a href="{{ note.link|default:'#' }}" class="list-group-item list-group-item-action p-4 border-light transition-hover 
+                {% if not note.is_read %}bg-primary bg-opacity-10 border-start border-4 border-primary{% else %}bg-white{% endif %}">
+                
+                <div class="d-flex w-100 justify-content-between align-items-md-center flex-column flex-md-row gap-2 mb-2">
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-white rounded-circle d-flex justify-content-center align-items-center shadow-sm {% if not note.is_read %}text-primary{% else %}text-secondary{% endif %}" style="width: 42px; height: 42px; flex-shrink: 0;">
+                            <i class="fas {% if not note.is_read %}fa-bell{% else %}fa-check{% endif %}"></i>
+                        </div>
+                        <h6 class="fw-bold mb-0 text-dark">{{ note.title }}</h6>
+                    </div>
+                    
+                    <small class="text-muted fw-bold" dir="ltr" style="font-size: 11px;">
+                        <i class="far fa-clock me-1"></i>{{ note.created_at|date:"d M Y - g:i A" }}
+                    </small>
+                </div>
+                
+                <p class="mb-0 text-secondary ms-md-5 ps-md-3" style="font-size: 13px; line-height: 1.6;">{{ note.message }}</p>
+                
+            </a>
+            {% empty %}
+            <div class="text-center py-5">
+                <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                    <i class="far fa-bell-slash text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                    <h5 class="text-dark fw-bold">{% trans "لا توجد إشعارات حالياً" %}</h5>
+                    <p class="text-muted small mb-0">{% trans "ستظهر هنا التنبيهات الخاصة بالنظام (تجار جدد، سحوبات، طلبات، وشكاوى)." %}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { filter: brightness(0.98); }
+</style>
+{% endblock %}

@@ -1,41 +1,101 @@
 {% extends 'base.html' %}
-{% block content %}
+{% load i18n %} {% block content %}
 
-<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3">
-    <a href="{% url 'profile' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <h5 class="m-0 fw-bold">المفضلة ❤️</h5>
+<style>
+    .dark-header {
+        background-color: var(--dark-bg, #091024);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .dark-card {
+        background-color: var(--dark-surface, #121d3a);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 18px;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .dark-card:hover {
+        transform: translateY(-3px);
+    }
+    .gold-text {
+        color: var(--gold-accent, #ffc107) !important;
+    }
+    .text-muted-dark {
+        color: #8fa0c1 !important;
+    }
+    
+    .btn-gold {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: #000;
+        border: none;
+        transition: 0.3s;
+    }
+    .btn-gold:hover {
+        transform: scale(0.98);
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+
+    /* زرار الإزالة من المفضلة */
+    .btn-remove-fav {
+        background: rgba(220, 53, 69, 0.1);
+        color: #ff6b6b;
+        border: 1px solid rgba(220, 53, 69, 0.2);
+        backdrop-filter: blur(4px);
+        transition: all 0.3s ease;
+    }
+    .btn-remove-fav:hover {
+        background: rgba(220, 53, 69, 0.8);
+        color: #fff;
+        transform: scale(1.1);
+    }
+</style>
+
+<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-4 sticky-top" style="z-index: 1020;">
+    <a href="{% url 'profile' %}" class="text-white me-3 text-decoration-none">
+        <i class="fas fa-arrow-right fs-5"></i>
+    </a>
+    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "المفضلة" %} <span class="gold-text"><i class="fas fa-heart ms-1"></i></span></h5>
 </div>
 
-<div class="container pb-5">
-    <div class="row g-2">
+<div class="container pb-5 mb-5" style="min-height: 80vh;">
+    <div class="row g-3">
         {% for item in favorites %}
         <div class="col-6 col-md-4" id="fav-card-{{ item.product.id }}">
-            <div class="card h-100 border-0 shadow-sm">
-                <!-- زر الحذف -->
-                <button onclick="toggleFav('{{ item.product.id }}')" class="btn btn-light rounded-circle position-absolute top-0 end-0 m-2 shadow-sm text-danger" style="width: 30px; height: 30px; padding: 0;">
-                    <i class="fas fa-times"></i>
+            <div class="card dark-card h-100 shadow-lg position-relative overflow-hidden">
+                
+                <button onclick="toggleFav('{{ item.product.id }}')" class="btn btn-remove-fav rounded-circle position-absolute shadow-sm d-flex justify-content-center align-items-center" style="width: 32px; height: 32px; padding: 0; top: 10px; right: 10px; z-index: 10;">
+                    <i class="fas fa-trash-alt" style="font-size: 13px;"></i>
                 </button>
 
-                <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none text-dark">
-                    <div style="height: 140px; overflow: hidden; border-radius: 16px 16px 0 0; background-color: #fff; display: flex; align-items: center; justify-content: center;">
+                <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none d-block">
+                    <div style="height: 150px; overflow: hidden; border-radius: 18px 18px 0 0; background-color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 10px;">
                         {% if item.product.image %}
-                            <img src="{{ item.product.image.url }}" class="w-100 h-100" style="object-fit: cover;">
+                            <img src="{{ item.product.image.url }}" class="w-100 h-100" style="object-fit: contain; mix-blend-mode: multiply;">
                         {% else %}
-                            <i class="fas fa-camera text-muted"></i>
+                            <i class="fas fa-camera text-muted fa-2x opacity-25"></i>
                         {% endif %}
                     </div>
-                    <div class="card-body p-2">
-                        <h6 class="text-truncate fw-bold mb-1" style="font-size: 12px;">{{ item.product.name }}</h6>
-                        <span class="text-primary fw-bold" style="font-size: 14px;">{{ item.product.base_price }} ج.م</span>
+                    
+                    <div class="card-body p-2 mt-2">
+                        <span class="d-block mb-1 text-muted-dark" style="font-size: 10px;">{{ item.product.category.name }}</span>
+                        <h6 class="text-truncate fw-bold mb-2 text-white" style="font-size: 13px;">{{ item.product.name }}</h6>
+                        
+                        <div class="d-flex align-items-center">
+                            <span class="gold-text fw-bold fs-6">{{ item.product.base_price }}</span>
+                            <span class="gold-text small ms-1" style="font-size: 10px;">{% trans "ج.م" %}</span>
+                        </div>
                     </div>
                 </a>
             </div>
         </div>
         {% empty %}
-        <div class="col-12 text-center py-5">
-            <i class="far fa-heart fa-3x text-muted opacity-25 mb-3"></i>
-            <p class="text-muted">قائمة المفضلة فارغة.</p>
-            <a href="{% url 'home' %}" class="btn btn-primary-app px-4">تصفح المنتجات</a>
+        <div class="col-12 text-center py-5 mt-5">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4 shadow-lg" style="width: 100px; height: 100px; background: rgba(255, 255, 255, 0.05);">
+                <i class="far fa-heart fa-3x text-muted-dark opacity-50"></i>
+            </div>
+            <h5 class="fw-bold text-white mb-2">{% trans "قائمة المفضلة فارغة!" %}</h5>
+            <p class="text-muted-dark mb-4 small">{% trans "لم تقم بإضافة أي منتجات للمفضلة بعد، اكتشف المنتجات المميزة الآن." %}</p>
+            <a href="{% url 'home' %}" class="btn btn-gold px-5 py-3 rounded-pill fw-bold shadow-lg">
+                {% trans "تصفح المنتجات" %} <i class="fas fa-store ms-1"></i>
+            </a>
         </div>
         {% endfor %}
     </div>
@@ -46,9 +106,19 @@ function toggleFav(productId) {
     fetch(`/wishlist/toggle/${productId}/`)
         .then(response => response.json())
         .then(data => {
-            // في صفحة المفضلة، إذا ضغطنا على الزر نحذف الكارت
             if (!data.added) {
-                document.getElementById(`fav-card-${productId}`).remove();
+                const card = document.getElementById(`fav-card-${productId}`);
+                // إضافة تأثير اختفاء ناعم قبل المسح
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    card.remove();
+                    // تحديث الصفحة لو مسح كل حاجة عشان الـ Empty State يظهر
+                    const remainingCards = document.querySelectorAll('[id^="fav-card-"]');
+                    if (remainingCards.length === 0) {
+                        location.reload();
+                    }
+                }, 300);
             }
         });
 }

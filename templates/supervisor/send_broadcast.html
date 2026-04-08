@@ -1,32 +1,114 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}إرسال إشعار عام{% endblock %}
+{% load i18n %}
+{% block head_title %}{% trans "إرسال إشعار | Elbazaar" %}{% endblock %}
+{% block page_title %}{% trans "إرسال إشعار للمستخدمين" %}{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 600px;">
-    <form method="POST" class="card p-4 border-0 shadow-sm rounded-4">
-        {% csrf_token %}
-        <h6 class="fw-bold text-primary mb-3">رسالة جماعية</h6>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<div class="container-fluid p-0 d-flex justify-content-center">
+    <div class="w-100" style="max-width: 800px;">
         
-        <div class="mb-3">
-            <label class="form-label">عنوان الإشعار</label>
-            <input type="text" name="title" class="form-control" required>
-        </div>
-        
-        <div class="mb-3">
-            <label class="form-label">نص الرسالة</label>
-            <textarea name="message" class="form-control" rows="4" required></textarea>
-        </div>
-        
-        <div class="mb-4">
-            <label class="form-label">المستلمون</label>
-            <select name="target" class="form-select">
-                <option value="ALL">الجميع (تجار وعملاء)</option>
-                <option value="MERCHANTS">التجار فقط</option>
-                <option value="CUSTOMERS">العملاء فقط</option>
-            </select>
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+            <div class="card-header bg-primary bg-opacity-10 border-bottom border-light py-4 px-4">
+                <h5 class="fw-bold m-0 text-primary"><i class="fas fa-bullhorn me-2"></i> {% trans "إرسال إشعار عام أو مخصص" %}</h5>
+                <p class="text-muted small mt-2 mb-0">{% trans "تواصل مع المستخدمين، أرسل لهم العروض الجديدة، أو نبههم بتحديثات المنصة." %}</p>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">{% trans "عنوان الإشعار" %} <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2 fw-bold text-dark" required placeholder="{% trans 'مثال: عرض خاص لك!' %}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">{% trans "الرابط عند الضغط (اختياري)" %}</label>
+                            <input type="text" name="link" class="form-control bg-light border-0 rounded-3 py-2" placeholder="{% trans 'مثال: /my-orders/ أو https://...' %}">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-muted small">{% trans "الجهة المستهدفة" %} <span class="text-danger">*</span></label>
+                            <select name="target" id="targetSelect" class="form-select bg-light border-0 rounded-3 py-2 fw-bold text-dark" onchange="toggleUserSelect()" required>
+                                <option value="ALL">{% trans "الجميع (تجار وعملاء)" %}</option>
+                                <option value="MERCHANTS">{% trans "التجار فقط" %}</option>
+                                <option value="CUSTOMERS">{% trans "العملاء فقط" %}</option>
+                                <option value="SPECIFIC">{% trans "مستخدم محدد (تاجر أو عميل مخصص)" %}</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 animate__animated animate__fadeIn" id="specificUserDiv" style="display: none;">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-4 border border-primary border-opacity-25">
+                                <label class="form-label fw-bold text-primary small">{% trans "اختر المستخدم المستهدف" %} <span class="text-danger">*</span></label>
+                                <select name="specific_user_id" class="form-select bg-white" id="userDropdown" style="width: 100%;">
+                                    <option value="">-- {% trans "ابحث بالاسم أو رقم الهاتف" %} --</option>
+                                    {% for u in all_users %}
+                                        <option value="{{ u.id }}">
+                                            {{ u.first_name }} {{ u.last_name|default:"" }} | {{ u.phone_primary }} | ({% if u.role == 'MERCHANT' %}{% trans "تاجر" %}{% else %}{% trans "عميل" %}{% endif %})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-muted small">{% trans "نص الإشعار التفصيلي" %} <span class="text-danger">*</span></label>
+                            <textarea name="message" class="form-control bg-light border-0 rounded-4 p-3" rows="5" required placeholder="{% trans 'اكتب تفاصيل الرسالة التي ستظهر للمستخدم هنا...' %}"></textarea>
+                        </div>
+                    </div>
+                    
+                    <hr class="opacity-25 my-4">
+                    
+                    <button type="submit" class="btn btn-primary w-100 rounded-4 py-3 fw-bold shadow-sm d-flex justify-content-center align-items-center gap-2 transition-hover" onclick="return confirm('{% trans "هل أنت متأكد من إرسال هذا الإشعار الآن؟" %}');">
+                        <i class="fas fa-paper-plane"></i> {% trans "إرسال الإشعار الآن" %}
+                    </button>
+                </form>
+            </div>
         </div>
 
-        <button type="submit" class="btn btn-dark w-100 rounded-pill">إرسال <i class="fas fa-paper-plane ms-2"></i></button>
-    </form>
+    </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    // تهيئة محرك البحث الذكي
+    $(document).ready(function() {
+        $('#userDropdown').select2({
+            placeholder: "{% trans 'ابحث عن المستخدم بالاسم أو رقم الهاتف...' %}",
+            allowClear: true,
+            language: { noResults: function () { return "{% trans 'لم يتم العثور على مستخدم مطابق' %}"; } }
+        });
+    });
+
+    // إظهار وإخفاء حقل تحديد المستخدم
+    function toggleUserSelect() {
+        const target = document.getElementById('targetSelect').value;
+        const userDiv = document.getElementById('specificUserDiv');
+        const userDropdown = $('#userDropdown'); // استخدام jQuery للتحكم في Select2
+        
+        if (target === 'SPECIFIC') {
+            userDiv.style.display = 'block';
+            userDropdown.prop('required', true);
+        } else {
+            userDiv.style.display = 'none';
+            userDropdown.prop('required', false);
+            userDropdown.val(null).trigger('change'); // تفريغ الاختيار وتحديث الواجهة
+        }
+    }
+</script>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-3px); filter: brightness(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    
+    /* تحسين Select2 ليتماشى مع تصميم البوتستراب */
+    .select2-container .select2-selection--single { height: 42px !important; border: 0 !important; border-radius: 0.5rem !important; background-color: #fff !important; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 42px !important; font-weight: bold; color: #1e293b !important; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px !important; }
+</style>
 {% endblock %}

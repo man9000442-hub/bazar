@@ -1,41 +1,95 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}قائمة التجار{% endblock %}
+{% load i18n supervisor_tags %}
+{% block head_title %}{% trans "قائمة التجار | Elbazaar" %}{% endblock %}
+{% block page_title %}{% trans "قائمة التجار والمتاجر" %}{% endblock %}
 
 {% block content %}
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="bg-light">
-                <tr>
-                    <th class="ps-4">التاجر</th>
-                    <th>الهاتف</th>
-                    <th>الحالة</th>
-                    <th>التوثيق</th>
-                    <th class="text-end pe-4">ملف</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in merchants %}
-                <tr>
-                    <td class="ps-4 fw-bold">{{ m.user.first_name }} {{ m.user.last_name }}</td>
-                    <td>{{ m.user.phone_primary }}</td>
-                    <td><span class="badge bg-success">نشط</span></td>
-                    <td>
-                        {% if m.is_verified %}
-                            <i class="fas fa-check-circle text-primary"></i>
-                        {% else %}
-                            <span class="text-muted">-</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-end pe-4">
-                        <a href="{% url 'super_merchant_profile' m.pk %}" class="btn btn-sm btn-light border">
-                            <i class="fas fa-eye"></i> عرض الملف
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-store text-primary me-2"></i> {% trans "قائمة التجار النشطين" %}</h5>
+            <small class="text-muted">{% trans "جميع المتاجر المعتمدة والتي تعمل حالياً على المنصة." %}</small>
+        </div>
+        <a href="{% url 'super_pending_merchants' %}" class="btn btn-outline-success shadow-sm rounded-3 px-3 fw-bold">
+            <i class="fas fa-user-clock me-1"></i> {% trans "طلبات الانضمام المعلقة" %}
+        </a>
     </div>
+
+    <div class="row g-3">
+        {% for m in merchants %}
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card overflow-hidden position-relative">
+                
+                <div class="position-absolute top-0 start-0 w-100" style="height: 4px; background-color: #10b981;"></div>
+
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        {% if m.shop_image %}
+                            <img src="{{ m.shop_image.url }}" class="rounded-circle shadow-sm" width="60" height="60" style="object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary-subtle text-primary rounded-circle d-flex justify-content-center align-items-center shadow-sm fw-bold fs-4" style="width: 60px; height: 60px;">
+                                {{ m.user.first_name|slice:":1" }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="text-start flex-grow-1">
+                            <h6 class="fw-bold text-dark m-0 mb-1 text-truncate" style="max-width: 150px;">{{ m.user.first_name }} {{ m.user.last_name|default:"" }}</h6>
+                            
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                {% if m.verification_rank == 'GOLD' %}
+                                    <span class="badge bg-warning text-dark border border-warning" style="font-size: 10px;"><i class="fas fa-medal"></i> {% trans "موثق ذهبي" %}</span>
+                                {% elif m.verification_rank == 'BLUE' %}
+                                    <span class="badge bg-primary text-white border border-primary" style="font-size: 10px;"><i class="fas fa-check-circle"></i> {% trans "موثق أزرق" %}</span>
+                                {% elif m.verification_rank == 'SILVER' %}
+                                    <span class="badge bg-secondary text-white border border-secondary" style="font-size: 10px;"><i class="fas fa-award"></i> {% trans "موثق فضي" %}</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border" style="font-size: 10px;">{% trans "عادي" %}</span>
+                                {% endif %}
+
+                                {% if request.user.role == 'OWNER' %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 10px;">
+                                        <i class="fas fa-globe me-1"></i> {% if m.user.country.name %}{% trans m.user.country.name %}{% else %}{% trans "غير محدد" %}{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-light rounded-3 p-3 mb-0">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size: 12px;"><i class="fas fa-phone-alt me-1"></i> {% trans "الهاتف:" %}</span>
+                            <span class="fw-bold text-dark" dir="ltr" style="font-size: 12px;">{{ m.user.phone_primary }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted" style="font-size: 12px;"><i class="fas fa-box me-1"></i> {% trans "المنتجات:" %}</span>
+                            <span class="fw-bold text-primary" style="font-size: 12px;">{% blocktrans with count=m.products.count %}{{ count }} منتج{% endblocktrans %}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white border-top border-light p-3 d-flex">
+                    <a href="{% url 'super_merchant_profile' m.pk %}" class="btn btn-light border flex-grow-1 rounded-3 text-primary fw-bold shadow-sm" style="font-size: 13px;">
+                        <i class="fas fa-user-tie me-1"></i> {% trans "عرض ملف التاجر" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                <i class="fas fa-store-slash text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                <h5 class="text-dark fw-bold">{% trans "لا يوجد تجار نشطين" %}</h5>
+                <p class="text-muted small mb-0">{% trans "لم يتم تفعيل أي متجر على المنصة حتى الآن." %}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
 </div>
+
+<style>
+    .hover-card { transition: all 0.2s ease-in-out; }
+    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; }
+</style>
 {% endblock %}

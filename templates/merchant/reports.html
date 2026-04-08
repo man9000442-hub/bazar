@@ -1,105 +1,223 @@
-{% extends 'base.html' %}
+{% extends 'merchant/base_merchant.html' %}
+{% load i18n %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block title %}{% trans "التقارير | لوحة التاجر" %}{% endblock %}
+
 {% block content %}
 
-<!-- Header -->
-<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3 sticky-top">
-    <a href="{% url 'merchant_dashboard' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <h5 class="m-0 fw-bold">تقارير الأرباح</h5>
+<div class="d-flex align-items-center mb-4 mt-2 bg-white p-3 rounded-4 shadow-sm border border-light sticky-top" style="top: 10px; z-index: 1020;">
+    <a href="{% url 'merchant_dashboard' %}" class="btn btn-light rounded-circle p-2 mx-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+        <i class="fas fa-arrow-{% if LANGUAGE_BIDI %}right{% else %}left{% endif %} text-dark"></i>
+    </a>
+    <div>
+        <h5 class="m-0 fw-bold text-dark">{% trans "تقارير الأرباح 📊" %}</h5>
+        <p class="text-muted small mb-0">{% trans "متابعة أداء ومبيعات متجرك" %}</p>
+    </div>
 </div>
 
-<div class="container pb-5">
+<div class="container pb-5 mb-5">
     
-    <!-- 1. الفلتر -->
-    <form method="GET" class="card border-0 shadow-sm p-3 mb-4 bg-light">
-        <div class="d-flex gap-2 overflow-auto pb-2" style="white-space: nowrap;">
-            <button type="submit" name="range" value="today" class="btn btn-sm btn-outline-primary {% if current_range == 'today' %}active{% endif %}">اليوم</button>
-            <button type="submit" name="range" value="week" class="btn btn-sm btn-outline-primary {% if current_range == 'week' %}active{% endif %}">أسبوع</button>
-            <button type="submit" name="range" value="month" class="btn btn-sm btn-outline-primary {% if current_range == 'month' %}active{% endif %}">شهر</button>
-            <button type="submit" name="range" value="year" class="btn btn-sm btn-outline-primary {% if current_range == 'year' %}active{% endif %}">سنة</button>
-        </div>
-        <div class="input-group input-group-sm mt-2">
-            <input type="date" name="start" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
-            <input type="date" name="end" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
-            <button class="btn btn-dark"><i class="fas fa-filter"></i></button>
+    <form method="GET" class="card border border-light shadow-sm p-3 mb-4 bg-white rounded-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            
+            <div class="btn-group shadow-sm w-100 w-md-auto rounded-pill overflow-hidden" role="group">
+                <button type="submit" name="range" value="today" class="btn btn-outline-primary {% if current_range == 'today' %}active fw-bold{% endif %}">{% trans "اليوم" %}</button>
+                <button type="submit" name="range" value="week" class="btn btn-outline-primary {% if current_range == 'week' %}active fw-bold{% endif %}">{% trans "أسبوع" %}</button>
+                <button type="submit" name="range" value="month" class="btn btn-outline-primary {% if current_range == 'month' %}active fw-bold{% endif %}">{% trans "شهر" %}</button>
+                <button type="submit" name="range" value="year" class="btn btn-outline-primary {% if current_range == 'year' %}active fw-bold{% endif %}">{% trans "سنة" %}</button>
+            </div>
+
+            <div class="input-group input-group-sm w-100 w-md-auto shadow-sm rounded-pill overflow-hidden bg-light p-1">
+                <span class="input-group-text bg-transparent text-muted border-0 fw-bold"><small>{% trans "من" %}</small></span>
+                <input type="date" name="start" class="form-control bg-white border-0 rounded-pill" value="{{ start_date|date:'Y-m-d' }}">
+                <span class="input-group-text bg-transparent text-muted border-0 fw-bold"><small>{% trans "إلى" %}</small></span>
+                <input type="date" name="end" class="form-control bg-white border-0 rounded-pill" value="{{ end_date|date:'Y-m-d' }}">
+                <button type="submit" name="range" value="custom" class="btn btn-primary rounded-circle mx-1 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0;"><i class="fas fa-search"></i></button>
+            </div>
         </div>
     </form>
 
-    <!-- 2. الإحصائيات -->
-    <div class="row g-2 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-6">
-            <div class="card border-0 shadow-sm p-3 h-100 bg-primary text-white">
-                <small class="opacity-75">إجمالي المبيعات</small>
-                <h3 class="fw-bold mb-0">{{ total_sales }} <span class="fs-6">ج.م</span></h3>
+            <div class="card border-0 shadow-sm p-3 h-100 rounded-4 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #198754, #20c997);">
+                <i class="fas fa-wallet position-absolute opacity-25" style="font-size: 5rem; left: -15px; bottom: -15px;"></i>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center mx-2" style="width: 35px; height: 35px;">
+                        <i class="fas fa-coins text-white"></i>
+                    </div>
+                    <small class="fw-bold opacity-75" style="font-size: 11px;">{% trans "صافي الإيرادات" %}</small>
+                </div>
+                <h4 class="fw-bold mb-0 mt-1" dir="ltr">{{ total_sales|floatformat:2 }} <span class="fs-6 fw-normal">{{ request.user.country.currency_symbol|default:'ج.م' }}</span></h4>
+                <small class="opacity-75 mt-2 d-block" style="font-size: 9px;">* {% trans "بعد خصم المرتجعات" %}</small>
             </div>
         </div>
+
         <div class="col-6">
-            <div class="card border-0 shadow-sm p-3 h-100 bg-white text-dark">
-                <small class="text-muted">عدد العمليات</small>
-                <h3 class="fw-bold mb-0">{{ total_orders }}</h3>
+            <div class="card border-0 shadow-sm p-3 h-100 rounded-4 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #0d6efd, #0dcaf0);">
+                <i class="fas fa-shopping-bag position-absolute opacity-25" style="font-size: 5rem; left: -15px; bottom: -15px;"></i>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center mx-2" style="width: 35px; height: 35px;">
+                        <i class="fas fa-box-open text-white"></i>
+                    </div>
+                    <small class="fw-bold opacity-75" style="font-size: 11px;">{% trans "الطلبات الناجحة" %}</small>
+                </div>
+                <h4 class="fw-bold mb-0 mt-1">{{ total_orders }} <span class="fs-6 fw-normal opacity-75">{% trans "طلب" %}</span></h4>
+                <small class="opacity-75 mt-2 d-block" style="font-size: 9px;">* {% trans "المكتملة أو الجارية" %}</small>
+            </div>
+        </div>
+
+        <div class="col-6">
+            <div class="card border border-light shadow-sm p-3 h-100 rounded-4 bg-white position-relative overflow-hidden">
+                <i class="fas fa-undo position-absolute opacity-10 text-danger" style="font-size: 5rem; left: -15px; bottom: -15px;"></i>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-2" style="width: 35px; height: 35px;">
+                        <i class="fas fa-reply text-danger"></i>
+                    </div>
+                    <small class="fw-bold text-muted" style="font-size: 11px;">{% trans "عدد المرتجعات" %}</small>
+                </div>
+                <h4 class="fw-bold mb-0 mt-1 text-dark">{{ total_returned_orders|default:"0" }} <span class="fs-6 fw-normal text-muted">{% trans "طلب" %}</span></h4>
+            </div>
+        </div>
+
+        <div class="col-6">
+            <div class="card border border-light shadow-sm p-3 h-100 rounded-4 bg-white position-relative overflow-hidden">
+                <i class="fas fa-hand-holding-usd position-absolute opacity-10 text-danger" style="font-size: 5rem; left: -15px; bottom: -15px;"></i>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-2" style="width: 35px; height: 35px;">
+                        <i class="fas fa-money-bill-wave text-danger"></i>
+                    </div>
+                    <small class="fw-bold text-muted" style="font-size: 11px;">{% trans "قيمة المرتجعات" %}</small>
+                </div>
+                <h4 class="fw-bold mb-0 mt-1 text-dark" dir="ltr">{{ total_returned_value|default:"0"|floatformat:2 }} <span class="fs-6 fw-normal text-muted">{{ request.user.country.currency_symbol|default:'ج.م' }}</span></h4>
             </div>
         </div>
     </div>
 
-    <!-- 3. الرسم البياني -->
-    <div class="card border-0 shadow-sm p-3 mb-4 rounded-4">
-        <h6 class="fw-bold mb-3 text-primary">تحليل الأداء</h6>
-        <div style="height: 200px; width: 100%;">
+    <div class="card border border-light shadow-sm p-4 mb-4 rounded-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h6 class="fw-bold m-0 text-dark"><i class="fas fa-chart-area text-primary mx-2 fs-5"></i> {% trans "مؤشر المبيعات" %}</h6>
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2">{% trans "أداء الفترة" %}</span>
+        </div>
+        <div style="height: 250px; width: 100%;">
             <canvas id="salesChart"></canvas>
         </div>
     </div>
 
-    <!-- 4. المنتجات الأكثر مبيعاً -->
-    <h6 class="fw-bold mb-3 px-1">الأكثر مبيعاً (Top 5)</h6>
-    <div class="list-group shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+        <h6 class="fw-bold m-0 text-dark"><i class="fas fa-star text-warning mx-2"></i> {% trans "الأكثر مبيعاً" %} (Top 5)</h6>
+    </div>
+    
+    <div>
         {% for p in top_products %}
-        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-            <div>
-                <span class="fw-bold text-dark d-block">{{ p.product_size__product__name }}</span>
-                <small class="text-muted">{{ p.total_qty }} قطعة مباعة</small>
+        <div class="card border border-light shadow-sm rounded-4 mb-3 bg-white transition-hover">
+            <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="bg-light border text-secondary rounded-circle d-flex align-items-center justify-content-center mx-3 shadow-sm" style="width: 45px; height: 45px; font-weight: bold; font-size: 18px;">
+                        {% if forloop.counter == 1 %}
+                            <i class="fas fa-trophy text-warning"></i>
+                        {% elif forloop.counter == 2 %}
+                            <i class="fas fa-medal text-secondary"></i>
+                        {% elif forloop.counter == 3 %}
+                            <i class="fas fa-award text-danger"></i>
+                        {% else %}
+                            {{ forloop.counter }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <span class="fw-bold text-dark d-block mb-1 text-truncate" style="font-size: 14px; max-width: 150px;">{{ p.product_size__product__name }}</span>
+                        <small class="text-muted"><i class="fas fa-shopping-cart mx-1 text-primary" style="font-size: 10px;"></i> {{ p.total_qty }} {% trans "قطعة مباعة" %}</small>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 fw-bold" style="font-size: 12px;" dir="ltr">
+                        {{ p.total_revenue|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:'ج.م' }}</small>
+                    </span>
+                </div>
             </div>
-            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
-                {{ p.total_revenue }} ج.م
-            </span>
         </div>
         {% empty %}
-        <div class="text-center py-4 text-muted small">لا توجد مبيعات في هذه الفترة.</div>
+        <div class="text-center py-5 bg-white rounded-4 shadow-sm border border-light">
+            <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+                <i class="fas fa-box-open fa-3x text-muted opacity-50"></i>
+            </div>
+            <h6 class="text-dark fw-bold">{% trans "لا توجد مبيعات في هذه الفترة" %}</h6>
+            <p class="small text-muted mb-0">{% trans "حاول تغيير نطاق التاريخ من الفلتر أعلاه." %}</p>
+        </div>
         {% endfor %}
     </div>
 
 </div>
 
-<!-- Chart Script -->
+<style>
+    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const labels = JSON.parse('{{ chart_labels|safe }}');
-    const values = JSON.parse('{{ chart_values|safe }}');
+    const labels = {{ chart_labels|safe }};
+    const values = {{ chart_values|safe }};
+    const currencySymbol = '{{ request.user.country.currency_symbol|default:"ج.م"|escapejs }}';
     
     const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    // تدرج لوني أنيق يطابق هوية Elbazaar البرتقالية/الذهبية
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(13, 110, 253, 0.5)');
-    gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)');
+    gradient.addColorStop(0, 'rgba(255, 140, 0, 0.4)'); // برتقالي شفاف
+    gradient.addColorStop(1, 'rgba(255, 140, 0, 0.0)');
 
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'المبيعات',
+                label: '{% trans "الإيرادات" %} (' + currencySymbol + ')',
                 data: values,
-                borderColor: '#0d6efd',
+                borderColor: '#ff8c00', // لون الخط برتقالي
                 backgroundColor: gradient,
+                borderWidth: 3,
                 fill: true,
-                tension: 0.4,
-                pointRadius: 3
+                tension: 0.4, // انحناء ناعم للخط
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#ff8c00',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 14, family: 'Cairo' },
+                    bodyFont: { size: 14, family: 'Cairo' },
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' ' + currencySymbol;
+                        }
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
             scales: {
-                x: { grid: { display: false } },
-                y: { beginAtZero: true, grid: { borderDash: [5, 5] } }
+                x: { 
+                    grid: { display: false },
+                    ticks: { font: { family: 'Cairo' }, color: '#6c757d' }
+                },
+                y: { 
+                    beginAtZero: true, 
+                    grid: { borderDash: [5, 5], color: '#e9ecef' },
+                    ticks: { font: { family: 'Cairo' }, color: '#6c757d' }
+                }
             }
         }
     });

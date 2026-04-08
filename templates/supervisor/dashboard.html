@@ -1,213 +1,290 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}لوحة القيادة{% endblock %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "لوحة القيادة" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "لوحة القيادة" %}{% endblock %}
 
 {% block content %}
+{% trans "ج.م" as default_currency %}
 
-<!-- 1. شريط الإحصائيات العلوي (Top Stats) -->
-<div class="row g-4 mb-4">
-    <!-- المبيعات اليومية -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm p-3 h-100 position-relative overflow-hidden text-white" 
-             style="background: linear-gradient(135deg, #667eea, #764ba2);">
-            <div class="position-absolute top-0 end-0 p-3 opacity-25">
-                <i class="fas fa-chart-line fa-3x"></i>
-            </div>
-            <h6 class="opacity-75 mb-2">مبيعات اليوم</h6>
-            <h3 class="fw-bold mb-0">{{ sales_today }} <span class="fs-6">ج.م</span></h3>
-            <small class="mt-2 d-block opacity-75">
-                <i class="fas fa-calendar-day me-1"></i> {{ now|date:"d M Y" }}
-            </small>
-        </div>
-    </div>
+<div class="container-fluid p-0">
 
-    <!-- مبيعات الشهر -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-primary">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-muted fw-bold">مبيعات الشهر</h6>
-                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2">
-                    <i class="fas fa-calendar-alt"></i>
+    {% if request.user.is_superuser or request.user.role == 'OWNER' or request.user|has_perm:'finance' %}
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card border-0 rounded-4 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                <div class="card-body p-4 position-relative text-white">
+                    <i class="fas fa-wallet position-absolute" style="font-size: 5rem; opacity: 0.1; left: -10px; bottom: -10px;"></i>
+                    <h6 class="fw-bold mb-1 opacity-75">{% trans "مبيعات اليوم" %}</h6>
+                    <h2 class="fw-bolder mb-0 display-5">{{ sales_today|default:"0.00" }} <span class="fs-6 opacity-75">{{ request.user.country.currency_symbol|default:default_currency }}</span></h2>
+                    <div class="mt-3 text-white-50 small fw-bold">
+                        <i class="fas fa-calendar-day me-1"></i> {{ now|date:"d M Y" }}
+                    </div>
                 </div>
             </div>
-            <h3 class="fw-bold text-dark mb-0">{{ sales_month }} <span class="fs-6 text-muted">ج.م</span></h3>
         </div>
-    </div>
-
-    <!-- الطلبات الجديدة -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-warning">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-muted fw-bold">طلبات جديدة</h6>
-                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2">
-                    <i class="fas fa-shopping-bag"></i>
+        
+        <div class="col-12 col-md-6">
+            <div class="card border-0 rounded-4 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <div class="card-body p-4 position-relative text-white">
+                    <i class="fas fa-chart-line position-absolute" style="font-size: 5rem; opacity: 0.1; left: -10px; bottom: -10px;"></i>
+                    <h6 class="fw-bold mb-1 opacity-75">{% trans "إجمالي مبيعات الشهر" %}</h6>
+                    <h2 class="fw-bolder mb-0 display-5">{{ sales_month|default:"0.00" }} <span class="fs-6 opacity-75">{{ request.user.country.currency_symbol|default:default_currency }}</span></h2>
+                    <div class="mt-3 text-white-50 small fw-bold">
+                        <i class="fas fa-check-circle me-1"></i> {% trans "الطلبات المؤكدة والمسلمة" %}
+                    </div>
                 </div>
             </div>
-            <h3 class="fw-bold text-dark mb-0">{{ pending_orders }}</h3>
-            <a href="{% url 'super_all_orders' %}" class="small text-warning text-decoration-none stretched-link">عرض التفاصيل</a>
         </div>
     </div>
+    {% endif %}
 
-        <!-- في قسم أدوات التحكم أو كرت منفصل -->
-    <div class="card border-0 shadow-sm p-3 mb-4 bg-white">
-        <h6 class="fw-bold mb-2 text-primary">دعوة تاجر جديد</h6>
-        <div class="input-group">
-            <input type="text" id="merchantLink" class="form-control form-control-sm bg-light" readonly
-                value="{{ request.scheme }}://{{ request.get_host }}{% url 'merchant_signup' %}">
-            <button class="btn btn-dark btn-sm" onclick="copyMerchantLink()">
-                <i class="fas fa-copy me-1"></i> نسخ
-            </button>
+    {% if request.user.is_superuser or request.user.role == 'OWNER' or request.user|has_perm:'merchants' %}
+    <div class="card border-0 shadow-sm p-3 mb-4 rounded-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h6 class="fw-bold mb-1 text-primary"><i class="fas fa-user-plus me-1"></i> {% trans "دعوة تاجر جديد" %}</h6>
+                <small class="text-muted">{% trans "انسخ الرابط وأرسله للتاجر للتسجيل مباشرة في سوقك." %}</small>
+            </div>
+            <div class="input-group" style="max-width: 400px; flex-wrap: nowrap;">
+                <input type="text" id="merchantLink" class="form-control form-control-sm bg-light border-0 px-3" readonly
+                    value="{{ request.scheme }}://{{ request.get_host }}{% url 'merchant_signup' %}">
+                <button class="btn btn-dark btn-sm px-3 fw-bold" onclick="copyMerchantLink()">
+                    <i class="fas fa-copy me-1"></i> {% trans "نسخ" %}
+                </button>
+            </div>
         </div>
-        <div class="form-text small text-success" id="copyMsg" style="display: none;">تم نسخ الرابط! أرسله للتاجر.</div>
+        <div class="form-text small text-success fw-bold mt-2" id="copyMsg" style="display: none;">
+            <i class="fas fa-check-circle me-1"></i> {% trans "تم نسخ الرابط! أرسله للتاجر الآن." %}
+        </div>
+    </div>
+    {% endif %}
+
+    <h6 class="fw-bold text-dark mb-3"><i class="fas fa-tasks text-primary me-2"></i> {% trans "مهام تتطلب المراجعة" %}</h6>
+    <div class="row g-3 mb-4">
+        
+        {% if request.user.is_superuser or request.user.role == 'OWNER' or request.user|has_perm:'orders' %}
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{% url 'super_all_orders' %}?status=PENDING" class="text-decoration-none">
+                <div class="card border-0 rounded-4 shadow-sm h-100 text-center p-3 transition-hover">
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2" style="width: 50px; height: 50px; font-size: 20px;">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <h4 class="fw-bolder text-dark mb-0">{{ pending_orders }}</h4>
+                    <span class="text-muted small fw-bold">{% trans "طلبات جديدة" %}</span>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+
+        {% if request.user.is_superuser or request.user.role == 'OWNER' or request.user|has_perm:'products' %}
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{% url 'super_pending_products' %}" class="text-decoration-none">
+                <div class="card border-0 rounded-4 shadow-sm h-100 text-center p-3 transition-hover">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2" style="width: 50px; height: 50px; font-size: 20px;">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h4 class="fw-bolder text-dark mb-0">{{ pending_products }}</h4>
+                    <span class="text-muted small fw-bold">{% trans "منتجات معلقة" %}</span>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+
+        {% if request.user.is_superuser or request.user.role == 'OWNER' or request.user|has_perm:'merchants' %}
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{% url 'super_pending_merchants' %}" class="text-decoration-none">
+                <div class="card border-0 rounded-4 shadow-sm h-100 text-center p-3 transition-hover">
+                    <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2" style="width: 50px; height: 50px; font-size: 20px;">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <h4 class="fw-bolder text-dark mb-0">{{ new_merchants }}</h4>
+                    <span class="text-muted small fw-bold">{% trans "متاجر للمراجعة" %}</span>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+
+        {% if request.user.is_superuser or request.user.role == 'OWNER' or request.user|has_perm:'finance' %}
+        <div class="col-6 col-md-4 col-xl-3">
+            <a href="{% url 'super_pending_deposits' %}" class="text-decoration-none">
+                <div class="card border-0 rounded-4 shadow-sm h-100 text-center p-3 transition-hover">
+                    <div class="bg-info bg-opacity-10 text-info rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2" style="width: 50px; height: 50px; font-size: 20px;">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <h4 class="fw-bolder text-dark mb-0">{{ pending_deposits }}</h4>
+                    <span class="text-muted small fw-bold">{% trans "إيداعات معلقة" %}</span>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+
+        {% if request.user.is_superuser or request.user.role == 'OWNER' or request.user|has_perm:'support' %}
+        <div class="col-12 col-md-4 col-xl-3">
+            <a href="{% url 'super_support_tickets' %}?status=OPEN" class="text-decoration-none">
+                <div class="card border-0 rounded-4 shadow-sm h-100 text-center p-3 transition-hover">
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2" style="width: 50px; height: 50px; font-size: 20px;">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h4 class="fw-bolder text-dark mb-0">{{ open_tickets_count }}</h4>
+                    <span class="text-muted small fw-bold">{% trans "تذاكر مفتوحة" %}</span>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+
     </div>
 
-    <!-- تجار للتفعيل -->
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-info">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-muted fw-bold">تجار جدد</h6>
-                <div class="bg-info bg-opacity-10 text-info rounded-circle p-2">
-                    <i class="fas fa-store"></i>
+    <div class="row g-4">
+        
+        <div class="col-12 col-xl-7">
+            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white">
+                <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+                    <h6 class="fw-bold text-dark m-0"><i class="fas fa-chart-area text-primary me-2"></i> {% trans "أداء المبيعات (آخر 7 أيام)" %}</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div style="height: 300px; width: 100%;">
+                        <canvas id="salesChart"></canvas>
+                    </div>
                 </div>
             </div>
-            <h3 class="fw-bold text-dark mb-0">{{ new_merchants }}</h3>
-            <a href="{% url 'super_pending_merchants' %}" class="small text-info text-decoration-none stretched-link">تفعيل الآن</a>
         </div>
-    </div>
-</div>
 
-<!-- 2. الرسم البياني والمهام -->
-<div class="row g-4 mb-4">
-    <!-- Chart -->
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm p-4 h-100 rounded-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h6 class="fw-bold text-dark"><i class="fas fa-chart-area me-2 text-primary"></i> أداء المبيعات (آخر 7 أيام)</h6>
-                <button class="btn btn-sm btn-light border"><i class="fas fa-sync-alt"></i></button>
-            </div>
-            <div style="height: 300px; width: 100%;">
-                <canvas id="salesChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Tasks -->
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm p-4 h-100 rounded-4">
-            <h6 class="fw-bold mb-4">مهام تتطلب انتباهك</h6>
-            <div class="list-group list-group-flush">
-                
-                <a href="{% url 'super_pending_products' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <i class="fas fa-box text-danger me-2"></i> منتجات للمراجعة
+        <div class="col-12 col-xl-5">
+            <div class="card border-0 rounded-4 shadow-sm h-100 bg-white overflow-hidden">
+                <div class="card-header bg-white border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark m-0"><i class="fas fa-shopping-bag text-primary me-2"></i> {% trans "أحدث الطلبات الواردة" %}</h6>
+                    <a href="{% url 'super_all_orders' %}" class="btn btn-sm btn-light rounded-pill fw-bold px-3 border">{% trans "عرض الكل" %}</a>
+                </div>
+                <div class="card-body p-0 mt-3" style="max-height: 350px; overflow-y: auto;">
+                    {% for order in recent_orders %}
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-light hover-bg-light transition-hover px-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center text-primary" style="width: 42px; height: 42px;">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div>
+                                <a href="{% url 'super_order_detail' order.order_id %}" class="fw-bold text-dark text-decoration-none d-block mb-1">#{{ order.order_id }}</a>
+                                <small class="text-muted d-block"><i class="far fa-user me-1"></i> {{ order.customer.first_name|default:order.customer.username }}</small>
+                                <small class="text-muted" style="font-size: 10px;"><i class="far fa-clock me-1"></i> {{ order.created_at|timesince }}</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="d-block fw-bolder text-dark mb-1">{{ order.final_total }} <span class="fw-normal fs-6 text-muted">{{ request.user.country.currency_symbol|default:default_currency }}</span></span>
+                            <span class="badge 
+                                {% if order.status == 'DELIVERED' %}bg-success-subtle text-success
+                                {% elif order.status == 'PENDING' %}bg-warning-subtle text-warning
+                                {% elif order.status == 'CANCELLED' or order.status == 'RETURNED' %}bg-danger-subtle text-danger
+                                {% else %}bg-info-subtle text-info{% endif %} 
+                                rounded-pill" style="font-size: 11px;">
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
                     </div>
-                    <span class="badge bg-danger rounded-pill">{{ pending_products }}</span>
-                </a>
-
-                <a href="{% url 'super_pending_deposits' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <i class="fas fa-wallet text-success me-2"></i> طلبات إيداع
+                    {% empty %}
+                    <div class="p-5 text-center text-muted">
+                        <i class="fas fa-inbox mb-3 fs-1 opacity-25"></i>
+                        <h6 class="fw-bold">{% trans "لا توجد طلبات حديثة" %}</h6>
+                        <p class="mb-0 small">{% trans "لم يتم تسجيل أي طلبات في المتجر بعد." %}</p>
                     </div>
-                    <span class="badge bg-success rounded-pill">{{ pending_deposits }}</span>
-                </a>
-
-                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <i class="fas fa-headset text-info me-2"></i> تذاكر مفتوحة
-                    </div>
-                    <span class="badge bg-info rounded-pill">0</span> <!-- (يمكنك ربطها لاحقاً) -->
-                </a>
-
+                    {% endfor %}
+                </div>
             </div>
         </div>
+
     </div>
+
 </div>
 
-<!-- 3. أحدث الطلبات -->
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-header bg-white py-3">
-        <h6 class="fw-bold m-0">أحدث الطلبات الواردة</h6>
-    </div>
-    <div class="table-responsive">
-        <table class="table align-middle mb-0">
-            <thead class="bg-light">
-                <tr>
-                    <th class="ps-4">رقم الطلب</th>
-                    <th>العميل</th>
-                    <th>القيمة</th>
-                    <th>الحالة</th>
-                    <th>التاريخ</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for order in recent_orders %}
-                <tr>
-                    <td class="ps-4 fw-bold text-primary">#{{ order.order_id }}</td>
-                    <td>{{ order.customer.first_name }}</td>
-                    <td class="fw-bold">{{ order.final_total }}</td>
-                    <td>
-                        <span class="badge bg-light text-dark border">{{ order.get_status_display }}</span>
-                    </td>
-                    <td class="text-muted small">{{ order.created_at|timesince }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="text-center py-4">لا توجد طلبات.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-3px); }
+    .hover-bg-light:hover { background-color: #f8fafc !important; }
+</style>
+{% endblock %}
 
-
-<!-- Scripts -->
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script>
-function copyMerchantLink() {
-    var copyText = document.getElementById("merchantLink");
-    copyText.select();
-    copyText.setSelectionRange(0, 99999); 
-    navigator.clipboard.writeText(copyText.value);
-    
-    document.getElementById("copyMsg").style.display = "block";
-    setTimeout(() => { document.getElementById("copyMsg").style.display = "none"; }, 3000);
-}
-</script>
-<script>
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    
-    // بيانات من جانجو
-    const labels = JSON.parse('{{ chart_labels|safe }}');
-    const data = JSON.parse('{{ chart_data|safe }}');
+{{ chart_labels|json_script:"labelsData" }}
+{{ chart_data|json_script:"valuesData" }}
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(102, 126, 234, 0.5)');
-    gradient.addColorStop(1, 'rgba(118, 75, 162, 0.0)');
+<script>
+    // 1. سكريبت النسخ الخاص برابط التاجر
+    function copyMerchantLink() {
+        var copyText = document.getElementById("merchantLink");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); 
+        navigator.clipboard.writeText(copyText.value);
+        
+        document.getElementById("copyMsg").style.display = "block";
+        setTimeout(() => { document.getElementById("copyMsg").style.display = "none"; }, 4000);
+    }
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'المبيعات',
-                data: data,
-                borderColor: '#667eea',
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
-                x: { grid: { display: false } }
+    // تجهيز النص المترجم للرسم البياني
+    const msgTotalSales = '{% trans "إجمالي المبيعات" %}';
+
+    // 2. سكريبت الرسم البياني العصري
+    document.addEventListener("DOMContentLoaded", function() {
+        const labels = JSON.parse(document.getElementById('labelsData').textContent);
+        const data = JSON.parse(document.getElementById('valuesData').textContent);
+
+        const canvas = document.getElementById('salesChart');
+        if (!canvas) return; 
+        
+        const ctx = canvas.getContext('2d');
+        
+        // عمل تدرج لوني جميل تحت الخط
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); // أزرق شفاف
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: msgTotalSales,
+                    data: data,
+                    borderColor: '#3b82f6',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#3b82f6',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4 // انحناء ناعم للخط
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleFont: { family: 'Cairo', size: 13 },
+                        bodyFont: { family: 'Cairo', size: 14, weight: 'bold' },
+                        padding: 10,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { font: { family: 'Cairo' }, color: '#94a3b8' }
+                    },
+                    y: {
+                        grid: { color: '#f1f5f9', borderDash: [5, 5], drawBorder: false },
+                        ticks: { 
+                            font: { family: 'Cairo' }, 
+                            color: '#94a3b8',
+                            beginAtZero: true
+                        }
+                    }
+                }
             }
-        }
+        });
     });
 </script>
-
 {% endblock %}

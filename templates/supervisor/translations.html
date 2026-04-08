@@ -1,0 +1,121 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load i18n %}
+
+{% block page_title %}{% trans "لوحة المترجمات الشاملة" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold"><i class="fas fa-language text-primary me-2"></i> {% trans "لوحة المترجمات الشاملة" %}</h4>
+        <span class="badge bg-secondary p-2">English / Arabic</span>
+    </div>
+
+    <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" data-bs-toggle="pill" data-bs-target="#categories" type="button"><i class="fas fa-tags me-1"></i> {% trans "الأقسام" %}</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" data-bs-toggle="pill" data-bs-target="#govs" type="button"><i class="fas fa-map-marker-alt me-1"></i> {% trans "المحافظات" %}</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" data-bs-toggle="pill" data-bs-target="#terms" type="button"><i class="fas fa-file-contract me-1"></i> {% trans "الشروط والأحكام" %}</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" data-bs-toggle="pill" data-bs-target="#about" type="button"><i class="fas fa-info-circle me-1"></i> {% trans "من نحن" %}</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+        
+        <div class="tab-pane fade show active" id="categories" role="tabpanel">
+            <div class="row g-3">
+                {% for item in categories %}
+                <div class="col-md-6">
+                    <form method="POST" class="card p-3 shadow-sm border-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="model_name" value="Category">
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        
+                        <h6 class="text-muted small">{% trans "النص الأصلي (عربي)" %}</h6>
+                        <p class="fw-bold mb-3 border-bottom pb-2">{{ item.name_ar|default:item.name }}</p>
+                        
+                        <label class="form-label text-primary fw-bold small">{% trans "الترجمة (English)" %}</label>
+                        <div class="input-group">
+                            <input type="text" name="name_en" class="form-control text-start" dir="ltr" value="{{ item.name_en|default:'' }}" placeholder="{% trans 'Type translation here...' %}">
+                            <button class="btn btn-primary" type="submit">{% trans "حفظ" %}</button>
+                        </div>
+                    </form>
+                </div>
+                {% empty %}
+                <div class="alert alert-light text-center">{% trans "لا توجد أقسام حالياً." %}</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="govs" role="tabpanel">
+            <div class="row g-3">
+                {% for item in governorates %}
+                <div class="col-md-4">
+                    <form method="POST" class="card p-3 shadow-sm border-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="model_name" value="Governorate">
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        
+                        <p class="fw-bold mb-2">{{ item.name_ar|default:item.name }}</p>
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="name_en" class="form-control text-start" dir="ltr" value="{{ item.name_en|default:'' }}" placeholder="{% trans 'English Name' %}">
+                            <button class="btn btn-primary" type="submit"><i class="fas fa-check"></i></button>
+                        </div>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="terms" role="tabpanel">
+            {% for item in terms %}
+            <form method="POST" class="card p-4 shadow-sm border-0 mb-3">
+                {% csrf_token %}
+                <input type="hidden" name="model_name" value="TermsAndCondition">
+                <input type="hidden" name="item_id" value="{{ item.id }}">
+                
+                <div class="row">
+                    <div class="col-md-6 border-end">
+                        <h6 class="text-muted fw-bold">{% trans "النص العربي" %}</h6>
+                        <input type="text" class="form-control mb-2 bg-light" value="{{ item.title_ar|default:item.title }}" readonly>
+                        <textarea class="form-control bg-light" rows="4" readonly>{{ item.content_ar|default:item.content }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary fw-bold">{% trans "English Translation" %}</h6>
+                        <input type="text" name="title_en" class="form-control mb-2 text-start" dir="ltr" value="{{ item.title_en|default:'' }}" placeholder="{% trans 'English Title' %}">
+                        <textarea name="content_en" class="form-control text-start" dir="ltr" rows="4" placeholder="{% trans 'English Content...' %}">{{ item.content_en|default:'' }}</textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-dark mt-3 w-25 mx-auto">{% trans "حفظ الترجمة" %}</button>
+            </form>
+            {% endfor %}
+        </div>
+
+        <div class="tab-pane fade" id="about" role="tabpanel">
+            {% for item in about_us %}
+            <form method="POST" class="card p-4 shadow-sm border-0 mb-3">
+                {% csrf_token %}
+                <input type="hidden" name="model_name" value="AboutUs">
+                <input type="hidden" name="item_id" value="{{ item.id }}">
+                
+                <h6 class="text-muted fw-bold">{% trans "النص العربي" %}</h6>
+                <div class="p-3 bg-light rounded mb-3" style="max-height: 150px; overflow-y: auto;">
+                    {{ item.content_ar|default:item.content }}
+                </div>
+
+                <h6 class="text-primary fw-bold">{% trans "English Translation" %}</h6>
+                <textarea name="content_en" class="form-control text-start mb-3" dir="ltr" rows="6" placeholder="{% trans 'English Translation...' %}">{{ item.content_en|default:'' }}</textarea>
+                
+                <button type="submit" class="btn btn-dark w-100">{% trans "حفظ تحديث صفحة من نحن" %}</button>
+            </form>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

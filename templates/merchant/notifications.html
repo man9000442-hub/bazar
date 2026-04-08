@@ -1,0 +1,72 @@
+{% extends 'merchant/base_merchant.html' %}
+{% load i18n %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block title %}{% trans "الإشعارات | لوحة التاجر" %}{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 mt-2 bg-white p-3 rounded-4 shadow-sm border border-light sticky-top" style="top: 10px; z-index: 1020;">
+    <div class="d-flex align-items-center">
+        <a href="javascript:history.back()" class="btn btn-light rounded-circle p-2 mx-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="fas fa-arrow-{% if LANGUAGE_BIDI %}right{% else %}left{% endif %} text-dark"></i>
+        </a>
+        <h5 class="m-0 fw-bold text-dark">{% trans "الإشعارات 🔔" %}</h5>
+    </div>
+    {% comment %} {% if notifications %}
+    <form action="{% url 'mark_all_read' %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm text-primary fw-bold border-0 bg-transparent">{% trans "تحديد الكل كمقروء" %}</button>
+    </form>
+    {% endif %} {% endcomment %}
+</div>
+
+<div class="container pb-5">
+    {% if notifications %}
+        <div class="list-group shadow-sm border-0 rounded-4 overflow-hidden mb-5">
+            {% for notification in notifications %}
+            <div class="list-group-item list-group-item-action border-bottom p-3 {% if not notification.is_read %}bg-light border-start border-primary border-4{% endif %}" style="transition: 0.3s;">
+                <div class="d-flex align-items-start">
+                    
+                    <div class="rounded-circle d-flex align-items-center justify-content-center mx-3 shadow-sm" 
+                         style="width: 45px; height: 45px; flex-shrink: 0; 
+                         {% if 'طلب' in notification.title or 'Order' in notification.title %} background-color: #e3f2fd; color: #1976d2; 
+                         {% elif 'رصيد' in notification.title or 'سحب' in notification.title or 'Wallet' in notification.title %} background-color: #e8f5e9; color: #388e3c;
+                         {% else %} background-color: #fff3e0; color: #f57c00; {% endif %}">
+                        <i class="fas {% if 'طلب' in notification.title or 'Order' in notification.title %}fa-shopping-basket{% elif 'رصيد' in notification.title or 'سحب' in notification.title or 'Wallet' in notification.title %}fa-wallet{% else %}fa-bell{% endif %}"></i>
+                    </div>
+                    
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0 fw-bold text-dark" style="font-size: 0.95rem;">{% trans notification.title %}</h6>
+                            <small class="text-muted" style="font-size: 0.75rem;" dir="ltr">{{ notification.created_at|timesince }}</small>
+                        </div>
+                        <p class="mb-0 text-muted" style="font-size: 0.85rem; line-height: 1.5;">{% trans notification.message %}</p>
+                    </div>
+                    
+                    {% if not notification.is_read %}
+                    <span class="mx-2 mt-2 p-1 bg-primary border border-light rounded-circle" style="width: 8px; height: 8px;"></span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5 mt-5">
+            <div class="bg-light d-inline-flex align-items-center justify-content-center rounded-circle mb-4 shadow-sm" style="width: 100px; height: 100px;">
+                <i class="fas fa-bell-slash fa-3x text-muted opacity-50"></i>
+            </div>
+            <h5 class="fw-bold text-dark">{% trans "لا توجد إشعارات حالياً" %}</h5>
+            <p class="text-muted small">{% trans "سنقوم بإخطارك عند حدوث أي نشاط جديد في متجرك" %}</p>
+            <a href="{% url 'merchant_dashboard' %}" class="btn text-white fw-bold rounded-pill px-5 py-2 mt-3 shadow-sm" style="background: linear-gradient(90deg, #ff8c00, #ffb347);">
+                {% trans "العودة للرئيسية" %}
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .bg-light { background-color: #f8f9fa !important; }
+    .list-group-item:hover { background-color: #f1f3f5 !important; }
+</style>
+{% endblock %}

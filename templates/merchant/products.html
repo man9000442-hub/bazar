@@ -1,86 +1,83 @@
-{% extends 'base.html' %}
+{% extends 'merchant/base_merchant.html' %}
+{% load i18n %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block title %}{% trans "منتجاتي | لوحة التاجر" %}{% endblock %}
 
 {% block content %}
 
-<!-- Header -->
-<div class="bg-white p-3 border-bottom shadow-sm d-flex justify-content-between align-items-center sticky-top">
-    <div class="d-flex align-items-center">
-        <a href="{% url 'merchant_dashboard' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-        <h5 class="m-0 fw-bold">منتجاتي ({{ products.count }})</h5>
+<div class="d-flex align-items-center mb-4 mt-2 bg-white p-3 rounded-4 shadow-sm border border-light sticky-top" style="top: 10px; z-index: 1020;">
+    <a href="{% url 'merchant_dashboard' %}" class="btn btn-light rounded-circle p-2 mx-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+        <i class="fas fa-arrow-{% if LANGUAGE_BIDI %}right{% else %}left{% endif %} text-dark"></i>
+    </a>
+    <div class="flex-grow-1">
+        <h5 class="m-0 fw-bold text-dark">{% trans "منتجاتي 🛍️" %}</h5>
+        <p class="text-muted small mb-0">{{ products.count }} {% trans "منتج متاح" %}</p>
     </div>
-    <a href="{% url 'merchant_add_product' %}" class="btn btn-sm btn-primary-app px-3 fw-bold shadow-sm">
-        <i class="fas fa-plus me-1"></i> جديد
+    <a href="{% url 'merchant_add_product' %}" class="btn text-white rounded-pill px-3 py-2 shadow-sm fw-bold d-flex align-items-center" style="background: linear-gradient(90deg, #ff8c00, #ffb347); font-size: 12px;">
+        <i class="fas fa-plus mx-1"></i> {% trans "جديد" %}
     </a>
 </div>
 
-<div class="container py-3 mb-5">
+<div class="container pb-5 mb-5">
     <div class="row g-3">
         {% for product in products %}
         <div class="col-12">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="row g-0">
-                    <!-- صورة المنتج -->
-                    <div class="col-3 bg-light d-flex align-items-center justify-content-center position-relative">
+            <div class="card border border-light shadow-sm bg-white rounded-4 overflow-hidden transition-hover">
+                <div class="d-flex p-2 align-items-center">
+                    
+                    <div class="position-relative flex-shrink-0">
                         {% if product.image %}
-                            <img src="{{ product.image.url }}" style="width: 100%; height: 100px; object-fit: cover;">
+                            <img src="{{ product.image.url }}" class="rounded-3 shadow-sm border border-light" style="width: 90px; height: 90px; object-fit: cover;">
                         {% else %}
-                            <i class="fas fa-camera text-muted opacity-50"></i>
+                            <div class="rounded-3 shadow-sm border border-light bg-light d-flex align-items-center justify-content-center" style="width: 90px; height: 90px;">
+                                <i class="fas fa-box-open text-muted opacity-50 fa-2x"></i>
+                            </div>
                         {% endif %}
                         
-                        <!-- Badge للعرض النشط -->
                         {% if product.active_offer and product.active_offer.is_active %}
-                            <span class="badge bg-danger position-absolute top-0 start-0 m-1 rounded-pill" style="font-size: 8px;">
+                            <span class="badge bg-danger position-absolute top-0 start-0 m-1 rounded-pill shadow-sm" style="font-size: 10px;" dir="ltr">
                                 -{{ product.active_offer.discount_percentage }}%
                             </span>
                         {% endif %}
                     </div>
                     
-                    <!-- تفاصيل المنتج -->
-                    <div class="col-9">
-                        <div class="card-body p-2 h-100 d-flex flex-column justify-content-center">
+                    <div class="flex-grow-1 px-3 d-flex flex-column justify-content-between h-100" style="min-height: 90px;">
+                        
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="fw-bold text-dark mb-0 lh-sm text-truncate" style="max-width: 140px; font-size: 14px;">{{ product.name }}</h6>
                             
-                            <!-- العنوان والحالة -->
-                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 130px;">{{ product.name }}</h6>
-                                
-                                {% if product.is_active %}
-                                    <span class="badge bg-success-subtle text-success rounded-pill border border-success-subtle" style="font-size: 9px;">نشط</span>
-                                {% else %}
-                                    <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill border border-warning-subtle" style="font-size: 9px;">مراجعة</span>
-                                {% endif %}
-                            </div>
+                            {% if product.is_active %}
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 border border-success border-opacity-25" style="font-size: 9px;">{% trans "نشط" %}</span>
+                            {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-2 border border-warning border-opacity-25" style="font-size: 9px;">{% trans "مراجعة" %}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-1" dir="ltr" style="text-align: {% if LANGUAGE_BIDI %}right{% else %}left{% endif %};">
+                            {% if product.active_offer and product.active_offer.is_active %}
+                                <span class="text-danger fw-bold small mx-1">{{ product.active_offer.discounted_price|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:'ج.م' }}</small></span>
+                                <span class="text-muted text-decoration-line-through" style="font-size: 10px;">{{ product.base_price|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="text-primary fw-bold small">{{ product.base_price|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:'ج.م' }}</small></span>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-auto pt-1 border-top border-light">
+                            <small class="text-muted text-truncate" style="font-size: 10px; max-width: 80px;"><i class="fas fa-tags mx-1 opacity-50"></i>{{ product.category.name }}</small>
                             
-                            <!-- السعر -->
-                            <div class="d-flex align-items-center mb-2">
-                                {% if product.active_offer and product.active_offer.is_active %}
-                                    <span class="text-danger fw-bold small me-2">{{ product.active_offer.discounted_price|floatformat:0 }} ج.م</span>
-                                    <span class="text-muted text-decoration-line-through small" style="font-size: 10px;">{{ product.base_price }}</span>
-                                {% else %}
-                                    <span class="text-primary fw-bold small">{{ product.base_price }} ج.م</span>
-                                {% endif %}
-                            </div>
-
-                            <!-- أزرار التحكم الجديدة -->
-                            <div class="d-flex justify-content-between align-items-center mt-auto">
-                                <small class="text-muted" style="font-size: 10px;">{{ product.category.name }}</small>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'merchant_add_offer' product.id %}" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center {% if product.active_offer %}btn-warning text-dark{% else %}btn-outline-warning text-warning{% endif %}" style="width: 28px; height: 28px;" title="{% trans 'إدارة العروض' %}">
+                                    <i class="fas fa-tag" style="font-size: 11px;"></i>
+                                </a>
                                 
-                                <div class="d-flex gap-2">
-                                    <!-- زر إضافة/تعديل عرض -->
-                                    <a href="{% url 'merchant_add_offer' product.id %}" class="btn btn-sm btn-light border text-warning px-2 py-0 rounded-pill d-flex align-items-center" style="font-size: 11px;">
-                                        <i class="fas fa-tag me-1"></i> 
-                                        {% if product.active_offer %}تعديل{% else %}عرض{% endif %}
-                                    </a>
-                                    
-                                    <!-- زر تعديل المنتج -->
-                                    <a href="{% url 'merchant_edit_product' product.id %}" class="btn btn-sm btn-light border text-primary px-2 py-0 rounded-pill">
-                                        <i class="fas fa-pen"></i>
-                                    </a>
+                                <a href="{% url 'merchant_edit_product' product.id %}" class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="{% trans 'تعديل' %}">
+                                    <i class="fas fa-pen" style="font-size: 11px;"></i>
+                                </a>
 
-                                    <!-- زر الحذف -->
-                                    <a href="{% url 'merchant_delete_product' product.id %}" class="btn btn-sm btn-light border text-danger px-2 py-0 rounded-pill" onclick="return confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                </div>
+                                <a href="{% url 'merchant_delete_product' product.id %}" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" onclick="return confirm('{% trans "هل أنت متأكد من حذف هذا المنتج نهائياً؟" %}');" title="{% trans 'حذف' %}">
+                                    <i class="fas fa-trash" style="font-size: 11px;"></i>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -88,24 +85,30 @@
             </div>
         </div>
         {% empty %}
-        <div class="text-center py-5 mt-4">
-            <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
-                <i class="fas fa-box-open fa-2x text-muted opacity-50"></i>
+        <div class="col-12">
+            <div class="text-center py-5 bg-white rounded-4 shadow-sm border border-light mt-2">
+                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center p-4 mb-3" style="width: 90px; height: 90px;">
+                    <i class="fas fa-box-open fa-2x text-muted opacity-50"></i>
+                </div>
+                <h6 class="fw-bold text-dark">{% trans "لا توجد منتجات بعد" %}</h6>
+                <p class="small text-muted mb-4 px-4">{% trans "ابدأ بإضافة منتجاتك الأولى لتبدأ رحلة المبيعات الخاصة بك!" %}</p>
+                <a href="{% url 'merchant_add_product' %}" class="btn text-white px-4 py-2 fw-bold shadow-sm rounded-pill" style="background: linear-gradient(90deg, #ff8c00, #ffb347);">
+                    <i class="fas fa-plus mx-1"></i> {% trans "إضافة منتج جديد" %}
+                </a>
             </div>
-            <h6 class="fw-bold text-muted">لا توجد منتجات</h6>
-            <p class="small text-muted mb-4">ابدأ بإضافة منتجاتك لتبدأ البيع</p>
-            <a href="{% url 'merchant_add_product' %}" class="btn btn-primary-app px-4 fw-bold shadow-sm">
-                إضافة منتج جديد
-            </a>
         </div>
         {% endfor %}
     </div>
 </div>
 
-<!-- زر عائم للإضافة -->
-<a href="{% url 'merchant_add_product' %}" class="btn btn-primary-app rounded-circle shadow-lg d-flex align-items-center justify-content-center position-fixed" 
-   style="width: 50px; height: 50px; bottom: 80px; left: 20px; z-index: 999;">
-    <i class="fas fa-plus text-white"></i>
+<a href="{% url 'merchant_add_product' %}" class="btn text-white rounded-circle shadow-lg d-flex align-items-center justify-content-center position-fixed transition-hover" 
+   style="width: 55px; height: 55px; bottom: 90px; {% if LANGUAGE_BIDI %}left: 20px;{% else %}right: 20px;{% endif %} z-index: 999; background: linear-gradient(135deg, #ff8c00, #ffb347);">
+    <i class="fas fa-plus fs-4"></i>
 </a>
+
+<style>
+    .transition-hover { transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+</style>
 
 {% endblock %}

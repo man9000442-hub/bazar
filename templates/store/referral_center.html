@@ -1,33 +1,131 @@
 {% extends 'base.html' %}
-{% block content %}
-<div class="container py-5">
-    <div class="card shadow-sm border-0 p-4 text-center mb-4">
-        <h5 class="fw-bold text-primary mb-3">كود الدعوة الخاص بك</h5>
-        <div class="bg-light p-3 rounded border border-dashed d-flex justify-content-between align-items-center">
-            <h3 class="m-0 fw-bold letter-spacing-2" id="myCode">{{ request.user.referral_code }}</h3>
-            <button class="btn btn-sm btn-outline-primary" onclick="copyCode()">نسخ</button>
+{% load i18n %} {% block content %}
+
+<style>
+    .dark-header {
+        background-color: var(--dark-bg, #091024);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .dark-card {
+        background-color: var(--dark-surface, #121d3a);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .gold-text {
+        color: var(--gold-accent, #ffc107) !important;
+    }
+    .text-muted-dark {
+        color: #8fa0c1 !important;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: #000;
+        border: none;
+        transition: 0.3s;
+    }
+    .btn-gold:hover {
+        transform: scale(0.98);
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+
+    /* تصميم صندوق الكود */
+    .code-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 2px dashed rgba(255, 193, 7, 0.4);
+        border-radius: 16px;
+        transition: 0.3s;
+    }
+    .code-box:hover {
+        background: rgba(255, 193, 7, 0.05);
+        border-color: rgba(255, 193, 7, 0.8);
+    }
+
+    /* حقل الإدخال الداكن */
+    .dark-input {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+    }
+    .dark-input:focus {
+        border-color: var(--gold-accent, #ffc107) !important;
+        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.15) !important;
+    }
+    .dark-input::placeholder { color: #6c7c9c !important; }
+</style>
+
+<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-4 sticky-top" style="z-index: 1020;">
+    <a href="javascript:history.back()" class="text-white me-3 text-decoration-none">
+        <i class="fas fa-arrow-right fs-5"></i>
+    </a>
+    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "برنامج الإحالة" %} <span class="gold-text"><i class="fas fa-gift ms-1"></i></span></h5>
+</div>
+
+<div class="container pb-5 mb-5" style="min-height: 80vh;">
+
+    <div class="card dark-card shadow-lg border-0 p-4 text-center mb-4 rounded-4 position-relative overflow-hidden">
+        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: radial-gradient(circle at top right, rgba(255,193,7,0.15), transparent 60%); pointer-events: none;"></div>
+
+        <i class="fas fa-wallet fa-3x gold-text mb-3 position-relative z-1" style="filter: drop-shadow(0 0 10px rgba(255,193,7,0.4));"></i>
+        <h6 class="text-white mb-2 position-relative z-1">{% trans "رصيد الإحالة المتاح" %}</h6>
+        <h1 class="fw-bold gold-text mb-0 position-relative z-1" style="text-shadow: 0 2px 5px rgba(0,0,0,0.5);">
+            {{ request.user.referral_balance }} <span class="fs-5">{% trans "ج.م" %}</span>
+        </h1>
+        <p class="small text-muted-dark mt-2 mb-0 position-relative z-1">{% trans "يمكنك استخدامه كخصم إضافي عند إتمام طلبك القادم." %}</p>
+    </div>
+
+    <div class="card dark-card shadow-lg border-0 p-4 text-center mb-4 rounded-4">
+        <h5 class="fw-bold text-white mb-2">{% trans "كود الدعوة الخاص بك" %}</h5>
+        <p class="text-muted-dark small mb-4">{% trans "شارك الكود مع أصدقائك، وسيحصل كل منكم على رصيد مجاني عند تسجيلهم وإتمام أول طلب!" %}</p>
+
+        <div class="code-box p-3 d-flex justify-content-between align-items-center mb-2">
+            <h2 class="m-0 fw-bold gold-text ps-2" id="myCode" style="letter-spacing: 4px;">{{ request.user.referral_code }}</h2>
+            <button id="copyBtn" class="btn bg-white rounded-circle shadow-sm d-flex justify-content-center align-items-center transition-all" style="width: 45px; height: 45px; color: var(--dark-surface);" onclick="copyCode()">
+                <i class="fas fa-copy fs-5"></i>
+            </button>
         </div>
-        <p class="text-muted small mt-2">شارك الكود واحصل على رصيد مجاني!</p>
-        <h4 class="fw-bold text-success mt-3">رصيدك الحالي: {{ request.user.referral_balance }} ج.م</h4>
     </div>
 
     {% if is_eligible %}
-    <div class="card shadow-sm border-0 p-4 bg-warning-subtle">
-        <h6 class="fw-bold text-dark mb-3">هل لديك كود دعوة من صديق؟</h6>
-        <p class="small">لديك مهلة {{ grace_hours }} ساعة فقط لإدخاله.</p>
-        <form method="POST" class="d-flex gap-2">
+    <div class="card dark-card shadow-lg border-0 p-4 rounded-4 mb-4" style="background: rgba(255,193,7,0.03); border: 1px solid rgba(255,193,7,0.2) !important;">
+        <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle p-2 me-3" style="background: rgba(255,193,7,0.1);">
+                <i class="fas fa-user-friends fs-4 gold-text"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold text-white mb-1">{% trans "لديك كود دعوة من صديق؟" %}</h6>
+                <p class="small text-muted-dark mb-0">
+                    {% blocktrans with hours=grace_hours %}أدخله الآن للحصول على رصيدك (مهلة {{ hours }} ساعة){% endblocktrans %}
+                </p>
+            </div>
+        </div>
+
+        <form method="POST" class="d-flex gap-2 mt-2">
             {% csrf_token %}
-            <input type="text" name="code" class="form-control" placeholder="أدخل الكود هنا" required>
-            <button class="btn btn-dark">تفعيل</button>
+            <input type="text" name="code" class="form-control dark-input rounded-pill px-4 text-center" placeholder="{% trans 'أدخل الكود هنا' %}" required style="letter-spacing: 2px; font-weight: bold;">
+            <button type="submit" class="btn btn-gold rounded-pill px-4 fw-bold shadow-sm">{% trans "تفعيل" %}</button>
         </form>
     </div>
     {% endif %}
+
 </div>
 
 <script>
 function copyCode() {
+    // نسخ النص
     navigator.clipboard.writeText(document.getElementById('myCode').innerText);
-    alert("تم النسخ!");
+    
+    // تغيير شكل الزر لإعطاء إحساس بالنجاح
+    const btn = document.getElementById('copyBtn');
+    const originalHTML = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fas fa-check fs-5" style="color: #4ade80;"></i>';
+    btn.style.transform = 'scale(1.1)';
+    
+    // إرجاع الزر لشكله الأصلي بعد ثانيتين
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.style.transform = 'scale(1)';
+    }, 2000);
 }
 </script>
+
 {% endblock %}

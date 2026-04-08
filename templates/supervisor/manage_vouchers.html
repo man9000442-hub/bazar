@@ -1,0 +1,242 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load i18n supervisor_tags %}
+{% block head_title %}{% trans "عروض العملاء (VIP) | Elbazaar" %}{% endblock %}
+{% block page_title %}{% trans "إدارة العروض المخصصة للعملاء" %}{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-gift text-danger me-2"></i> {% trans "قسائم الخصم الخاصة (Vouchers)" %}</h5>
+            <small class="text-muted">{% trans "إصدار هدايا وخصومات مخصصة لعملاء محددين كتعويض أو مكافأة." %}</small>
+        </div>
+        <button type="button" class="btn btn-danger shadow-sm rounded-3 px-4 fw-bold d-block d-xl-none" data-bs-toggle="modal" data-bs-target="#addVoucherModalMobile">
+            <i class="fas fa-magic me-1"></i> {% trans "إصدار قسيمة جديدة" %}
+        </button>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-12 col-xl-4 d-none d-xl-block">
+            <div class="card p-4 shadow-sm border-0 rounded-4 sticky-top bg-white" style="top: 90px;">
+                <h6 class="fw-bold mb-4 text-danger pb-2 border-bottom border-light"><i class="fas fa-magic me-2"></i> {% trans "إنشاء قسيمة جديدة" %}</h6>
+                
+                <form method="POST" action="{% url 'super_manage_vouchers' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">{% trans "العميل المستهدف (ابحث بالاسم أو الهاتف)" %} <span class="text-danger">*</span></label>
+                        <select name="customer_id" class="form-select bg-light border-0 py-2 select2-desktop" required>
+                            <option value="">{% trans "ابحث عن العميل..." %}</option>
+                            {% for c in customers %}
+                                <option value="{{ c.id }}">{{ c.first_name }} {{ c.last_name|default:"" }} ({{ c.phone_primary }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">{% trans "عنوان رسالة الهدية للعميل" %} <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2 fw-bold text-dark" value="هدية خاصة لك من إدارة بازرنا" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">{% trans "كود الخصم (للاستخدام السري)" %} <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-white border-0 text-danger"><i class="fas fa-ticket-alt"></i></span>
+                            <input type="text" name="code" class="form-control bg-white border-0 text-uppercase text-center fw-bolder text-danger fs-5 py-2" value="{{ suggested_code }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">{% trans "نسبة الخصم" %} <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" name="discount_percentage" class="form-control bg-light border-0 fw-bold text-center" value="10" min="0" max="100" required>
+                                <span class="input-group-text bg-light border-0 text-muted fw-bold">%</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">{% trans "أقصى خصم" %} <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" name="max_discount_amount" class="form-control bg-light border-0 fw-bold text-center" value="50" min="0" required>
+                                <span class="input-group-text bg-light border-0 text-muted fw-bold">{{ request.user.country.currency_symbol|default:"ج" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">{% trans "رصيد القطع المسموحة" %} <span class="text-danger">*</span></label>
+                            <input type="number" name="remaining_items" class="form-control bg-light border-0 fw-bold text-center" value="3" min="1" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">{% trans "تاريخ الانتهاء" %} <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="expires_at" class="form-control bg-light border-0" style="font-size: 12px;" required>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-4 p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 d-flex align-items-center justify-content-between">
+                        <label class="form-check-label fw-bold small text-success m-0" for="freeShipToggle">{% trans "تضمين شحن مجاني للطلب" %} <i class="fas fa-truck ms-1"></i></label>
+                        <input class="form-check-input m-0" type="checkbox" id="freeShipToggle" name="free_shipping" style="transform: scale(1.2);">
+                    </div>
+
+                    <button type="submit" class="btn btn-danger w-100 py-3 fw-bold rounded-4 shadow-sm d-flex justify-content-center align-items-center gap-2">
+                        <i class="fas fa-paper-plane"></i> {% trans "إصدار وإرسال الهدية للعميل" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-8">
+            <div class="row g-3">
+                {% for v in vouchers %}
+                <div class="col-12 col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white overflow-hidden position-relative">
+                        
+                        <div class="position-absolute top-0 bottom-0 start-0" style="width: 5px; background-color: {% if v.is_used %}#64748b{% else %}#ef4444{% endif %};"></div>
+
+                        <div class="card-body p-4 ms-2">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="fw-bolder text-danger m-0 mb-1 font-monospace">{{ v.code }}</h5>
+                                    <span class="text-muted small"><i class="fas fa-user me-1"></i> {{ v.customer.first_name }} {{ v.customer.last_name|default:"" }}</span>
+                                </div>
+                                <div class="text-end">
+                                    {% if v.is_used %}
+                                        <span class="badge bg-secondary shadow-sm rounded-pill px-3 py-2">{% trans "نفد الرصيد / مستخدمة" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger shadow-sm rounded-pill px-3 py-2"><i class="fas fa-ticket-alt me-1"></i> {% trans "قسيمة نشطة" %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="bg-light rounded-3 p-3 mb-3 border border-light border-dashed">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-dark">{% trans "خصم" %} {{ v.discount_percentage }}%</span>
+                                    <span class="text-muted small">{% trans "أقصى خصم:" %} <span class="fw-bold text-dark">{{ v.max_discount_amount }} {{ request.user.country.currency_symbol|default:"ج" }}</span></span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted small">{% trans "متبقي للاستخدام:" %}</span>
+                                    <span class="fw-bold {% if v.is_used %}text-danger{% else %}text-success{% endif %}">{{ v.remaining_items }} {% trans "قطع" %}</span>
+                                </div>
+                                {% if v.free_shipping %}
+                                    <div class="mt-2 pt-2 border-top border-secondary border-opacity-10 text-center">
+                                        <span class="badge bg-success-subtle text-success w-100 py-1"><i class="fas fa-truck-moving me-1"></i> {% trans "يشمل شحن مجاني" %}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted" style="font-size: 11px;"><i class="far fa-clock me-1"></i> {% trans "تنتهي:" %} {{ v.expires_at|date:"d M Y - h:i A" }}</span>
+                                <a href="{% url 'super_delete_voucher' v.id %}" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 35px; height: 35px;" onclick="return confirm('{% trans "هل أنت متأكد من حذف وإلغاء هذه القسيمة من العميل نهائياً؟" %}')" title="{% trans "حذف القسيمة" %}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                        <i class="fas fa-ticket-alt text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                        <h5 class="text-dark fw-bold">{% trans "لا توجد قسائم مُصدرة" %}</h5>
+                        <p class="text-muted small mb-0">{% trans "لم تقم بإصدار أي هدايا أو عروض مخصصة للعملاء حتى الآن." %}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addVoucherModalMobile" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-magic me-2"></i> {% trans "إصدار قسيمة جديدة" %}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'super_manage_vouchers' %}" class="modal-body p-4 text-start">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">{% trans "العميل المستهدف" %} <span class="text-danger">*</span></label>
+                    <select name="customer_id" class="form-select bg-light border-0 py-2 select2-mobile" style="width: 100%;" required>
+                        <option value="">{% trans "ابحث عن العميل..." %}</option>
+                        {% for c in customers %}
+                            <option value="{{ c.id }}">{{ c.first_name }} {{ c.last_name|default:"" }} ({{ c.phone_primary }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">{% trans "عنوان الهدية" %}</label>
+                    <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2 fw-bold" value="هدية خاصة لك من إدارة بازرنا" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">{% trans "كود الخصم" %}</label>
+                    <input type="text" name="code" class="form-control bg-light border-0 text-center fw-bold text-danger py-2" value="{{ suggested_code }}" required>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-muted">{% trans "نسبة الخصم %" %}</label>
+                        <input type="number" name="discount_percentage" class="form-control bg-light border-0 text-center fw-bold" value="10" min="0" max="100" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-muted">{% trans "أقصى خصم" %}</label>
+                        <input type="number" name="max_discount_amount" class="form-control bg-light border-0 text-center fw-bold" value="50" min="0" required>
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-muted">{% trans "عدد القطع" %}</label>
+                        <input type="number" name="remaining_items" class="form-control bg-light border-0 text-center fw-bold" value="3" min="1" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-muted">{% trans "ينتهي في" %}</label>
+                        <input type="datetime-local" name="expires_at" class="form-control bg-light border-0" style="font-size: 11px;" required>
+                    </div>
+                </div>
+                <div class="form-check form-switch mb-4 p-2 bg-success bg-opacity-10 rounded-3 d-flex align-items-center justify-content-between">
+                    <label class="form-check-label fw-bold small text-success m-0" for="freeShipToggleMobile">{% trans "تضمين شحن مجاني" %}</label>
+                    <input class="form-check-input m-0" type="checkbox" id="freeShipToggleMobile" name="free_shipping" style="transform: scale(1.2);">
+                </div>
+                <button type="submit" class="btn btn-danger w-100 py-3 fw-bold rounded-4 shadow-sm">
+                    <i class="fas fa-paper-plane me-1"></i> {% trans "إصدار وإرسال الهدية" %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // تهيئة محرك البحث للكمبيوتر
+        $('.select2-desktop').select2({
+            placeholder: "{% trans 'ابحث عن العميل بالاسم أو رقم الهاتف...' %}",
+            allowClear: true,
+            language: { noResults: function () { return "{% trans 'لم يتم العثور على عميل مطابق' %}"; } }
+        });
+        
+        // تهيئة محرك البحث داخل المودال للموبايل (يحتاج لتحديد الـ dropdownParent لكي لا يظهر خلف المودال)
+        $('.select2-mobile').select2({
+            dropdownParent: $('#addVoucherModalMobile'),
+            placeholder: "{% trans 'ابحث عن العميل...' %}",
+            allowClear: true,
+            language: { noResults: function () { return "{% trans 'لا توجد نتائج' %}"; } }
+        });
+    });
+</script>
+
+<style>
+    .border-dashed { border-style: dashed !important; }
+    /* تحسين Select2 ليتماشى مع تصميم البوتستراب 5 */
+    .select2-container .select2-selection--single { height: 40px !important; border: none !important; background-color: transparent !important; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 40px !important; font-weight: bold; color: #1e293b !important; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 38px !important; }
+</style>
+{% endblock %}

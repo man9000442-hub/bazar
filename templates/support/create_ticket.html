@@ -1,32 +1,74 @@
 {% extends 'base.html' %}
-{% block content %}
-<div class="container py-4">
-    <h5 class="fw-bold mb-4">إنشاء تذكرة جديدة</h5>
+{% load i18n %} {% block content %}
+{% trans "ج.م" as default_currency %}
+
+<div class="container py-5" style="max-width: 700px;">
     
-    <form method="POST" class="card border-0 shadow-sm p-4">
+    <div class="d-flex align-items-center mb-4 gap-3">
+        <a href="javascript:history.back()" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+            <i class="fas fa-arrow-right text-dark"></i>
+        </a>
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-headset text-primary me-2"></i> {% trans "إنشاء تذكرة دعم جديدة" %}</h5>
+            <small class="text-muted">{% trans "نحن هنا لمساعدتك! يرجى توضيح مشكلتك وسنقوم بالرد عليك في أقرب وقت." %}</small>
+        </div>
+    </div>
+
+    <form method="POST" class="card border-0 shadow-sm rounded-4 overflow-hidden">
         {% csrf_token %}
         
-        <div class="mb-3">
-            <label class="form-label small">الموضوع</label>
-            <input type="text" name="subject" class="form-control" required placeholder="مثلاً: مشكلة في الطلب #123">
-        </div>
+        <div class="card-body p-4 p-md-5">
+            
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-muted">{% trans "موضوع التذكرة" %} <span class="text-danger">*</span></label>
+                <div class="input-group shadow-sm rounded-3">
+                    <span class="input-group-text bg-light border-0 text-primary"><i class="fas fa-edit"></i></span>
+                    <input type="text" name="subject" class="form-control bg-light border-0 py-2 fw-bold text-dark" required placeholder="{% trans 'مثلاً: استفسار عن الطلب #123' %}">
+                </div>
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label small">طلب متعلق (اختياري)</label>
-            <select name="order_id" class="form-select">
-                <option value="">-- اختر طلب --</option>
-                {% for order in orders %}
-                <option value="{{ order.id }}">#{{ order.order_id }} - {{ order.final_total }} ج.م</option>
-                {% endfor %}
-            </select>
-        </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-muted">{% trans "طلب متعلق (اختياري)" %}</label>
+                <div class="input-group shadow-sm rounded-3">
+                    <span class="input-group-text bg-light border-0 text-secondary"><i class="fas fa-shopping-bag"></i></span>
+                    <select name="order_id" class="form-select bg-light border-0 py-2 fw-bold text-dark">
+                        <option value="">-- {% trans "بدون طلب محدد / استفسار عام" %} --</option>
+                        {% for order in orders %}
+                        <option value="{{ order.id }}">
+                            {% trans "الطلب" %} #{{ order.order_id }} - {{ order.final_total }} {{ request.user.country.currency_symbol|default:default_currency }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
 
-        <div class="mb-4">
-            <label class="form-label small">التفاصيل</label>
-            <textarea name="message" class="form-control" rows="5" required placeholder="اشرح مشكلتك بالتفصيل..."></textarea>
-        </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-muted">{% trans "تفاصيل المشكلة أو الاستفسار" %} <span class="text-danger">*</span></label>
+                <textarea name="message" class="form-control bg-light border-0 shadow-sm rounded-4 p-3 text-dark custom-textarea" rows="6" required placeholder="{% trans 'اشرح مشكلتك أو استفسارك بالتفصيل لمساعدتنا في الرد عليك بشكل أسرع وأدق...' %}"></textarea>
+            </div>
 
-        <button type="submit" class="btn btn-primary-app w-100 fw-bold">إرسال</button>
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-3 rounded-3 shadow-sm d-flex justify-content-center align-items-center gap-2 transition-hover">
+                <i class="fas fa-paper-plane"></i> {% trans "إرسال التذكرة" %}
+            </button>
+            
+        </div>
     </form>
 </div>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-3px); filter: brightness(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    
+    /* تحسين حقل النص ليكون مريح في الكتابة */
+    .custom-textarea { 
+        line-height: 1.8; 
+        font-size: 14px; 
+        resize: vertical; 
+        transition: all 0.3s ease;
+    }
+    .custom-textarea:focus { 
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important; 
+        background-color: #fff !important; 
+    }
+</style>
 {% endblock %}

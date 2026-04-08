@@ -1,53 +1,119 @@
-{% extends 'base.html' %}
+{% extends 'supervisor/base_supervisor.html' %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "إطلاق عرض منصة" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "إنشاء عرض منصة (Platform Offer)" %}{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="card shadow p-4 border-0">
-        <h5 class="fw-bold mb-3 text-primary">إنشاء عرض منصة (Platform Offer) 🏷️</h5>
-        <p class="text-muted small">هذا العرض مدعوم من المنصة. سيتم تعويض التاجر عن فرق السعر تلقائياً.</p>
+<div class="container-fluid p-0 d-flex justify-content-center">
+    
+    <div class="w-100" style="max-width: 650px;">
         
-        <form method="POST">
-            {% csrf_token %}
+        <div class="d-flex align-items-center mb-4 gap-3">
+            <a href="javascript:history.back()" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-arrow-right text-dark"></i>
+            </a>
+            <div>
+                <h5 class="fw-bold text-dark m-0"><i class="fas fa-tags text-danger me-2"></i> {% trans "إطلاق عرض منصة حصري" %}</h5>
+                <small class="text-muted">{% trans "هذا العرض ممول من المنصة، سيتم تعويض التاجر تلقائياً عن أي خصومات." %}</small>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
             
-            <div class="mb-3">
-                <label class="form-label">اختر المنتج</label>
-                <select name="product_id" class="form-select select2" required>
-                    <option value="">بحث عن منتج...</option>
-                    {% for p in products %}
-                    <option value="{{ p.id }}">{{ p.name }} - {{ p.base_price }} ج.م ({{ p.merchant.user.first_name }})</option>
-                    {% endfor %}
-                </select>
+            <div class="bg-primary px-4 py-3 text-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="fas fa-rocket me-1"></i> {% trans "إعدادات العرض الجديد" %}</span>
             </div>
 
-            <div class="row">
-                <div class="col-6 mb-3">
-                    <label class="form-label">نسبة الخصم (%)</label>
-                    <input type="number" name="percentage" class="form-control" min="1" max="100" required>
+            <form method="POST" class="card-body p-4">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-muted">{% trans "اختر المنتج المستهدف" %} <span class="text-danger">*</span></label>
+                    <div class="input-group shadow-sm rounded-3">
+                        <span class="input-group-text bg-light border-0 text-primary"><i class="fas fa-box-open"></i></span>
+                        <select name="product_id" class="form-select bg-light border-0 py-2 fw-bold text-dark select2" required>
+                            <option value="">-- {% trans "ابحث عن منتج لاختياره" %} --</option>
+                            {% for p in products %}
+                                <option value="{{ p.id }}">{{ p.name }} - {{ p.base_price }} {{ request.user.country.currency_symbol|default:"ج.م" }} ({% trans "متجر:" %} {{ p.merchant.user.first_name }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div class="col-6 mb-3">
-                    <label class="form-label">المدة (أيام)</label>
-                    <input type="number" name="days" class="form-control" value="3" required>
+
+                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom border-light"><i class="fas fa-percentage text-danger me-2"></i> {% trans "قيمة الخصم والمدة" %}</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold small text-muted">{% trans "نسبة الخصم المراد تطبيقها" %}</label>
+                        <div class="input-group shadow-sm rounded-3">
+                            <input type="number" name="percentage" class="form-control bg-light border-0 py-2 fw-bold text-danger fs-5 text-center" min="0" max="100" value="0">
+                            <span class="input-group-text bg-danger text-white border-0 fw-bold"><i class="fas fa-percent"></i></span>
+                        </div>
+                        <div class="form-text small text-muted mt-2"><i class="fas fa-info-circle me-1"></i> {% trans "أدخل 0 إذا كنت تريد تقديم شحن مجاني فقط." %}</div>
+                    </div>
+                    
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold small text-muted">{% trans "مدة العرض" %}</label>
+                        <div class="input-group shadow-sm rounded-3">
+                            <input type="number" name="days" class="form-control bg-light border-0 py-2 fw-bold text-dark fs-5 text-center" value="3" min="1" required>
+                            <span class="input-group-text bg-light border-0 text-muted fw-bold">{% trans "أيام" %}</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <!-- داخل الفورم -->
-            <hr class="my-3">
-            <h6 class="fw-bold text-success mb-3"><i class="fas fa-truck me-2"></i> شحن مجاني (مدعوم)</h6>
 
-            <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" name="free_shipping" id="freeShip">
-                <label class="form-check-label" for="freeShip">تفعيل الشحن المجاني</label>
-            </div>
+                <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-success m-0"><i class="fas fa-shipping-fast me-2"></i> {% trans "دعم الشحن المجاني" %}</h6>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" name="free_shipping" id="freeShipToggle" style="transform: scale(1.3); cursor: pointer;" onchange="toggleThreshold()">
+                        </div>
+                    </div>
 
-            <div class="input-group mb-3">
-                <span class="input-group-text">بشرط شراء</span>
-                <input type="number" name="threshold" class="form-control" value="1" min="1">
-                <span class="input-group-text">قطع</span>
-            </div>
-            <div class="form-text text-muted small">
-                * في حالة تفعيل هذا الخيار، سيتم تعويض التاجر عن قيمة الشحن بالكامل.
-            </div>
+                    <p class="small text-success opacity-75 fw-bold mb-3">{% trans "تفعيل هذا الخيار يعني أن المنصة ستتحمل تكلفة الشحن بالكامل بدلاً من العميل." %}</p>
 
-            <button type="submit" class="btn btn-gold w-100 fw-bold">إطلاق العرض 🚀</button>
-        </form>
+                    <div id="thresholdBox" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
+                        <label class="form-label fw-bold small text-success">{% trans "الشرط (الحد الأدنى للقطع)" %}</label>
+                        <div class="input-group shadow-sm rounded-3">
+                            <span class="input-group-text bg-white border-0 text-success fw-bold">{% trans "شراء" %}</span>
+                            <input type="number" name="threshold" id="thresholdInput" class="form-control border-0 py-2 fw-bold text-center" value="1" min="1" tabindex="-1">
+                            <span class="input-group-text bg-white border-0 text-success fw-bold">{% trans "قطع فأكثر" %}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm fs-5 d-flex justify-content-center align-items-center gap-2 transition-hover" onclick="return confirm('{% trans "تأكيد: هل أنت متأكد من إطلاق هذا العرض؟ سيتم تطبيقه فوراً على المنصة." %}')">
+                    <i class="fas fa-rocket"></i> {% trans "إطلاق العرض وتفعيله" %}
+                </button>
+                
+            </form>
+        </div>
     </div>
 </div>
+
+<script>
+    function toggleThreshold() {
+        const toggle = document.getElementById('freeShipToggle');
+        const box = document.getElementById('thresholdBox');
+        const input = document.getElementById('thresholdInput');
+        
+        if (toggle.checked) {
+            box.style.opacity = '1';
+            box.style.pointerEvents = 'auto';
+            input.removeAttribute('tabindex');
+        } else {
+            box.style.opacity = '0.5';
+            box.style.pointerEvents = 'none';
+            input.setAttribute('tabindex', '-1');
+        }
+    }
+    
+    document.addEventListener("DOMContentLoaded", toggleThreshold);
+</script>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-3px); filter: brightness(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    
+    .select2-container .select2-selection--single { height: 42px !important; border: none !important; background-color: transparent !important; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 42px !important; font-weight: bold; color: #1e293b !important; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px !important; }
+</style>
 {% endblock %}

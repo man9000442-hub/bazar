@@ -1,175 +1,153 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}إدارة الأعضاء{% endblock %}
+{% load i18n supervisor_tags %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block head_title %}{% trans "إدارة الأعضاء | Elbazaar" %}{% endblock %}
+{% block page_title %}{% trans "إدارة المستخدمين والأعضاء" %}{% endblock %}
 
 {% block content %}
+<div class="container-fluid p-0">
 
-<!-- 1. شريط البحث والفلترة -->
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-body p-3">
-        <form class="row g-2 align-items-center" method="GET">
-            <div class="col-12 col-md-5">
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                    <input type="text" name="q" class="form-control border-start-0" placeholder="بحث بالاسم، الهاتف، أو الإيميل..." value="{{ request.GET.q }}">
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <select name="role" class="form-select">
-                    <option value="">كل الأدوار</option>
-                    <option value="CUSTOMER" {% if request.GET.role == 'CUSTOMER' %}selected{% endif %}>عملاء</option>
-                    <option value="MERCHANT" {% if request.GET.role == 'MERCHANT' %}selected{% endif %}>تجار</option>
-                    <option value="ADMIN_LVL3" {% if request.GET.role == 'ADMIN_LVL3' %}selected{% endif %}>مشرفين</option>
-                </select>
-            </div>
-            <div class="col-6 col-md-2">
-                <select name="status" class="form-select">
-                    <option value="">كل الحالات</option>
-                    <option value="active">نشط</option>
-                    <option value="banned">محظور</option>
-                </select>
-            </div>
-            <div class="col-12 col-md-2">
-                <button class="btn btn-primary w-100 fw-bold">تصفية النتائج</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- 2. عرض الجدول (للشاشات الكبيرة) -->
-<div class="d-none d-md-block">
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4">المستخدم</th>
-                        <th>الدور</th>
-                        <th>الحالة</th>
-                        <th>النشاط</th>
-                        <th>تاريخ الانضمام</th>
-                        <th class="text-end pe-4">إجراءات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in users %}
-                    <tr>
-                        <td class="ps-4">
-                            <div class="d-flex align-items-center">
-                                <img src="https://ui-avatars.com/api/?name={{ u.first_name }}+{{ u.last_name }}&background=random&size=128" 
-                                     class="rounded-circle me-3 border" width="40" height="40">
-                                <div>
-                                    <div class="fw-bold text-dark">{{ u.first_name }} {{ u.last_name }}</div>
-                                    <div class="small text-muted">{{ u.phone_primary }}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            {% if u.role == 'MERCHANT' %}
-                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">تاجر</span>
-                            {% elif u.role == 'CUSTOMER' %}
-                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill">عميل</span>
-                            {% else %}
-                                <span class="badge bg-dark-subtle text-dark-emphasis border border-dark-subtle rounded-pill">مشرف</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if u.is_banned %}
-                                <span class="badge bg-danger rounded-pill"><i class="fas fa-ban me-1"></i> محظور</span>
-                            {% elif u.is_active %}
-                                <span class="badge bg-success rounded-pill"><i class="fas fa-check me-1"></i> نشط</span>
-                            {% else %}
-                                <span class="badge bg-secondary rounded-pill">غير مفعل</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <small class="text-muted d-block">
-                                {% if u.role == 'MERCHANT' %}
-                                    {{ u.merchant_profile.products.count }} منتج
-                                {% else %}
-                                    {{ u.orders.count }} طلب
-                                {% endif %}
-                            </small>
-                        </td>
-                        <td class="text-muted small">{{ u.date_joined|date:"d M Y" }}</td>
-                        <td class="text-end pe-4">
-                            <div class="btn-group">
-                                <a href="{% url 'super_user_edit' u.id %}" class="btn btn-sm btn-light border" title="تعديل"><i class="fas fa-pen text-primary"></i></a>
-                                
-                                {% if u.is_banned %}
-                                    <a href="{% url 'super_ban_user' u.id %}?action=unban" class="btn btn-sm btn-success text-white fw-bold px-3" title="فك الحظر">فك</a>
-                                {% else %}
-                                    <a href="{% url 'super_ban_user' u.id %}?action=ban" class="btn btn-sm btn-light border text-danger" title="حظر" onclick="return confirm('حظر هذا المستخدم؟')"><i class="fas fa-ban"></i></a>
-                                {% endif %}
-                                
-                                <button class="btn btn-sm btn-light border" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                    <li><a class="dropdown-item small" href="#">سجل النشاط</a></li>
-                                    <li><a class="dropdown-item small text-danger" href="{% url 'super_user_delete' u.id %}" onclick="return confirm('حذف نهائي؟')">حذف الحساب</a></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="6" class="text-center py-5 text-muted">لا توجد نتائج مطابقة.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-users text-primary mx-2"></i> {% trans "سجل الأعضاء" %}</h5>
+            <small class="text-muted">{% trans "ابحث وأدر جميع حسابات العملاء، التجار، والمشرفين." %}</small>
         </div>
     </div>
-</div>
 
-<!-- 3. عرض الكروت (للموبايل فقط) -->
-<div class="d-md-none">
-    {% for u in users %}
-    <div class="card border-0 shadow-sm mb-3 rounded-4 overflow-hidden position-relative">
-        <!-- شريط ملون حسب الدور -->
-        <div class="position-absolute top-0 start-0 bottom-0 width-5px 
-            {% if u.role == 'MERCHANT' %}bg-warning{% elif u.role == 'CUSTOMER' %}bg-info{% else %}bg-dark{% endif %}" 
-            style="width: 5px;"></div>
-            
-        <div class="card-body p-3 ps-4">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="d-flex align-items-center">
-                    <img src="https://ui-avatars.com/api/?name={{ u.first_name }}+{{ u.last_name }}&background=random&size=128" 
-                         class="rounded-circle me-3 border" width="45" height="45">
-                    <div>
-                        <h6 class="fw-bold mb-0 text-dark">{{ u.first_name }} {{ u.last_name }}</h6>
-                        <small class="text-muted d-block" style="font-size: 11px;">{{ u.phone_primary }}</small>
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-3">
+            <form class="row g-2 align-items-center" method="GET">
+                <div class="col-12 col-lg-5">
+                    <div class="input-group shadow-sm rounded-3">
+                        <span class="input-group-text bg-light border-0 px-3 rounded-end-3"><i class="fas fa-search text-primary"></i></span>
+                        <input type="text" name="q" value="{{ request.GET.q }}" class="form-control bg-light border-0 rounded-start-3 px-2 fw-bold" placeholder="{% trans 'ابحث بالاسم، أو رقم الهاتف...' %}">
                     </div>
                 </div>
-                
-                <div class="dropdown">
-                    <button class="btn btn-light btn-sm rounded-circle shadow-sm" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v text-muted"></i></button>
-                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
-                        <li><a class="dropdown-item py-2" href="{% url 'super_user_edit' u.id %}">تعديل البيانات</a></li>
-                        <li>
-                            {% if u.is_banned %}
-                                <a class="dropdown-item py-2 text-success" href="{% url 'super_ban_user' u.id %}?action=unban">فك الحظر</a>
-                            {% else %}
-                                <a class="dropdown-item py-2 text-danger" href="{% url 'super_ban_user' u.id %}?action=ban">حظر المستخدم</a>
-                            {% endif %}
-                        </li>
-                    </ul>
+                <div class="col-6 col-lg-3">
+                    <select name="role" class="form-select bg-light border-0 shadow-sm rounded-3 text-dark fw-bold" onchange="this.form.submit()">
+                        <option value="">{% trans "كل الأدوار" %}</option>
+                        <option value="CUSTOMER" {% if request.GET.role == 'CUSTOMER' %}selected{% endif %}>{% trans "عملاء" %}</option>
+                        <option value="MERCHANT" {% if request.GET.role == 'MERCHANT' %}selected{% endif %}>{% trans "تجار" %}</option>
+                    </select>
                 </div>
-            </div>
-            
-            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-light">
-                <div>
-                    <span class="badge bg-light text-dark border me-1">{{ u.get_role_display }}</span>
-                    {% if u.is_banned %}
-                        <span class="badge bg-danger">محظور</span>
-                    {% endif %}
+                <div class="col-6 col-lg-2">
+                    <select name="status" class="form-select bg-light border-0 shadow-sm rounded-3 text-dark fw-bold" onchange="this.form.submit()">
+                        <option value="">{% trans "الحالة" %}</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "نشط" %}</option>
+                        <option value="banned" {% if request.GET.status == 'banned' %}selected{% endif %}>{% trans "محظور" %}</option>
+                    </select>
                 </div>
-                <small class="text-muted" style="font-size: 10px;">انضم: {{ u.date_joined|date:"d/m/Y" }}</small>
-            </div>
+                <div class="col-12 col-lg-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold rounded-3 shadow-sm transition-hover">{% trans "تصفية" %}</button>
+                </div>
+            </form>
         </div>
     </div>
-    {% empty %}
-    <div class="text-center py-5">
-        <i class="fas fa-search fa-3x text-muted opacity-25 mb-3"></i>
-        <p class="text-muted small">لا توجد نتائج.</p>
+
+    <div class="row g-3">
+        {% for u in users %}
+            {% if request.user.is_superuser or not u.is_superuser %}
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card overflow-hidden position-relative">
+                    
+                    <div class="position-absolute top-0 bottom-0 start-0 w-100" style="height: 4px; background-color: {% if u.is_banned %}#ef4444{% elif u.role == 'MERCHANT' %}#f59e0b{% elif u.role == 'CUSTOMER' %}#3b82f6{% else %}#10b981{% endif %};"></div>
+
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-start gap-3 mb-3">
+                            <img src="https://ui-avatars.com/api/?name={{ u.first_name|default:u.username|urlencode }}&background=random&color=fff&bold=true" class="rounded-circle shadow-sm border border-2 border-white" width="55" height="55" alt="{{ u.username }}">
+                            <div class="text-start flex-grow-1 overflow-hidden" style="text-align: {% if LANGUAGE_BIDI %}right{% else %}left{% endif %} !important;">
+                                <h6 class="fw-bold text-dark m-0 mb-1 text-truncate" title="{{ u.first_name }} {{ u.last_name|default:'' }}">
+                                    {{ u.first_name }} {{ u.last_name|default:"" }}
+                                    {% if u.is_superuser %}<i class="fas fa-crown text-warning mx-1" title="{% trans 'المالك' %}"></i>{% endif %}
+                                </h6>
+                                
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    {% if u.role == 'MERCHANT' %}
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 10px;">{% trans "تاجر متجر" %}</span>
+                                    {% elif u.role == 'CUSTOMER' %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 10px;">{% trans "عميل متسوق" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 10px;">{% trans "إدارة / مشرف" %}</span>
+                                    {% endif %}
+                                    
+                                    {% if u.is_banned %}
+                                        <span class="badge bg-danger text-white shadow-sm" style="font-size: 10px;"><i class="fas fa-ban mx-1"></i> {% trans "محظور" %}</span>
+                                    {% elif not u.is_active %}
+                                        <span class="badge bg-secondary text-white shadow-sm" style="font-size: 10px;">{% trans "معطل" %}</span>
+                                    {% endif %}
+
+                                    {% if request.user.role == 'OWNER' and u.country %}
+                                        <span class="badge bg-light text-dark border" style="font-size: 10px;"><i class="fas fa-globe mx-1"></i> {% trans u.country.name %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-light border border-light rounded-3 p-3 mb-0">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted" style="font-size: 12px;"><i class="fas fa-phone-alt text-primary mx-1"></i> {% trans "الدخول:" %}</span>
+                                <span class="fw-bold text-dark" dir="ltr" style="font-size: 12px;">{{ u.phone_primary }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted" style="font-size: 12px;"><i class="far fa-calendar-alt text-success mx-1"></i> {% trans "الانضمام:" %}</span>
+                                <span class="fw-bold text-dark" style="font-size: 12px;" dir="ltr">{{ u.date_joined|date:"d M Y" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between border-top border-secondary border-opacity-10 pt-2 mt-2">
+                                <span class="text-muted" style="font-size: 12px;"><i class="fas fa-chart-line text-warning mx-1"></i> {% trans "النشاط:" %}</span>
+                                
+                                {% if u.role == 'MERCHANT' %}
+                                    {% with p_count=u.merchant_profile.products.count|default:0 %}
+                                    <span class="fw-bold text-warning" style="font-size: 12px;">{% blocktrans count counter=p_count %}{{ counter }} منتج{% plural %}{{ counter }} منتجات{% endblocktrans %}</span>
+                                    {% endwith %}
+                                {% else %}
+                                    {% with o_count=u.orders.count|default:0 %}
+                                    <span class="fw-bold text-primary" style="font-size: 12px;">{% blocktrans count counter=o_count %}{{ counter }} طلب{% plural %}{{ counter }} طلبات{% endblocktrans %}</span>
+                                    {% endwith %}
+                                {% endif %}
+                                </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white border-top border-light p-3 d-flex gap-2">
+                        <a href="{% url 'super_user_edit' u.id %}" class="btn btn-light border flex-grow-1 rounded-3 text-dark fw-bold transition-hover" style="font-size: 12px;">
+                            <i class="fas fa-pen text-primary mx-1"></i> {% trans "تعديل الحساب" %}
+                        </a>
+                        
+                        {% if u.role == 'CUSTOMER' %}
+                            <a href="{% url 'super_customer_profile' u.id %}" class="btn btn-light border flex-grow-1 rounded-3 text-success fw-bold transition-hover" style="font-size: 12px;" title="{% trans 'عرض طلبات هذا العميل' %}">
+                                <i class="fas fa-shopping-bag mx-1"></i> {% trans "الطلبات" %}
+                            </a>
+                        {% endif %}
+
+                        {% if u.is_banned %}
+                            <a href="{% url 'super_ban_user' u.id %}?action=unban" class="btn btn-success text-white fw-bold rounded-3 px-3 shadow-sm transition-hover" title="{% trans 'فك الحظر' %}">{% trans "فك الحظر" %}</a>
+                        {% else %}
+                            <a href="{% url 'super_ban_user' u.id %}?action=ban" class="btn btn-light border text-danger rounded-3 px-3 transition-hover" title="{% trans 'حظر الحساب' %}" onclick="return confirm('{% trans "تأكيد: هل أنت متأكد من حظر هذا المستخدم؟ لن يتمكن من الدخول للمنصة." %}')">
+                                <i class="fas fa-ban"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                <i class="fas fa-users-slash text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                <h5 class="text-dark fw-bold">{% trans "لا توجد نتائج" %}</h5>
+                <p class="text-muted small mb-0">{% trans "جرب البحث بكلمات أخرى أو تغيير الفلاتر المحددة." %}</p>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
+
 </div>
 
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important; filter: brightness(0.98); }
+    .hover-card { transition: all 0.2s ease-in-out; }
+    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
+</style>
 {% endblock %}

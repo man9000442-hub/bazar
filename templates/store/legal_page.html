@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load i18n %} {% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<style>
+  .dark-card {
+    background-color: var(--dark-surface, #121d3a);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .gold-text {
+    color: var(--gold-accent, #ffc107) !important;
+  }
+  .text-muted-dark {
+    color: #8fa0c1 !important;
+  }
+  .text-content-light {
+    color: #e0e6ed; /* لون مريح جداً لقراءة النصوص الطويلة في الدارك مود */
+  }
+  .btn-gold {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    color: #000;
+    border: none;
+    transition: 0.3s;
+  }
+  .btn-gold:hover {
+    transform: scale(0.98);
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+  }
+  .dark-divider {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+  }
+</style>
+
+<div class="container py-5 mb-5" style="min-height: 80vh;">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card dark-card shadow-lg rounded-4 p-4 p-md-5">
+                
+                <div class="text-center mb-5 border-bottom dark-divider pb-4">
+                    <div class="d-inline-flex rounded-circle p-4 mb-3 shadow" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.2);">
+                        <i class="fas fa-file-contract fa-2x gold-text"></i>
+                    </div>
+                    <h3 class="fw-bold text-white" style="letter-spacing: 0.5px;">{{ page_title }}</h3>
+                    <p class="text-muted-dark small mt-2">{% trans "آخر تحديث للبنود:" %} {% now "d F Y" %}</p>
+                </div>
+                
+                <div class="legal-content">
+                    {% for doc in documents %}
+                    <div class="mb-4">
+                        <h5 class="fw-bold gold-text mb-3 d-flex align-items-center">
+                            <span class="badge me-3 shadow-sm" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 193, 7, 0.3); color: var(--gold-accent); padding: 6px 10px;">
+                                {{ forloop.counter }}
+                            </span>
+                            {{ doc.title }}
+                        </h5>
+                        
+                        <div class="text-content-light text-start ps-2" style="line-height: 2.2; font-size: 15px;">
+                            {{ doc.content|linebreaksbr }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x mb-3" style="color: rgba(255, 255, 255, 0.1);"></i>
+                        <h6 class="text-white-50">{% trans "جاري تحديث هذه الصفحة..." %}</h6>
+                        <p class="small text-muted-dark mt-2">{% trans "لم يتم إضافة البنود الخاصة بهذا القسم حتى الآن، يرجى العودة لاحقاً." %}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <hr class="my-5 dark-divider">
+                
+                <div class="text-center mt-5">
+                    <button onclick="window.close()" class="btn btn-gold px-5 py-3 rounded-pill fw-bold shadow-lg">
+                        <i class="fas fa-check-circle me-2"></i> {% trans "إغلاق والعودة" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

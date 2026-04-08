@@ -1,25 +1,86 @@
 {% extends 'base.html' %}
+{% load i18n %} {% block content %}
 
-{% block content %}
-<div class="container py-5">
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-bottom py-3">
-            <h4 class="fw-bold text-primary mb-0">الشروط والأحكام</h4>
+<style>
+    .dark-card {
+        background-color: var(--dark-surface, #121d3a);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+    }
+    .text-muted-dark {
+        color: #8fa0c1 !important;
+    }
+    .gold-text {
+        color: var(--gold-accent, #ffc107) !important;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: #000;
+        border: none;
+        transition: 0.3s;
+    }
+    .btn-gold:hover {
+        transform: scale(0.98);
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+    /* تحسين زر الرجوع ليتماشى مع الدارك مود */
+    .btn-back-dark {
+        background: rgba(255,255,255,0.05); 
+        border: 1px solid rgba(255,255,255,0.1); 
+        color: #fff;
+        transition: 0.3s;
+    }
+    .btn-back-dark:hover {
+        background: rgba(255,255,255,0.15);
+        color: var(--gold-accent);
+    }
+</style>
+
+<div class="container py-5" style="max-width: 850px;">
+    
+    <div class="d-flex align-items-center mb-4 gap-3">
+        <a href="javascript:history.back()" class="btn btn-back-dark shadow-sm rounded-circle d-flex justify-content-center align-items-center" style="width: 42px; height: 42px;">
+            <i class="fas fa-arrow-right"></i>
+        </a>
+        <div>
+            <h4 class="fw-bold text-white m-0"><i class="fas fa-file-contract gold-text me-2"></i> {% trans "الشروط والأحكام" %}</h4>
+            <small class="text-muted-dark">{% trans "يرجى قراءة شروط استخدام المنصة بعناية قبل الموافقة." %}</small>
         </div>
-        <div class="card-body p-4" style="line-height: 1.8; text-align: justify;">
+    </div>
+
+    <div class="card dark-card shadow-lg border-0 overflow-hidden mb-5">
+        <div class="card-body p-4 p-md-5" style="line-height: 1.9; text-align: justify;">
             
             {% for term in terms %}
-                <h5 class="fw-bold mt-4 text-dark">{{ forloop.counter }}. {{ term.title }}</h5>
-                <p class="text-muted">{{ term.content|linebreaksbr }}</p>
+                <div class="mb-4">
+                    <h5 class="fw-bold text-white d-flex align-items-center gap-3 mb-3">
+                        <span class="badge rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 15px; background: var(--gold-gradient); color: #000;">
+                            {{ forloop.counter }}
+                        </span>
+                        {{ term.title }}
+                    </h5>
+                    <p class="text-muted-dark ms-4 ps-3 border-start border-light border-opacity-10" style="font-size: 15px;">
+                        {{ term.content|linebreaksbr }}
+                    </p>
+                </div>
             {% empty %}
-                <p class="text-center text-muted py-5">لا توجد شروط حالياً.</p>
+                <div class="text-center py-5 my-4">
+                    <i class="fas fa-file-signature fa-4x text-muted-dark opacity-25 mb-3"></i>
+                    <h5 class="text-white fw-bold">{% trans "لا توجد شروط حالياً" %}</h5>
+                    <p class="text-muted-dark">{% trans "لم يتم إضافة أي شروط أو أحكام للمنصة حتى الآن." %}</p>
+                </div>
             {% endfor %}
 
-            <hr class="my-5">
+            <hr class="my-5 border-light opacity-10">
+            
             <div class="text-center">
-                <a href="javascript:history.back()" class="btn btn-primary-app px-5 rounded-pill fw-bold shadow-sm">عودة</a>
+                <button onclick="window.close(); history.back();" class="btn btn-gold px-5 py-3 rounded-pill fw-bold shadow-lg d-inline-flex align-items-center gap-2" style="font-size: 16px;">
+                    <i class="fas fa-check-circle fs-5"></i> {% trans "إغلاق والعودة للتسجيل" %}
+                </button>
             </div>
+            
         </div>
     </div>
 </div>
+
 {% endblock %}

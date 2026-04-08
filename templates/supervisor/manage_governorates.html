@@ -1,0 +1,111 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load i18n %}
+
+{% block page_title %}{% trans "إدارة المحافظات والمدن" %}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12 col-xl-4">
+        <div class="card p-4 shadow-sm border-0 rounded-4 bg-white h-100">
+            <h6 class="fw-bold mb-4 text-primary border-bottom pb-2">
+                <i class="fas fa-map-marker-alt me-2"></i> {% trans "إضافة محافظة جديدة" %}
+            </h6>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">{% trans "الدولة التابعة لها" %}</label>
+                    <select name="country_id" class="form-select bg-light border-0 py-2 fw-bold text-dark" required>
+                        {% for c in countries %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">{% trans "اسم المحافظة / المدينة" %}</label>
+                    <input type="text" name="name" class="form-control bg-light border-0 py-2 fw-bold text-dark" required placeholder="{% trans 'مثال: القاهرة، الرياض...' %}">
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm">
+                    <i class="fas fa-plus"></i> {% trans "حفظ المحافظة" %}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-8">
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex align-items-center">
+                <h6 class="fw-bold m-0 text-dark"><i class="fas fa-list-ul text-primary me-2"></i> {% trans "المحافظات المسجلة" %}</h6>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 text-muted small">{% trans "الدولة" %}</th>
+                            <th class="text-muted small">{% trans "اسم المحافظة" %}</th>
+                            <th class="text-end pe-4 text-muted small">{% trans "تحكم" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gov in governorates %}
+                        <tr class="hover-bg-light transition-hover">
+                            <td class="ps-4">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+                                    <i class="fas fa-flag me-1"></i> {{ gov.country.name }}
+                                </span>
+                            </td>
+                            <td class="fw-bolder text-dark">{{ gov.name }}</td>
+                            <td class="text-end pe-4">
+                                <button type="button" class="btn btn-sm btn-light text-primary rounded-circle shadow-sm border mx-1" style="width: 32px; height: 32px;" data-bs-toggle="modal" data-bs-target="#editModal{{ gov.id }}">
+                                    <i class="fas fa-pen" style="font-size: 12px;"></i>
+                                </button>
+                                <a href="{% url 'super_delete_governorate' gov.id %}" class="btn btn-sm btn-light text-danger rounded-circle shadow-sm border mx-1" style="width: 32px; height: 32px;" onclick="return confirm('{% trans "هل أنت متأكد من الحذف؟" %}');">
+                                    <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
+                                </a>
+                            </td>
+                        </tr>
+
+                        <div class="modal fade" id="editModal{{ gov.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <form method="POST" class="modal-content border-0 shadow-lg rounded-4">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="edit">
+                                    <input type="hidden" name="gov_id" value="{{ gov.id }}">
+                                    <div class="modal-header bg-light border-0">
+                                        <h5 class="modal-title fw-bold">{% trans "تعديل المحافظة" %}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body p-4">
+                                        <label class="form-label small fw-bold text-muted">{% trans "اسم المحافظة الجديد" %}</label>
+                                        <input type="text" name="name" value="{{ gov.name }}" class="form-control bg-light border-0 py-2 fw-bold text-dark" required>
+                                    </div>
+                                    <div class="modal-footer border-0">
+                                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">{% trans "حفظ التعديلات" %}</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-5 text-muted">
+                                <i class="fas fa-map-marker-alt fa-3x mb-3 opacity-25"></i>
+                                <h6 class="fw-bold text-dark">{% trans "لا توجد محافظات مسجلة." %}</h6>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .hover-bg-light:hover { background-color: #f8fafc !important; }
+</style>
+{% endblock %}

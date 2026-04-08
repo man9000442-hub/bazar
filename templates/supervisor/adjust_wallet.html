@@ -1,33 +1,88 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}تعديل رصيد التاجر{% endblock %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "تسوية رصيد:" %} {{ wallet.merchant.user.first_name }} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "تعديل رصيد المحفظة" %}{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 500px;">
-    <div class="card p-4 shadow-sm border-0 rounded-4">
-        <h5 class="fw-bold mb-3 text-center">تعديل رصيد: {{ wallet.merchant.user.first_name }}</h5>
-        <div class="alert alert-info text-center">
-            الرصيد الحالي: <strong>{{ wallet.balance }} ج.م</strong>
+
+{% trans "ج.م" as default_currency %}
+
+<div class="container-fluid p-0 d-flex justify-content-center">
+    <div class="w-100" style="max-width: 550px;">
+        
+        <div class="d-flex align-items-center mb-4 gap-3">
+            <a href="{% url 'super_wallets_list' %}" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-arrow-right text-dark"></i>
+            </a>
+            <div>
+                <h5 class="fw-bold text-dark m-0">{% trans "تسوية مالية يدوية" %}</h5>
+                <small class="text-muted">{% trans "تعديل رصيد التاجر:" %} <span class="text-primary fw-bold">{{ wallet.merchant.user.first_name }} {{ wallet.merchant.user.last_name|default:"" }}</span></small>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            
+            <div class="bg-light p-4 text-center border-bottom border-light position-relative">
+                <i class="fas fa-wallet position-absolute top-50 start-0 translate-middle-y opacity-10 fa-4x ms-3 text-primary"></i>
+                <span class="text-muted small fw-bold d-block mb-1">{% trans "الرصيد الحالي في المحفظة" %}</span>
+                <h2 class="fw-bolder text-dark mb-0 position-relative z-1" dir="ltr">
+                    {{ wallet.balance|floatformat:2 }} <span class="fs-6 text-muted">{{ request.user.country.currency_symbol|default:default_currency }}</span>
+                </h2>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">{% trans "المبلغ المراد تسويته" %} <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-white border-0 text-muted px-3"><i class="fas fa-money-bill-wave text-success"></i></span>
+                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control bg-white border-0 fw-bold fs-4 py-2" placeholder="0.00" required>
+                            <span class="input-group-text bg-light border-0 text-muted fw-bold px-3">{{ request.user.country.currency_symbol|default:default_currency }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">{% trans "البيان / سبب التسوية (يظهر للتاجر)" %} <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-light border-0 text-muted px-3"><i class="fas fa-pen"></i></span>
+                            <input type="text" name="reason" class="form-control bg-light border-0 py-2" placeholder="{% trans 'مثال: تعويض مالي، غرامة تأخير، تسوية...' %}" required>
+                        </div>
+                        <div class="form-text small mt-2"><i class="fas fa-info-circle text-primary me-1"></i> {% trans "هذا السبب سيُسجل في كشف حساب التاجر كمرجع للعملية." %}</div>
+                    </div>
+
+                    <hr class="my-4 opacity-25">
+
+                    <h6 class="fw-bold text-dark mb-3 text-center">{% trans "اختر نوع العملية" %} <i class="fas fa-hand-pointer text-warning ms-1"></i></h6>
+                    
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <button type="submit" name="action" value="add" class="btn btn-success w-100 rounded-4 fw-bold py-3 shadow-sm d-flex flex-column align-items-center justify-content-center gap-2 transition-hover" onclick="return confirm('{% trans "تأكيد الإجراء: هل أنت متأكد من إضافة هذا المبلغ لرصيد التاجر؟" %}')">
+                                <i class="fas fa-plus-circle fs-3 text-white"></i>
+                                <span>{% trans "إضافة للرصيد" %}</span>
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" name="action" value="deduct" class="btn btn-danger w-100 rounded-4 fw-bold py-3 shadow-sm d-flex flex-column align-items-center justify-content-center gap-2 transition-hover" onclick="return confirm('{% trans "تأكيد الإجراء: هل أنت متأكد من خصم هذا المبلغ من رصيد التاجر؟" %}')">
+                                <i class="fas fa-minus-circle fs-3 text-white"></i>
+                                <span>{% trans "خصم من الرصيد" %}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
         </div>
         
-        <form method="POST">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label class="form-label">المبلغ</label>
-                <input type="number" name="amount" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">السبب (للأرشيف)</label>
-                <input type="text" name="reason" class="form-control" placeholder="بونص / غرامة / تسوية..." required>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="submit" name="action" value="add" class="btn btn-success flex-grow-1">
-                    <i class="fas fa-plus"></i> إضافة
-                </button>
-                <button type="submit" name="action" value="deduct" class="btn btn-danger flex-grow-1">
-                    <i class="fas fa-minus"></i> خصم
-                </button>
-            </div>
-        </form>
     </div>
 </div>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-3px); filter: brightness(1.05); }
+    /* إخفاء أسهم زيادة وتقليل الأرقام من حقل المبلغ لشكل أنظف */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+</style>
 {% endblock %}

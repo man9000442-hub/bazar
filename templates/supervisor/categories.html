@@ -1,57 +1,125 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}إدارة الأقسام{% endblock %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "إدارة الأقسام" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "إدارة أقسام المتجر" %}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- نموذج الإضافة -->
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm p-4 rounded-4">
-            <h6 class="fw-bold mb-3">إضافة قسم جديد</h6>
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-layer-group text-primary me-2"></i> {% trans "تصنيفات المنتجات" %}</h5>
+            <small class="text-muted">{% trans "إدارة الأقسام الرئيسية لتسهيل تصفح العملاء للمنتجات." %}</small>
+        </div>
+        <button type="button" class="btn btn-primary shadow-sm rounded-3 px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addCatModal">
+            <i class="fas fa-plus-circle me-1"></i> {% trans "إضافة قسم جديد" %}
+        </button>
+    </div>
+
+    <div class="row g-3">
+        {% for cat in categories %}
+        <div class="col-6 col-md-4 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card overflow-hidden">
+                
+                <div class="position-relative bg-light" style="aspect-ratio: 16/9;">
+                    {% if cat.image %}
+                        <img src="{{ cat.image.url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ cat.name }}">
+                    {% else %}
+                        <div class="w-100 h-100 d-flex justify-content-center align-items-center text-muted">
+                            <i class="fas fa-image fa-2x opacity-25"></i>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-body p-3 text-center d-flex flex-column">
+                    <h6 class="fw-bold text-dark mb-3 text-truncate flex-grow-1" title="{{ cat.name }}">{{ cat.name }}</h6>
+                    
+                    <div class="d-flex gap-2 justify-content-center mt-auto">
+                        <button type="button" class="btn btn-light border flex-grow-1 rounded-3 text-primary" data-bs-toggle="modal" data-bs-target="#editCatModal{{ cat.id }}" title="{% trans 'تعديل' %}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <a href="{% url 'super_delete_category' cat.pk %}" class="btn btn-light border flex-grow-1 rounded-3 text-danger" onclick="return confirm('{% blocktrans with name=cat.name|escapejs %}تأكيد الإجراء: هل أنت متأكد من حذف قسم ({{ name }}) نهائياً؟{% endblocktrans %}');" title="{% trans 'حذف' %}">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="editCatModal{{ cat.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg rounded-4">
+                            <div class="modal-header bg-light border-0 rounded-top-4">
+                                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-pen text-primary me-2"></i> {% trans "تعديل القسم" %}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="{% url 'super_edit_category' cat.id %}" method="POST" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="modal-body p-4">
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold small text-muted">{% trans "اسم القسم" %} <span class="text-danger">*</span></label>
+                                        <input type="text" name="name" class="form-control bg-light border-0 rounded-3 px-3 py-2 fw-bold text-dark" value="{{ cat.name }}" required>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label fw-bold small text-muted">{% trans "تحديث الصورة (اختياري)" %}</label>
+                                        <input type="file" name="image" class="form-control bg-light border-0 rounded-3 px-3 py-2" accept="image/*">
+                                        {% if cat.image %}
+                                            <div class="form-text mt-2 small text-primary"><i class="fas fa-info-circle me-1"></i> {% trans "يوجد صورة حالية. ارفع صورة جديدة إذا أردت استبدالها فقط." %}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-top-0 pt-0 px-4 pb-4 gap-2">
+                                    <button type="button" class="btn btn-light border fw-bold flex-grow-1 rounded-3 py-2" data-bs-dismiss="modal">{% trans "إلغاء" %}</button>
+                                    <button type="submit" class="btn btn-primary fw-bold flex-grow-1 rounded-3 py-2 shadow-sm">{% trans "حفظ التعديلات" %}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                <i class="fas fa-folder-open text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                <h5 class="text-dark fw-bold">{% trans "لا توجد أقسام مسجلة" %}</h5>
+                <p class="text-muted small mb-0">{% trans "قم بإضافة أقسام جديدة ليبدأ التجار في تصنيف منتجاتهم." %}</p>
+                <button type="button" class="btn btn-primary rounded-pill mt-3 px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addCatModal">{% trans "إضافة قسم الآن" %}</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<div class="modal fade" id="addCatModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-plus-circle me-2"></i> {% trans "إضافة قسم جديد" %}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="mb-3">
-                    <label class="form-label small">اسم القسم</label>
-                    <input type="text" name="name" class="form-control" required>
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">{% trans "اسم القسم" %} <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control bg-light border-0 rounded-3 px-3 py-2 fw-bold text-dark" placeholder="{% trans 'مثال: إلكترونيات، ملابس رجالي...' %}" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-muted">{% trans "صورة القسم (يفضل أبعاد 16:9)" %}</label>
+                        <input type="file" name="image" class="form-control bg-light border-0 rounded-3 px-3 py-2" accept="image/*">
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label small">صورة القسم</label>
-                    <input type="file" name="image" class="form-control">
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4 gap-2">
+                    <button type="button" class="btn btn-light border fw-bold flex-grow-1 rounded-3 py-2" data-bs-dismiss="modal">{% trans "إلغاء" %}</button>
+                    <button type="submit" class="btn btn-primary fw-bold flex-grow-1 rounded-3 py-2 shadow-sm">{% trans "حفظ وإضافة" %}</button>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 rounded-pill">حفظ</button>
             </form>
         </div>
     </div>
-
-    <!-- القائمة -->
-    <div class="col-md-8">
-        <div class="card border-0 shadow-sm rounded-4">
-            <table class="table align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4">الصورة</th>
-                        <th>الاسم</th>
-                        <th class="text-end pe-4">حذف</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cat in categories %}
-                    <tr>
-                        <td class="ps-4">
-                            {% if cat.image %}
-                                <img src="{{ cat.image.url }}" class="rounded" width="40">
-                            {% else %}
-                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-image text-muted"></i></div>
-                            {% endif %}
-                        </td>
-                        <td class="fw-bold">{{ cat.name }}</td>
-                        <td class="text-end pe-4">
-                            <a href="{% url 'super_delete_category' cat.pk %}" class="btn btn-sm btn-light text-danger border" onclick="return confirm('حذف؟')"><i class="fas fa-trash"></i></a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
 </div>
+
+<style>
+    .hover-card { transition: all 0.2s ease-in-out; }
+    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
+</style>
 {% endblock %}

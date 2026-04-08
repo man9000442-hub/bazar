@@ -1,0 +1,83 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'ar' }}" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "سياسة الخصوصية" %} | Elbazaar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(to left, #0D6EFD, #00C6FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-200">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <h1 class="text-2xl font-extrabold gradient-text tracking-tight">Elbazaar</h1>
+            <span class="text-sm font-semibold bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
+                {% trans "المركز القانوني" %}
+            </span>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+        
+        <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">{% trans "سياسة خصوصية العملاء" %}</h2>
+            <p class="text-slate-500 text-lg">{% trans "نحن نهتم بخصوصيتك ونلتزم بحماية بياناتك الشخصية." %}</p>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+            <div class="p-6 sm:p-10">
+                
+                {% if policies %}
+                    <div class="space-y-8">
+                        {% for policy in policies %}
+                            <section class="group">
+                                <h3 class="text-xl font-bold text-slate-800 mb-3 flex items-center gap-2 group-hover:text-blue-600 transition-colors duration-200">
+                                    <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm border border-blue-100">
+                                        {{ policy.order|default:forloop.counter }}
+                                    </span>
+                                    {{ policy.title }}
+                                </h3>
+                                <div class="text-slate-600 leading-relaxed text-sm sm:text-base pl-10 pr-2">
+                                    {{ policy.content|linebreaks }}
+                                </div>
+                            </section>
+                            {% if not forloop.last %}
+                                <hr class="border-slate-100">
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="text-slate-500 font-medium text-lg">{% trans "جاري تحديث سياسة الخصوصية. يرجى العودة لاحقاً." %}</p>
+                    </div>
+                {% endif %}
+
+            </div>
+            
+            <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 text-center sm:text-right">
+                <p class="text-xs text-slate-500 font-medium">
+                    {% trans "استخدامك لتطبيق البازار يعني موافقتك على هذه الشروط والسياسات." %}
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-8 text-slate-500 text-sm mt-10">
+        <p>&copy; {% now "Y" %} {% trans "تطبيق البازار (Elbazaar). جميع الحقوق محفوظة." %}</p>
+    </footer>
+
+</body>
+</html>

@@ -1,26 +1,86 @@
-{% extends 'base.html' %}
+{% extends 'merchant/base_merchant.html' %}
+{% load i18n %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block title %}{% trans "طلب سحب أرباح | لوحة التاجر" %}{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h5 class="fw-bold text-coffee mb-3">طلب سحب أرباح 💸</h5>
-    <div class="card p-4 border-0 shadow-sm">
-        <div class="alert alert-success">
-            الرصيد القابل للسحب: <strong>{{ withdrawable_balance }} ج.م</strong>
-            <br>
-            <small class="text-muted">(يتم حجز {{ reserved_balance }} ج.م لتغطية المرتجعات)</small>
-        </div>
-        
-        <form method="POST">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label class="form-label">المبلغ المراد سحبه</label>
-                <input type="number" name="amount" class="form-control" max="{{ wallet.balance }}" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">رقم المحفظة (فودافون كاش/إلخ)</label>
-                <input type="tel" name="phone" class="form-control" value="{{ request.user.phone_primary }}" required>
-            </div>
-            <button type="submit" class="btn btn-primary-app w-100 fw-bold">تأكيد الطلب</button>
-        </form>
+
+<div class="d-flex align-items-center mb-4 mt-2 bg-white p-3 rounded-4 shadow-sm border border-light sticky-top" style="top: 10px; z-index: 1020;">
+    <a href="{% url 'merchant_wallet' %}" class="btn btn-light rounded-circle p-2 mx-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+        <i class="fas fa-arrow-{% if LANGUAGE_BIDI %}right{% else %}left{% endif %} text-dark"></i>
+    </a>
+    <div>
+        <h5 class="m-0 fw-bold text-dark">{% trans "طلب سحب أرباح 💸" %}</h5>
+        <p class="text-muted small mb-0">{% trans "اسحب أرباحك لمحفظتك الإلكترونية" %}</p>
     </div>
 </div>
+
+<div class="container pb-5 mb-5">
+    
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden position-relative bg-white">
+        <div class="card-body p-4 text-center">
+            <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center p-3 mb-3" style="width: 70px; height: 70px;">
+                <i class="fas fa-hand-holding-usd fa-2x"></i>
+            </div>
+            <small class="d-block text-muted fw-bold mb-1">{% trans "الرصيد القابل للسحب الآن" %}</small>
+            <h2 class="fw-bold text-success mb-0" dir="ltr">{{ withdrawable_balance|default:"0.00"|floatformat:2 }} <small class="fs-6 text-muted">{{ request.user.country.currency_symbol|default:'ج.م' }}</small></h2>
+        </div>
+        
+        {% if reserved_balance and reserved_balance > 0 %}
+        <div class="bg-warning bg-opacity-10 border-top border-warning border-opacity-25 p-3 text-center">
+            <small class="text-warning-emphasis fw-bold">
+                <i class="fas fa-lock mx-1"></i> {% trans "يتم حجز" %} <span dir="ltr">{{ reserved_balance|floatformat:2 }} {{ request.user.country.currency_symbol|default:'ج.م' }}</span> {% trans "لتغطية المرتجعات أو الحد الأدنى." %}
+            </small>
+        </div>
+        {% endif %}
+    </div>
+
+    <form method="POST" class="card border border-light shadow-sm p-4 bg-white rounded-4">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark">{% trans "المبلغ المراد سحبه" %}</label>
+            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                <input type="number" 
+                       name="amount" 
+                       class="form-control bg-light border-0 fw-bold text-center text-primary fs-4" 
+                       max="{{ withdrawable_balance }}" 
+                       min="1" 
+                       placeholder="0" 
+                       required>
+                <span class="input-group-text bg-white border-0 fw-bold text-muted">{{ request.user.country.currency_symbol|default:'ج.م' }}</span>
+            </div>
+            <div class="form-text small text-muted mt-2">
+                <i class="fas fa-info-circle mx-1"></i> {% trans "لا يمكنك طلب مبلغ أكبر من الرصيد القابل للسحب أعلاه." %}
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark">{% trans "رقم المحفظة (المحلية)" %}</label>
+            <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                <span class="input-group-text bg-light border-0 text-success"><i class="fas fa-mobile-alt"></i></span>
+                <input type="tel" 
+                       name="phone" 
+                       class="form-control bg-light border-0 fw-bold" 
+                       value="{{ request.user.phone_primary }}" 
+                       placeholder="010xxxxxxxx" 
+                       dir="ltr"
+                       style="text-align: {% if LANGUAGE_BIDI %}right{% else %}left{% endif %};"
+                       required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn text-white w-100 py-3 fw-bold rounded-pill shadow-sm mt-2 transition-hover" style="background: linear-gradient(90deg, #198754, #20c997); font-size: 16px;">
+            <i class="fas fa-paper-plane mx-2"></i> {% trans "تأكيد وإرسال الطلب" %}
+        </button>
+    </form>
+
+</div>
+
+<style>
+    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+</style>
+
 {% endblock %}

@@ -1,61 +1,125 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}إدارة البانرات (Slider){% endblock %}
+{% block head_title %}إدارة البانرات | Elbazaar{% endblock %}
+{% block page_title %}إدارة إعلانات السلايدر{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- إضافة -->
-    <div class="col-md-4">
-        <div class="card p-4 shadow-sm border-0 rounded-4">
-            <h6 class="fw-bold mb-3 text-primary">إضافة بانر جديد</h6>
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-images text-primary me-2"></i> بانرات الصفحة الرئيسية</h5>
+            <small class="text-muted">تحكم في الصور المتحركة (Slider) التي تظهر للعملاء في أعلى التطبيق.</small>
+        </div>
+        <button type="button" class="btn btn-primary shadow-sm rounded-3 px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addBannerModal">
+            <i class="fas fa-plus-circle me-1"></i> إضافة بانر جديد
+        </button>
+    </div>
+
+    <div class="row g-4">
+        {% for banner in banners %}
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white overflow-hidden hover-card position-relative">
+                
+                <div class="position-relative bg-light" style="aspect-ratio: 2/1; overflow: hidden;">
+                    <img src="{{ banner.image.url }}" class="w-100 h-100" style="object-fit: cover;" alt="Banner">
+                    
+                    <div class="position-absolute top-0 start-0 m-3">
+                        {% if banner.is_active %}
+                            <span class="badge bg-success shadow-sm rounded-pill px-3"><i class="fas fa-check-circle me-1"></i> نشط الآن</span>
+                        {% else %}
+                            <span class="badge bg-danger shadow-sm rounded-pill px-3"><i class="fas fa-clock me-1"></i> منتهي الصلاحية</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-body p-3">
+                    <div class="mb-3">
+                        <span class="text-muted d-block small mb-1">الرابط الموجه (Link):</span>
+                        {% if banner.link %}
+                            <a href="{{ banner.link }}" target="_blank" class="text-primary fw-bold small text-truncate d-block" style="max-width: 100%;">
+                                <i class="fas fa-link me-1"></i> {{ banner.link }}
+                            </a>
+                        {% else %}
+                            <span class="text-muted small italic">لا يوجد رابط (صورة فقط)</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="bg-light rounded-3 p-2 px-3 d-flex justify-content-between align-items-center">
+                        <span class="text-muted small fw-bold"><i class="far fa-calendar-times me-1"></i> ينتهي في:</span>
+                        <span class="text-dark fw-bold small">
+                            {{ banner.expires_at|date:"d M Y - h:i A"|default:"غير محدد (دائم)" }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white border-top border-light p-3 d-flex gap-2">
+                    <a href="{% url 'super_delete_banner' banner.pk %}" class="btn btn-outline-danger flex-grow-1 rounded-3 fw-bold py-2" onclick="return confirm('تأكيد: هل أنت متأكد من حذف هذا البانر نهائياً؟')">
+                        <i class="fas fa-trash-alt me-1"></i> حذف الإعلان
+                    </a>
+                </div>
+
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                <i class="fas fa-images text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                <h5 class="text-dark fw-bold">لا توجد إعلانات نشطة</h5>
+                <p class="text-muted small mb-0">لم تقم بإضافة أي صور للسلايدر الرئيسي بعد.</p>
+                <button class="btn btn-primary rounded-pill mt-3 px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addBannerModal">ابدأ بإضافة أول بانر</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<div class="modal fade" id="addBannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-plus-circle me-2"></i> إضافة بانر جديد</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="mb-3">
-                    <label class="form-label small">الصورة (يفضل عرضية)</label>
-                    <input type="file" name="image" class="form-control" required>
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">صورة البانر (يفضل أبعاد 1080x540) <span class="text-danger">*</span></label>
+                        <div class="bg-light p-3 rounded-3 border-2 border-dashed text-center">
+                            <input type="file" name="image" class="form-control bg-white" accept="image/*" required>
+                            <small class="text-muted d-block mt-2">يرجى اختيار صور عالية الجودة لضمان مظهر احترافي.</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">رابط التوجيه (عند الضغط)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="fas fa-link text-primary"></i></span>
+                            <input type="url" name="link" class="form-control bg-light border-0 py-2" placeholder="https://elbazaare.com/products/...">
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-muted">تاريخ ووقت انتهاء الإعلان (اختياري)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="fas fa-calendar-alt text-danger"></i></span>
+                            <input type="datetime-local" name="expires_at" class="form-control bg-light border-0 py-2">
+                        </div>
+                        <div class="form-text small text-muted mt-2">اتركه فارغاً ليظل الإعلان ظاهراً للأبد حتى تحذفه يدوياً.</div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label small">رابط عند الضغط (اختياري)</label>
-                    <input type="url" name="link" class="form-control" placeholder="https://...">
+                <div class="modal-footer border-top-0 pt-0 px-4 pb-4 gap-2">
+                    <button type="button" class="btn btn-light border fw-bold flex-grow-1 rounded-3 py-2" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary fw-bold flex-grow-1 rounded-3 py-2 shadow-sm">نشر الإعلان الآن</button>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 rounded-pill">نشر</button>
             </form>
         </div>
     </div>
-
-    <!-- القائمة -->
-    <div class="col-md-8">
-        <div class="card border-0 shadow-sm rounded-4">
-            <table class="table align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4">المعاينة</th>
-                        <th>الرابط</th>
-                        <th>الحالة</th>
-                        <th class="text-end pe-4">حذف</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for banner in banners %}
-                    <tr>
-                        <td class="ps-4">
-                            <img src="{{ banner.image.url }}" class="rounded shadow-sm" style="width: 120px; height: 60px; object-fit: cover;">
-                        </td>
-                        <td class="small text-muted text-truncate" style="max-width: 150px;">
-                            {{ banner.link|default:"-" }}
-                        </td>
-                        <td>
-                            {% if banner.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-secondary">معطل</span>{% endif %}
-                        </td>
-                        <td class="text-end pe-4">
-                            <a href="{% url 'super_delete_banner' banner.pk %}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('حذف؟')"><i class="fas fa-trash"></i></a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4" class="text-center py-4">لا توجد بانرات.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
 </div>
+
+<style>
+    .hover-card { transition: all 0.2s ease-in-out; }
+    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
+</style>
 {% endblock %}

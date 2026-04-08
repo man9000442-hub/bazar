@@ -1,0 +1,207 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "إدارة النوافذ المنبثقة" %} | Elbazaar{% endblock %}
+{% block page_title %}{% trans "إدارة الإعلانات المنبثقة (Popups)" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="far fa-window-restore text-primary me-2"></i> {% trans "إعلانات الـ Popup" %}</h5>
+            <small class="text-muted">{% trans "جدولة وإدارة الإعلانات التي تظهر للعملاء فور فتح التطبيق." %}</small>
+        </div>
+        <button type="button" class="btn btn-primary shadow-sm rounded-3 px-4 fw-bold d-block d-xl-none" data-bs-toggle="modal" data-bs-target="#addPopupModalMobile">
+            <i class="fas fa-plus-circle me-1"></i> {% trans "جدولة إعلان جديد" %}
+        </button>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-12 col-xl-4 d-none d-xl-block">
+            <div class="card p-4 shadow-sm border-0 rounded-4 sticky-top bg-white" style="top: 90px;">
+                <h6 class="fw-bold mb-4 text-primary pb-2 border-bottom border-light"><i class="fas fa-calendar-plus me-2"></i> {% trans "إعداد وجدولة إعلان جديد" %}</h6>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">{% trans "عنوان الإعلان الداخلي" %}</label>
+                        <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2 fw-bold text-dark" placeholder="{% trans 'مثال: خصم العيد 50%' %}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">{% trans "صورة الإعلان" %} <span class="text-danger">*</span></label>
+                        <input type="file" name="image" class="form-control bg-light border-0 rounded-3 py-2" accept="image/*" required>
+                    </div>
+                    
+                    <hr class="opacity-25 my-4">
+                    
+                    <h6 class="small fw-bold text-success mb-3"><i class="fas fa-route me-1"></i> {% trans "وجهة التوجيه (عند الضغط)" %}</h6>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">{% trans "ربط بعرض منصة متاح" %}</label>
+                        <select name="offer_id" class="form-select bg-light border-0 rounded-3 py-2 fw-bold">
+                            <option value="">-- {% trans "اختياري: لا أريد الربط بعرض" %} --</option>
+                            {% for offer in active_offers %}
+                                <option value="{{ offer.id }}">
+                                    {% blocktrans with percent=offer.discount_percentage product_name=offer.product.name %}خصم {{ percent }}% على {{ product_name }}{% endblocktrans %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">{% trans "أو رابط توجيه خارجي" %}</label>
+                        <input type="url" name="custom_link" class="form-control bg-light border-0 rounded-3 py-2" placeholder="https://...">
+                    </div>
+
+                    <hr class="opacity-25 my-4">
+                    
+                    <h6 class="small fw-bold text-danger mb-3"><i class="fas fa-business-time me-1"></i> {% trans "التوقيت الدقيق للظهور" %}</h6>
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">{% trans "تاريخ وساعة البدء:" %}</label>
+                            <input type="datetime-local" name="start_time" class="form-control bg-light border-0 rounded-3" style="font-size: 13px;" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">{% trans "تاريخ وساعة الانتهاء:" %}</label>
+                            <input type="datetime-local" name="end_time" class="form-control bg-light border-0 rounded-3" style="font-size: 13px;" required>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-4 p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-25 d-flex align-items-center justify-content-between">
+                        <label class="form-check-label fw-bold small text-primary m-0" for="isActive">{% trans "تفعيل المراقبة والجدولة فوراً" %}</label>
+                        <input class="form-check-input m-0" type="checkbox" name="is_active" id="isActive" checked style="transform: scale(1.2);">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm d-flex justify-content-center align-items-center gap-2">
+                        <i class="fas fa-paper-plane"></i> {% trans "حفظ وجدولة الإعلان" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-8">
+            <div class="row g-3">
+                {% for popup in popups %}
+                <div class="col-12 col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card overflow-hidden">
+                        
+                        <div class="position-relative bg-light border-bottom border-light" style="aspect-ratio: 16/9;">
+                            {% if popup.image %}
+                                <img src="{{ popup.image.url }}" class="w-100 h-100" style="object-fit: cover;" alt="Popup Image">
+                            {% else %}
+                                <div class="w-100 h-100 d-flex justify-content-center align-items-center"><i class="fas fa-image fa-2x text-muted opacity-25"></i></div>
+                            {% endif %}
+
+                            <div class="position-absolute top-0 start-0 m-3 shadow-sm">
+                                {% if not popup.is_active %}
+                                    <span class="badge bg-secondary rounded-pill px-3 py-2"><i class="fas fa-pause-circle me-1"></i> {% trans "متوقف يدوياً" %}</span>
+                                {% elif popup.current_status == 'expired' %}
+                                    <span class="badge bg-danger rounded-pill px-3 py-2"><i class="fas fa-times-circle me-1"></i> {% trans "منتهي الصلاحية" %}</span>
+                                {% elif popup.current_status == 'scheduled' %}
+                                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2"><i class="fas fa-clock me-1"></i> {% trans "مجدول للظهور" %}</span>
+                                {% elif popup.current_status == 'active' %}
+                                    <span class="badge bg-success rounded-pill px-3 py-2"><i class="fas fa-broadcast-tower fa-spin me-1"></i> {% trans "يعمل الآن" %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold text-dark mb-1">{{ popup.title }}</h6>
+                            <div class="mb-3">
+                                <a href="{{ popup.get_link|default:'#' }}" target="_blank" class="text-decoration-none small text-truncate d-block fw-bold {% if popup.offer %}text-success{% else %}text-primary{% endif %}">
+                                    {% if popup.offer %}<i class="fas fa-box-open me-1"></i> {% trans "مرتبط بعرض داخلي" %}{% else %}<i class="fas fa-external-link-alt me-1"></i> {% trans "توجيه خارجي" %}{% endif %}
+                                </a>
+                            </div>
+
+                            <div class="bg-light rounded-3 p-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted small fw-bold"><i class="fas fa-play text-success me-1"></i> {% trans "البداية:" %}</span>
+                                    <span class="text-dark small fw-bold" dir="ltr">{{ popup.start_time|date:"y/m/d - H:i" }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small fw-bold"><i class="fas fa-stop text-danger me-1"></i> {% trans "النهاية:" %}</span>
+                                    <span class="text-dark small fw-bold" dir="ltr">{{ popup.end_time|date:"y/m/d - H:i" }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-white border-top border-light p-3 d-flex">
+                            <a href="{% url 'super_delete_popup' popup.id %}" class="btn btn-light border text-danger flex-grow-1 rounded-3 fw-bold py-2 shadow-sm" onclick="return confirm('{% trans "تأكيد: هل أنت متأكد من حذف هذا الإعلان نهائياً؟" %}')">
+                                <i class="fas fa-trash-alt me-1"></i> {% trans "حذف الجدولة" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
+                        <i class="far fa-window-restore text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
+                        <h5 class="text-dark fw-bold">{% trans "لا توجد إعلانات منبثقة" %}</h5>
+                        <p class="text-muted small mb-0">{% trans "لم تقم بجدولة أي إعلانات لتظهر للعملاء حتى الآن." %}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addPopupModalMobile" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-0 rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-calendar-plus me-2"></i> {% trans "جدولة إعلان جديد" %}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data" class="modal-body p-4 text-start">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">{% trans "عنوان الإعلان الداخلي" %}</label>
+                    <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2 fw-bold text-dark" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">{% trans "صورة الإعلان" %} <span class="text-danger">*</span></label>
+                    <input type="file" name="image" class="form-control bg-light border-0 rounded-3 py-2" accept="image/*" required>
+                </div>
+                <hr class="opacity-25 my-4">
+                <h6 class="small fw-bold text-success mb-3"><i class="fas fa-route me-1"></i> {% trans "وجهة التوجيه" %}</h6>
+                <div class="mb-3">
+                    <select name="offer_id" class="form-select bg-light border-0 rounded-3 py-2 fw-bold">
+                        <option value="">-- {% trans "اختياري: لا أريد الربط بعرض" %} --</option>
+                        {% for offer in active_offers %}
+                            <option value="{{ offer.id }}">
+                                {% blocktrans with percent=offer.discount_percentage product_name=offer.product.name %}خصم {{ percent }}% على {{ product_name }}{% endblocktrans %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <input type="url" name="custom_link" class="form-control bg-light border-0 rounded-3 py-2" placeholder="{% trans 'أو رابط توجيه خارجي https://...' %}">
+                </div>
+                <hr class="opacity-25 my-4">
+                <h6 class="small fw-bold text-danger mb-3"><i class="fas fa-business-time me-1"></i> {% trans "التوقيت الدقيق" %}</h6>
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <label class="form-label small text-muted fw-bold">{% trans "يبدأ من:" %}</label>
+                        <input type="datetime-local" name="start_time" class="form-control bg-light border-0 rounded-3" style="font-size: 13px;" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted fw-bold">{% trans "ينتهي في:" %}</label>
+                        <input type="datetime-local" name="end_time" class="form-control bg-light border-0 rounded-3" style="font-size: 13px;" required>
+                    </div>
+                </div>
+                <div class="form-check form-switch mb-4 p-3 bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-between">
+                    <label class="form-check-label fw-bold small text-primary m-0" for="isActiveMobile">{% trans "تفعيل المراقبة فوراً" %}</label>
+                    <input class="form-check-input m-0" type="checkbox" name="is_active" id="isActiveMobile" checked style="transform: scale(1.2);">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm">
+                    {% trans "حفظ وجدولة الإعلان" %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card { transition: all 0.2s ease-in-out; }
+    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
+</style>
+{% endblock %}

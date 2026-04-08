@@ -1,263 +1,231 @@
-{% extends 'supervisor/base_supervisor.html' %} {% block page_title %}إدارة
-المحافظ{% endblock %} {% block content %}
-<!-- فلاتر البحث والترتيب -->
-<div class="row g-3 mb-4">
-  <div class="col-md-6">
-    <div class="input-group">
-      <span class="input-group-text bg-white border"
-        ><i class="fas fa-search text-muted"></i
-      ></span>
-      <input
-        type="text"
-        id="searchInput"
-        class="form-control border"
-        placeholder="ابحث عن التاجر..."
-      />
-    </div>
-  </div>
+{% extends 'supervisor/base_supervisor.html' %}
+{% load i18n supervisor_tags %}
+{% block head_title %}{% trans "إدارة المحافظ | Elbazaar" %}{% endblock %}
+{% block page_title %}{% trans "إدارة محافظ التجار" %}{% endblock %}
 
-  <div class="col-md-6">
-    <div class="d-flex gap-2">
-      <select id="sortSelect" class="form-select border">
-        <option value="balance_desc" selected>الرصيد: الأعلى أولاً</option>
-        <option value="balance_asc">الرصيد: الأقل أولاً</option>
-        <option value="name_asc">الاسم: أ-ي</option>
-        <option value="name_desc">الاسم: ي-أ</option>
-        <option value="pending_desc">الرصيد المعلق: الأعلى أولاً</option>
-        <option value="pending_asc">الرصيد المعلق: الأقل أولاً</option>
-      </select>
-      <button
-        class="btn btn-outline-secondary"
-        onclick="resetFilters()"
-        title="إعادة تعيين"
-      >
-        <i class="fas fa-redo"></i>
-      </button>
-    </div>
-  </div>
-</div>
+{% block content %}
+<div class="container-fluid p-0">
 
-<!-- إحصائيات سريعة -->
-<div class="row g-3 mb-4">
-  <div class="col-md-4">
-    <div class="card border-0 shadow-sm p-3 bg-success bg-opacity-10">
-      <small class="text-muted">إجمالي الرصيد المتاح</small>
-      <h5 class="fw-bold text-success mb-0">
-        <span id="totalBalance">0</span> ج.م
-      </h5>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark m-0"><i class="fas fa-wallet text-success me-2"></i> {% trans "محافظ التجار المالية" %}</h5>
+            <small class="text-muted">{% trans "راقب أرصدة التجار المتاحة والمعلقة، وقم بتعديلها عند الحاجة." %}</small>
+        </div>
     </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card border-0 shadow-sm p-3 bg-warning bg-opacity-10">
-      <small class="text-muted">إجمالي الرصيد المعلق</small>
-      <h5 class="fw-bold text-warning mb-0">
-        <span id="totalPending">0</span> ج.م
-      </h5>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card border-0 shadow-sm p-3 bg-info bg-opacity-10">
-      <small class="text-muted">عدد التجار</small>
-      <h5 class="fw-bold text-info mb-0">
-        <span id="merchantCount">0</span>
-      </h5>
-    </div>
-  </div>
-</div>
 
-<!-- جدول المحافظ -->
-<div class="card border-0 shadow-sm rounded-4">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead class="bg-light">
-        <tr>
-          <th class="ps-4">
-            <i class="fas fa-user-tie text-muted me-2"></i>التاجر
-          </th>
-          <th class="text-end">
-            <i class="fas fa-wallet text-success me-2"></i>الرصيد المتاح
-          </th>
-          <th class="text-end">
-            <i class="fas fa-hourglass-half text-warning me-2"></i>الرصيد المعلق
-          </th>
-          <th class="text-end">
-            <i class="fas fa-calculator text-info me-2"></i>الإجمالي
-          </th>
-          <th class="text-end pe-4">تحكم</th>
-        </tr>
-      </thead>
-      <tbody id="walletsTableBody">
-        {% for w in wallets %}
-        <tr
-          class="wallet-row"
-          data-merchant-name="{{ w.merchant.user.first_name }}"
-          data-balance="{{ w.balance }}"
-          data-pending="{{ w.pending_balance }}"
-        >
-          <td class="ps-4 fw-bold">
-            {{ w.merchant.user.first_name }} {% if w.merchant.is_verified %}
-            <i class="fas fa-check-circle text-primary ms-1" title="موثّق"></i>
-            {% endif %}
-          </td>
-          <td class="text-end">
-            <span
-              class="badge bg-success-subtle text-success-emphasis fw-bold border border-success-subtle px-3"
-            >
-              {{ w.balance }} ج.م
-            </span>
-          </td>
-          <td class="text-end">
-            <span
-              class="badge bg-warning-subtle text-warning-emphasis fw-bold border border-warning-subtle px-3"
-            >
-              {{ w.pending_balance }} ج.م
-            </span>
-          </td>
-          <td class="text-end">
-            <span
-              class="badge bg-info-subtle text-info-emphasis fw-bold border border-info-subtle px-3"
-            >
-              {{ w.balance|add:w.pending_balance }} ج.م
-            </span>
-          </td>
-          <td class="text-end pe-4">
-            <a
-              href="{% url 'super_adjust_wallet' w.id %}"
-              class="btn btn-sm btn-outline-primary rounded-pill"
-            >
-              <i class="fas fa-edit me-1"></i> تعديل
-            </a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="5" class="text-center py-4">
-            <i class="fas fa-inbox text-muted me-2"></i>
-            <span class="text-muted">لا توجد محافظ</span>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+    <div class="card border-0 shadow-sm p-3 mb-4 bg-white rounded-4">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                    <span class="input-group-text bg-light border-0"><i class="fas fa-search text-primary"></i></span>
+                    <input type="text" id="searchInput" class="form-control bg-light border-0 px-2 fw-bold" placeholder="{% trans 'ابحث عن اسم التاجر...' %}">
+                </div>
+            </div>
 
-<!-- رسالة عدم وجود نتائج -->
-<div id="noResults" class="alert alert-info border-0 d-none mt-4" role="alert">
-  <i class="fas fa-search me-2"></i>
-  لم يتم العثور على أي محافظ تطابق معايير البحث
+            <div class="col-md-6">
+                <div class="d-flex gap-2">
+                    <select id="sortSelect" class="form-select bg-light border-0 shadow-sm rounded-3 fw-bold text-dark">
+                        <option value="balance_desc" selected>{% trans "الرصيد المتاح: الأعلى أولاً" %}</option>
+                        <option value="balance_asc">{% trans "الرصيد المتاح: الأقل أولاً" %}</option>
+                        <option value="name_asc">{% trans "الاسم: أ-ي" %}</option>
+                        <option value="name_desc">{% trans "الاسم: ي-أ" %}</option>
+                        <option value="pending_desc">{% trans "الرصيد المعلق: الأعلى أولاً" %}</option>
+                        <option value="pending_asc">{% trans "الرصيد المعلق: الأقل أولاً" %}</option>
+                    </select>
+                    <button class="btn btn-dark rounded-3 shadow-sm px-3" onclick="resetFilters()" title="{% trans 'إعادة تعيين الفلاتر' %}">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 h-100 text-center">
+                <i class="fas fa-money-bill-wave fs-3 text-success opacity-75 mb-2"></i>
+                <small class="text-success fw-bold">{% trans "إجمالي الرصيد المتاح" %}</small>
+                <h4 class="fw-bolder text-success m-0 mt-1" dir="ltr"><span id="totalBalance">0</span> <span class="fs-6 fw-normal">{{ request.user.country.currency_symbol|default:"ج.م" }}</span></h4>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 h-100 text-center">
+                <i class="fas fa-hourglass-half fs-3 text-warning opacity-75 mb-2"></i>
+                <small class="text-warning text-darken fw-bold">{% trans "إجمالي الرصيد المعلق" %}</small>
+                <h4 class="fw-bolder text-warning text-darken m-0 mt-1" dir="ltr"><span id="totalPending">0</span> <span class="fs-6 fw-normal">{{ request.user.country.currency_symbol|default:"ج.م" }}</span></h4>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-4 bg-info bg-opacity-10 border border-info border-opacity-25 rounded-4 h-100 text-center">
+                <i class="fas fa-store fs-3 text-info opacity-75 mb-2"></i>
+                <small class="text-info text-darken fw-bold">{% trans "عدد التجار المعروضين" %}</small>
+                <h4 class="fw-bolder text-info text-darken m-0 mt-1"><span id="merchantCount">0</span></h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3"><i class="fas fa-user-tie text-primary me-2"></i> {% trans "التاجر" %}</th>
+                        <th class="text-center py-3"><i class="fas fa-wallet text-success me-2"></i> {% trans "الرصيد المتاح" %}</th>
+                        <th class="text-center py-3"><i class="fas fa-hourglass-half text-warning me-2"></i> {% trans "الرصيد المعلق" %}</th>
+                        <th class="text-center py-3"><i class="fas fa-calculator text-info me-2"></i> {% trans "إجمالي المستحقات" %}</th>
+                        <th class="text-end pe-4 py-3">{% trans "إجراء" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="walletsTableBody">
+                    {% for w in wallets %}
+                    <tr class="wallet-row transition-hover"
+                        data-merchant-name="{{ w.merchant.user.first_name }}"
+                        data-balance="{{ w.balance }}"
+                        data-pending="{{ w.pending_balance }}">
+                        
+                        <td class="ps-4 fw-bold text-dark">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-primary-subtle text-primary rounded-circle d-flex justify-content-center align-items-center fw-bold" style="width: 35px; height: 35px;">
+                                    {{ w.merchant.user.first_name|slice:":1" }}
+                                </div>
+                                <div>
+                                    <span class="d-block">{{ w.merchant.user.first_name }} {{ w.merchant.user.last_name|default:"" }}</span>
+                                    {% if w.merchant.is_verified %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1" style="font-size: 10px;"><i class="fas fa-check-circle me-1"></i> {% trans "حساب موثق" %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="text-center" dir="ltr">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fs-6 shadow-sm">
+                                {{ w.balance|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:"ج.م" }}</small>
+                            </span>
+                        </td>
+                        
+                        <td class="text-center" dir="ltr">
+                            <span class="badge bg-warning-subtle text-warning text-darken border border-warning-subtle px-3 py-2 rounded-pill fs-6 shadow-sm">
+                                {{ w.pending_balance|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:"ج.م" }}</small>
+                            </span>
+                        </td>
+                        
+                        <td class="text-center" dir="ltr">
+                            <span class="badge bg-info-subtle text-info text-darken border border-info-subtle px-3 py-2 rounded-pill fs-6 shadow-sm">
+                                {{ w.balance|add:w.pending_balance|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:"ج.م" }}</small>
+                            </span>
+                        </td>
+                        
+                        <td class="text-end pe-4">
+                            <a href="{% url 'super_adjust_wallet' w.id %}" class="btn btn-sm btn-outline-primary rounded-3 px-3 fw-bold shadow-sm">
+                                <i class="fas fa-edit me-1"></i> {% trans "تعديل الرصيد" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="fas fa-wallet text-muted mb-3 opacity-25" style="font-size: 4rem;"></i>
+                            <h6 class="text-dark fw-bold">{% trans "لا توجد محافظ نشطة" %}</h6>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="noResults" class="alert alert-warning border-0 rounded-4 shadow-sm d-none mt-4 text-center fw-bold p-4" role="alert">
+        <i class="fas fa-search me-2 fs-5"></i> {% trans "لم يتم العثور على أي محافظ تطابق اسم التاجر المُدخل." %}
+    </div>
+
 </div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    updateStats();
+    document.addEventListener("DOMContentLoaded", function () {
+        updateStats();
 
-    // البحث
-    document
-      .getElementById("searchInput")
-      .addEventListener("keyup", function () {
-        filterAndSort();
-      });
-
-    // الترتيب
-    document
-      .getElementById("sortSelect")
-      .addEventListener("change", function () {
-        filterAndSort();
-      });
-  });
-
-  function filterAndSort() {
-    const searchTerm = document
-      .getElementById("searchInput")
-      .value.toLowerCase();
-    const sortBy = document.getElementById("sortSelect").value;
-    const rows = Array.from(document.querySelectorAll(".wallet-row"));
-
-    // تصفية
-    const filteredRows = rows.filter((row) => {
-      const merchantName = row.dataset.merchantName.toLowerCase();
-      return merchantName.includes(searchTerm);
+        // تفعيل البحث عند الكتابة
+        document.getElementById("searchInput").addEventListener("keyup", filterAndSort);
+        // تفعيل الترتيب عند تغيير القائمة
+        document.getElementById("sortSelect").addEventListener("change", filterAndSort);
     });
 
-    // ترتيب
-    filteredRows.sort((a, b) => {
-      const nameA = a.dataset.merchantName.toLowerCase();
-      const nameB = b.dataset.merchantName.toLowerCase();
-      const balanceA = parseFloat(a.dataset.balance);
-      const balanceB = parseFloat(b.dataset.balance);
-      const pendingA = parseFloat(a.dataset.pending);
-      const pendingB = parseFloat(b.dataset.pending);
+    function filterAndSort() {
+        const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+        const sortBy = document.getElementById("sortSelect").value;
+        const rows = Array.from(document.querySelectorAll(".wallet-row"));
 
-      switch (sortBy) {
-        case "balance_desc":
-          return balanceB - balanceA;
-        case "balance_asc":
-          return balanceA - balanceB;
-        case "name_asc":
-          return nameA.localeCompare(nameB);
-        case "name_desc":
-          return nameB.localeCompare(nameA);
-        case "pending_desc":
-          return pendingB - pendingA;
-        case "pending_asc":
-          return pendingA - pendingB;
-        default:
-          return balanceB - balanceA;
-      }
-    });
+        // التصفية بالاسم
+        const filteredRows = rows.filter((row) => {
+            const merchantName = row.dataset.merchantName.toLowerCase();
+            return merchantName.includes(searchTerm);
+        });
 
-    // إظهار/إخفاء الصفوف
-    const tbody = document.getElementById("walletsTableBody");
-    tbody.innerHTML = "";
+        // الترتيب
+        filteredRows.sort((a, b) => {
+            const nameA = a.dataset.merchantName.toLowerCase();
+            const nameB = b.dataset.merchantName.toLowerCase();
+            const balanceA = parseFloat(a.dataset.balance);
+            const balanceB = parseFloat(b.dataset.balance);
+            const pendingA = parseFloat(a.dataset.pending);
+            const pendingB = parseFloat(b.dataset.pending);
 
-    if (filteredRows.length === 0) {
-      document.getElementById("noResults").classList.remove("d-none");
-    } else {
-      document.getElementById("noResults").classList.add("d-none");
-      filteredRows.forEach((row) => tbody.appendChild(row));
+            switch (sortBy) {
+                case "balance_desc": return balanceB - balanceA;
+                case "balance_asc": return balanceA - balanceB;
+                case "name_asc": return nameA.localeCompare(nameB);
+                case "name_desc": return nameB.localeCompare(nameA);
+                case "pending_desc": return pendingB - pendingA;
+                case "pending_asc": return pendingA - pendingB;
+                default: return balanceB - balanceA;
+            }
+        });
+
+        // تحديث الجدول
+        const tbody = document.getElementById("walletsTableBody");
+        tbody.innerHTML = "";
+
+        if (filteredRows.length === 0) {
+            document.getElementById("noResults").classList.remove("d-none");
+        } else {
+            document.getElementById("noResults").classList.add("d-none");
+            filteredRows.forEach((row) => tbody.appendChild(row));
+        }
+
+        updateStats();
     }
 
-    updateStats();
-  }
+    function updateStats() {
+        const visibleRows = document.querySelectorAll('.wallet-row:not([style*="display: none"])');
+        let totalBalance = 0;
+        let totalPending = 0;
 
-  function updateStats() {
-    const visibleRows = document.querySelectorAll(
-      '.wallet-row:not([style*="display: none"])',
-    );
-    let totalBalance = 0;
-    let totalPending = 0;
+        visibleRows.forEach((row) => {
+            totalBalance += parseFloat(row.dataset.balance) || 0;
+            totalPending += parseFloat(row.dataset.pending) || 0;
+        });
 
-    visibleRows.forEach((row) => {
-      totalBalance += parseFloat(row.dataset.balance) || 0;
-      totalPending += parseFloat(row.dataset.pending) || 0;
-    });
+        document.getElementById("totalBalance").textContent = totalBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById("totalPending").textContent = totalPending.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById("merchantCount").textContent = visibleRows.length;
+    }
 
-    document.getElementById("totalBalance").textContent =
-      totalBalance.toFixed(2);
-    document.getElementById("totalPending").textContent =
-      totalPending.toFixed(2);
-    document.getElementById("merchantCount").textContent = visibleRows.length;
-  }
-
-  function resetFilters() {
-    document.getElementById("searchInput").value = "";
-    document.getElementById("sortSelect").value = "balance_desc";
-    filterAndSort();
-  }
+    function resetFilters() {
+        document.getElementById("searchInput").value = "";
+        document.getElementById("sortSelect").value = "balance_desc";
+        filterAndSort();
+    }
 </script>
 
 <style>
-  .wallet-row {
-    animation: fadeIn 0.3s ease-in;
-  }
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { background-color: #f8fafc !important; }
+    .text-darken { color: #b45309 !important; } /* لون داكن يتناسب مع الخلفيات الملونة */
+    
+    .wallet-row { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
     }
-    to {
-      opacity: 1;
-    }
-  }
 </style>
 {% endblock %}

@@ -1,106 +1,182 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block page_title %}تعديل المستخدم: {{ user_obj.username }}{% endblock %}
+{% load i18n supervisor_tags %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block head_title %}{% trans "تعديل حساب | Elbazaar" %}{% endblock %}
+{% block page_title %}{% trans "تعديل بيانات المستخدم" %}{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 600px;">
-    <form method="POST" class="card border-0 shadow-sm p-4 rounded-4 bg-white">
-        {% csrf_token %}
+<div class="container-fluid p-0 d-flex justify-content-center">
+    
+    <div class="w-100" style="max-width: 650px;">
         
-        <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                <i class="fas fa-user-edit fs-4"></i>
-            </div>
-            <div>
-                <h5 class="fw-bold mb-0 text-dark">بيانات الحساب</h5>
-                <small class="text-muted">آخر دخول: {{ user_obj.last_login|default:"لم يدخل بعد" }}</small>
-            </div>
+        <div class="mb-4">
+            <a href="javascript:history.back()" class="btn btn-light shadow-sm border rounded-circle d-inline-flex justify-content-center align-items-center transition-hover" style="width: 40px; height: 40px;" title="{% trans 'العودة للخلف' %}">
+                <i class="fas fa-arrow-{% if LANGUAGE_BIDI %}right{% else %}left{% endif %} text-dark"></i>
+            </a>
         </div>
 
-        <!-- 1. البيانات الأساسية -->
-        <h6 class="fw-bold text-primary mb-3">المعلومات الشخصية</h6>
-        <div class="row g-3 mb-3">
-            <div class="col-6">
-                <label class="form-label small fw-bold">الاسم الأول</label>
-                <input type="text" name="first_name" class="form-control" value="{{ user_obj.first_name }}">
+        <form method="POST" class="card border-0 shadow-sm p-4 p-md-5 rounded-4 bg-white overflow-hidden">
+            {% csrf_token %}
+            
+            <div class="d-flex align-items-center mb-4 pb-4 border-bottom border-light">
+                <div class="position-relative">
+                    <img src="https://ui-avatars.com/api/?name={{ user_obj.first_name|default:user_obj.username|urlencode }}&background=f1f5f9&color=3b82f6&bold=true" class="rounded-circle shadow-sm mx-3 border border-2 border-white" width="60" height="60" alt="{{ user_obj.username }}">
+                    
+                    {% if user_obj.is_banned %}
+                        <span class="position-absolute bottom-0 start-0 bg-danger text-white rounded-circle d-flex justify-content-center align-items-center border border-white" style="width: 20px; height: 20px;" title="{% trans 'محظور' %}">
+                            <i class="fas fa-ban" style="font-size: 10px;"></i>
+                        </span>
+                    {% elif user_obj.is_active %}
+                        <span class="position-absolute bottom-0 start-0 bg-success text-white rounded-circle d-flex justify-content-center align-items-center border border-white" style="width: 20px; height: 20px;" title="{% trans 'نشط' %}">
+                            <i class="fas fa-check" style="font-size: 10px;"></i>
+                        </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-1 text-dark">{% trans "إعدادات حساب المستخدم" %}</h5>
+                    <small class="text-muted"><i class="far fa-clock mx-1"></i> {% trans "آخر دخول:" %} {% if user_obj.last_login %}{{ user_obj.last_login|date:"d M Y" }}{% else %}{% trans "لم يسجل دخول بعد" %}{% endif %}</small>
+                </div>
             </div>
-            <div class="col-6">
-                <label class="form-label small fw-bold">اسم العائلة</label>
-                <input type="text" name="last_name" class="form-control" value="{{ user_obj.last_name }}">
+
+            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-id-card mx-2"></i> {% trans "المعلومات الشخصية" %}</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-bold text-muted">{% trans "الاسم الأول" %}</label>
+                    <input type="text" name="first_name" class="form-control bg-light border-0 rounded-3 px-3 py-2 fw-bold text-dark" value="{{ user_obj.first_name }}">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-bold text-muted">{% trans "اسم العائلة" %}</label>
+                    <input type="text" name="last_name" class="form-control bg-light border-0 rounded-3 px-3 py-2 fw-bold text-dark" value="{{ user_obj.last_name }}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold text-muted">{% trans "رقم الهاتف (اسم الدخول الأساسي)" %}</label>
+                    <input type="text" name="phone" class="form-control bg-light border-0 rounded-3 px-3 py-2 fw-bold text-dark" value="{{ user_obj.phone_primary }}" dir="ltr" style="text-align: {% if LANGUAGE_BIDI %}right{% else %}left{% endif %} !important;">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-bold text-muted">{% trans "البريد الإلكتروني (اختياري)" %}</label>
+                    <input type="email" name="email" class="form-control bg-light border-0 rounded-3 px-3 py-2 fw-bold text-dark" value="{{ user_obj.email }}" dir="ltr" style="text-align: {% if LANGUAGE_BIDI %}right{% else %}left{% endif %} !important;">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-bold text-muted">{% trans "دولة الحساب" %}</label>
+                    <select name="country" class="form-select bg-light border-0 rounded-3 px-3 py-2 fw-bold text-dark">
+                        <option value="">-- {% trans "اختر الدولة" %} --</option>
+                        {% for c in countries %}
+                            <option value="{{ c.id }}" {% if user_obj.country_id == c.id %}selected{% endif %}>
+                                {{ c.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-        </div>
 
-        <div class="mb-3">
-            <label class="form-label small fw-bold">رقم الهاتف (اسم الدخول)</label>
-            <input type="text" name="phone" class="form-control" value="{{ user_obj.phone_primary }}">
-        </div>
+            <hr class="opacity-25 my-4">
 
-        <div class="mb-3">
-            <label class="form-label small fw-bold">البريد الإلكتروني</label>
-            <input type="email" name="email" class="form-control" value="{{ user_obj.email }}">
-        </div>
-
-        <hr class="opacity-25 my-4">
-
-        <!-- 2. الصلاحيات والحالة -->
-        <h6 class="fw-bold text-warning mb-3">الصلاحيات والحالة</h6>
-        
-        <div class="mb-3">
-            <label class="form-label small fw-bold">الدور (Role)</label>
-            <select name="role" class="form-select bg-light border-0">
-                <option value="CUSTOMER" {% if user_obj.role == 'CUSTOMER' %}selected{% endif %}>عميل</option>
-                <option value="MERCHANT" {% if user_obj.role == 'MERCHANT' %}selected{% endif %}>تاجر</option>
-                {% if request.user.role == 'OWNER' %}
-                <option value="OWNER" {% if user_obj.role == 'OWNER' %}selected{% endif %}>مالك (Owner)</option>
+            <h6 class="fw-bold text-warning text-darken mb-3"><i class="fas fa-user-shield mx-2"></i> {% trans "الصلاحيات وحالة الحساب" %}</h6>
+            
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">{% trans "تغيير دور الحساب الأساسي (Role)" %}</label>
+                <select name="role" class="form-select bg-light border-0 rounded-3 px-3 py-2 fw-bold text-dark shadow-sm">
+                    <option value="CUSTOMER" {% if user_obj.role == 'CUSTOMER' %}selected{% endif %}>{% trans "عميل عادي (تسوق)" %}</option>
+                    <option value="MERCHANT" {% if user_obj.role == 'MERCHANT' %}selected{% endif %}>{% trans "تاجر (صاحب متجر)" %}</option>
+                    {% if request.user.role == 'OWNER' %}
+                        <option value="ADMIN_LVL2" {% if user_obj.role == 'ADMIN_LVL2' %}selected{% endif %}>{% trans "مشرف / موظف دعم" %}</option>
+                        <option value="COUNTRY_ADMIN" {% if user_obj.role == 'COUNTRY_ADMIN' %}selected{% endif %}>{% trans "مدير دولة" %}</option>
+                        <option value="OWNER" {% if user_obj.role == 'OWNER' %}selected{% endif %}>{% trans "مالك أعلى (Super Admin)" %}</option>
+                    {% endif %}
+                </select>
+                {% if request.user.role != 'OWNER' and user_obj.role in 'OWNER,COUNTRY_ADMIN,ADMIN_LVL2' %}
+                    <div class="form-text small text-danger mt-2 fw-bold"><i class="fas fa-exclamation-triangle mx-1"></i> {% trans "لا تملك الصلاحية لتغيير أدوار الإدارة العليا." %}</div>
                 {% endif %}
-            </select>
-        </div>
+            </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-6">
-                <div class="form-check form-switch p-3 bg-light rounded border">
-                    <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if user_obj.is_active %}checked{% endif %}>
-                    <label class="form-check-label fw-bold small" for="isActive">حساب نشط</label>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="form-check form-switch p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between h-100 transition-all" id="activeContainer">
+                        <label class="form-check-label fw-bold small text-success m-0" for="isActive"><i class="fas fa-check-circle mx-1"></i> {% trans "حساب نشط" %}</label>
+                        <input class="form-check-input m-0" type="checkbox" name="is_active" id="isActive" {% if user_obj.is_active %}checked{% endif %} style="transform: scale(1.2); cursor: pointer;" onchange="toggleActiveColor()">
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="form-check form-switch p-3 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-25 d-flex align-items-center justify-content-between h-100 transition-all" id="banContainer">
+                        <label class="form-check-label fw-bold small text-danger m-0" for="isBanned"><i class="fas fa-ban mx-1"></i> {% trans "حظر الحساب" %}</label>
+                        <input class="form-check-input m-0 border-danger" type="checkbox" name="is_banned" id="isBanned" {% if user_obj.is_banned %}checked{% endif %} style="transform: scale(1.2); cursor: pointer;" onchange="toggleBanColor()">
+                    </div>
                 </div>
             </div>
-            <div class="col-6">
-                <div class="form-check form-switch p-3 bg-danger-subtle rounded border border-danger-subtle">
-                    <input class="form-check-input" type="checkbox" name="is_banned" id="isBanned" {% if user_obj.is_banned %}checked{% endif %}>
-                    <label class="form-check-label fw-bold small text-danger" for="isBanned">محظور (Banned)</label>
+
+            <hr class="opacity-25 my-4">
+
+            <div class="p-4 bg-light border border-light rounded-4 mb-4">
+                <h6 class="fw-bold text-danger mb-3"><i class="fas fa-key mx-2"></i> {% trans "إعدادات الأمان (اختياري)" %}</h6>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold text-muted">{% trans "تعيين كلمة مرور جديدة قسرياً" %}</label>
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                        <input type="text" name="new_password" class="form-control bg-white border-0 px-3 py-2 fw-bold text-danger" placeholder="{% trans 'اتركه فارغاً لعدم التغيير' %}" id="newPassField">
+                        <button type="button" class="btn btn-dark fw-bold px-3 border-0 transition-hover" onclick="generatePassword()" title="{% trans 'توليد كلمة مرور عشوائية قوية' %}">
+                            <i class="fas fa-magic mx-1"></i> <span class="d-none d-sm-inline">{% trans "توليد عشوائي" %}</span>
+                        </button>
+                    </div>
+                    <div class="form-text small text-muted mt-2"><i class="fas fa-exclamation-circle mx-1 text-primary"></i> {% trans "سيتم تغيير كلمة المرور فوراً بمجرد الحفظ دون الحاجة لمعرفة الكلمة القديمة." %}</div>
                 </div>
             </div>
-        </div>
 
-        <hr class="opacity-25 my-4">
-
-        <!-- 3. الأمان (تغيير الباسورد) -->
-        <h6 class="fw-bold text-danger mb-3"><i class="fas fa-key me-2"></i> الأمان (اختياري)</h6>
-        <div class="mb-3">
-            <label class="form-label small fw-bold">تعيين كلمة مرور جديدة</label>
-            <div class="input-group">
-                <input type="text" name="new_password" class="form-control" placeholder="اتركه فارغاً لعدم التغيير" id="newPassField">
-                <button type="button" class="btn btn-outline-secondary" onclick="generatePassword()">
-                    <i class="fas fa-magic"></i> توليد
+            <div class="d-grid gap-2 mt-4 pt-3 border-top border-light">
+                <button type="submit" class="btn btn-primary py-3 fw-bold shadow-sm rounded-4 fs-5 transition-hover d-flex justify-content-center align-items-center gap-2" onclick="return confirm('{% trans "هل أنت متأكد من حفظ التعديلات على هذا الحساب؟" %}');">
+                    <i class="fas fa-save"></i> {% trans "حفظ التغييرات وتحديث الحساب" %}
                 </button>
             </div>
-            <div class="form-text small text-muted">سيتم تغيير كلمة المرور فوراً بدون القديمة.</div>
-        </div>
-
-        <!-- أزرار التحكم -->
-        <div class="d-grid gap-2 mt-4">
-            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm rounded-pill">حفظ التغييرات</button>
-            <a href="{% url 'super_users_list' %}" class="btn btn-light w-100 rounded-pill border">إلغاء</a>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
 <script>
-function generatePassword() {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
-    let pass = "";
-    for (let i = 0; i < 12; i++) {
-        pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    // دالة لتوليد كلمة مرور عشوائية قوية
+    function generatePassword() {
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
+        let pass = "";
+        for (let i = 0; i < 10; i++) {
+            pass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        const passField = document.getElementById('newPassField');
+        passField.value = pass;
+        
+        // تأثير بصري بسيط للفت الانتباه
+        passField.style.backgroundColor = '#fef2f2'; // لون أحمر فاتح
+        setTimeout(() => passField.style.backgroundColor = '#ffffff', 500);
     }
-    document.getElementById('newPassField').value = pass;
-}
+
+    // تفاعلية صناديق الأزرار (UX)
+    function toggleActiveColor() {
+        const isActive = document.getElementById('isActive').checked;
+        const container = document.getElementById('activeContainer');
+        if (isActive) {
+            container.className = "form-check form-switch p-3 bg-success bg-opacity-10 border-success rounded-3 border d-flex align-items-center justify-content-between h-100 transition-all";
+        } else {
+            container.className = "form-check form-switch p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between h-100 transition-all";
+        }
+    }
+
+    function toggleBanColor() {
+        const isBanned = document.getElementById('isBanned').checked;
+        const container = document.getElementById('banContainer');
+        if (isBanned) {
+            container.className = "form-check form-switch p-3 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-25 d-flex align-items-center justify-content-between h-100 transition-all";
+        } else {
+            container.className = "form-check form-switch p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between h-100 transition-all";
+        }
+    }
+    
+    // تشغيل الدوال عند التحميل لتأكيد الألوان
+    document.addEventListener('DOMContentLoaded', () => {
+        toggleActiveColor();
+    });
 </script>
+
+<style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; filter: brightness(1.05); }
+    .transition-all { transition: all 0.3s ease; }
+    .text-darken { color: #b45309 !important; } /* لون أغمق ليتناسب مع الخلفية الملونة */
+</style>
 {% endblock %}

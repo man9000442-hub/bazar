@@ -1,176 +1,282 @@
 {% extends 'base.html' %}
+{% load i18n %} {% block content %}
 
-{% block content %}
+<style>
+    .dark-header {
+        background-color: var(--dark-bg, #091024);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .dark-card {
+        background-color: var(--dark-surface, #121d3a);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+    }
+    .gold-text {
+        color: var(--gold-accent, #ffc107) !important;
+    }
+    .text-muted-dark {
+        color: #8fa0c1 !important;
+    }
+    
+    /* تصميم مخصص للخانات (Inputs) */
+    .dark-input {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+        transition: all 0.3s ease;
+    }
+    .dark-input:focus {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border-color: var(--gold-accent, #ffc107) !important;
+        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.15) !important;
+    }
+    .dark-input::placeholder {
+        color: #6c7c9c !important;
+    }
+    .dark-input-group-text {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #8fa0c1 !important;
+    }
 
-<!-- Header -->
-<div class="bg-white p-3 border-bottom shadow-sm d-flex align-items-center mb-3 sticky-top" style="z-index: 1020;">
-    <a href="{% url 'cart_view' %}" class="text-dark me-3"><i class="fas fa-arrow-right"></i></a>
-    <h5 class="m-0 fw-bold">تأكيد الطلب والدفع</h5>
+    /* تصميم أزرار اختيار الدفع */
+    .payment-label {
+        background-color: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #8fa0c1;
+        transition: all 0.3s ease;
+        border-radius: 12px;
+    }
+    .payment-label i {
+        color: #6c7c9c;
+        transition: all 0.3s ease;
+    }
+    .btn-check:checked + .payment-label {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-color: #ffc107;
+        color: #ffc107;
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.15);
+    }
+    .btn-check:checked + .payment-label i {
+        color: #ffc107;
+    }
+
+    /* زر الدفع الرئيسي */
+    .btn-gold {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: #000;
+        border: none;
+        transition: 0.3s;
+    }
+    .btn-gold:active {
+        transform: scale(0.98);
+    }
+    .btn-gold:disabled {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: rgba(255, 255, 255, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .last-no-border:last-child { border-bottom: none !important; }
+</style>
+
+<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-3 sticky-top" style="z-index: 1020;">
+    <a href="{% url 'cart_view' %}" class="text-white me-3 text-decoration-none"><i class="fas fa-arrow-right fs-5"></i></a>
+    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "تأكيد الطلب والدفع" %}</h5>
 </div>
 
 <div class="container pb-5 mb-5">
     <form method="POST" id="checkout-form">
         {% csrf_token %}
         
-        <!-- حقول مخفية للمنتجات المختارة -->
         {% for item_id in selected_ids %}
             <input type="hidden" name="selected_items" value="{{ item_id }}">
         {% endfor %}
 
-        <!-- 1. عنوان التوصيل -->
-        <div class="card border-0 shadow-sm mb-3 p-3">
-            <h6 class="fw-bold mb-3 d-flex align-items-center text-primary">
-                <i class="fas fa-map-marker-alt me-2"></i> بيانات الشحن
+        <div class="card dark-card shadow-lg mb-4 p-3 border-0">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gold-text">
+                <i class="fas fa-map-marker-alt me-2"></i> {% trans "بيانات الشحن" %}
             </h6>
             
             <div class="mb-3">
-                <label class="form-label text-muted small">المحافظة</label>
-                <select name="city" id="city-select" class="form-select bg-light border-0" onchange="updateShipping()" required>
-                    <option value="">اختر المحافظة...</option>
+                <label class="form-label text-muted-dark small">{% trans "المحافظة" %}</label>
+                <select name="city" id="city-select" class="form-select dark-input" onchange="updateShipping()" required>
+                    <option value="" class="text-dark">{% trans "اختر المحافظة..." %}</option>
                     {% for gov in governorates %}
-                    <option value="{{ gov.id }}">{{ gov.name }}</option>
+                    <option value="{{ gov.id }}" class="text-dark">{{ gov.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             
             <div class="mb-3">
-                <label class="form-label text-muted small">العنوان بالتفصيل</label>
-                <textarea name="address" class="form-control bg-light border-0" rows="2" placeholder="اسم الشارع، رقم العمارة..." required></textarea>
+                <label class="form-label text-muted-dark small">{% trans "العنوان بالتفصيل" %}</label>
+                <textarea name="address" class="form-control dark-input" rows="2" placeholder="{% trans 'اسم الشارع، رقم العمارة...' %}" required></textarea>
+            </div>
+
+            <div class="mb-3 text-start">
+                <label class="form-label fw-bold text-white small">{% trans "اسم المستلم" %} <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text dark-input-group-text border-end-0"><i class="fas fa-user"></i></span>
+                    <input type="text" name="recipient_name" class="form-control dark-input border-start-0" 
+                        value="{{ request.user.first_name }} {{ request.user.last_name }}" required placeholder="{% trans 'اسم الشخص الذي سيستلم الطلب' %}">
+                </div>
+                <div class="form-text text-muted-dark" style="font-size: 11px;">{% trans "يمكنك تغييره إذا كنت ترسل الطلب لشخص آخر." %}</div>
             </div>
 
             <div class="mb-0">
-                <label class="form-label text-muted small">رقم الهاتف</label>
-                <input type="tel" name="phone" class="form-control bg-light border-0" value="{{ request.user.phone_primary }}" required>
+                <label class="form-label text-muted-dark small">{% trans "رقم الهاتف" %}</label>
+                <input type="tel" name="phone" class="form-control dark-input" value="{{ request.user.phone_primary }}" required>
             </div>
         </div>
 
-        <!-- 2. تفاصيل الفاتورة -->
-        <div class="card border-0 shadow-sm mb-3 p-3 bg-white">
-            <h6 class="fw-bold mb-3 text-primary">تفاصيل الطلب</h6>
+        <div class="card dark-card shadow-lg mb-4 p-3 border-0">
+            <h6 class="fw-bold mb-3 gold-text"><i class="fas fa-box-open me-2"></i> {% trans "تفاصيل الطلب" %}</h6>
             
             {% for group in cart_structure %}
-            <div class="mb-3 pb-3 border-bottom last-no-border">
+            <div class="mb-3 pb-3 border-bottom border-secondary border-opacity-25 last-no-border">
                 <div class="d-flex align-items-center mb-2">
-                    <i class="fas fa-store text-warning me-2"></i>
-                    <h6 class="fw-bold text-dark mb-0">{{ group.merchant.user.first_name }}</h6>
+                    <i class="fas fa-store text-white-50 me-2"></i>
+                    <h6 class="fw-bold text-white mb-0">{{ group.merchant.user.first_name }}</h6>
                 </div>
                 
-                <div class="ps-4 border-start border-2 ms-1">
+                <div class="ps-4 border-start border-2 ms-1" style="border-color: rgba(255,255,255,0.1) !important;">
                     {% for item in group.items %}
-                    <div class="d-flex justify-content-between small text-muted mb-1">
+                    <div class="d-flex justify-content-between small text-muted-dark mb-1">
                         <span>{{ item.product_size.product.name }} (x{{ item.quantity }})</span>
-                        <span>{{ item.price_at_purchase }} ج.م</span>
+                        <span class="text-white">{{ item.price_at_purchase }} {% trans "ج.م" %}</span>
                     </div>
                     {% endfor %}
                 </div>
                 
-                <div class="d-flex justify-content-between align-items-center mt-2 ps-4 small bg-light p-2 rounded">
-                    <span class="text-muted">تكلفة الشحن:</span>
-                    <span class="fw-bold text-dark shipping-val" id="shipping-merch-{{ group.merchant.id }}">--</span>
+                <div class="d-flex justify-content-between align-items-center mt-2 ps-4 small p-2 rounded" style="background: rgba(255,255,255,0.03);">
+                    <span class="text-muted-dark">{% trans "تكلفة الشحن:" %}</span>
+                    <span class="fw-bold gold-text shipping-val" id="shipping-merch-{{ group.merchant.id }}">--</span>
                 </div>
             </div>
             {% endfor %}
 
-            <!-- الملخص النهائي -->
             <div class="mt-3">
-                <div class="d-flex justify-content-between mb-1 small text-muted">
-                    <span>إجمالي المنتجات</span>
-                    <span>{{ cart_total }} ج.م</span>
+                <div class="d-flex justify-content-between mb-1 small text-muted-dark">
+                    <span>{% trans "إجمالي المنتجات" %}</span>
+                    <span class="text-white">{{ cart_total }} {% trans "ج.م" %}</span>
                 </div>
-                <div class="d-flex justify-content-between mb-1 small text-muted">
-                    <span>إجمالي الشحن</span>
-                    <span id="total-shipping-display">--</span>
-                </div>
-                
-                <!-- رسوم الأونلاين (مخفية افتراضياً) -->
-                <div class="d-flex justify-content-between mb-1 small text-warning fw-bold" id="online-fees-row" style="display: none;">
-                    <span>رسوم دفع إلكتروني</span>
-                    <span id="online-fees-display">0.00 ج.م</span>
+                <div class="d-flex justify-content-between mb-1 small text-muted-dark">
+                    <span>{% trans "إجمالي الشحن" %}</span>
+                    <span id="total-shipping-display" class="text-white">--</span>
                 </div>
                 
-                <hr>
+                <div class="d-flex justify-content-between mb-1 small fw-bold" id="online-fees-row" style="display: none; color: #ff9800;">
+                    <span>{% trans "رسوم الدفع الإلكتروني" %}</span>
+                    <span id="online-fees-display">0.00 {% trans "ج.م" %}</span>
+                </div>
+                
+                <hr style="border-color: rgba(255,255,255,0.1);">
                 
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="fw-bold fs-5">الإجمالي للدفع</span>
-                    <span id="grand-total-display" class="fw-bold text-gold fs-4">-- ج.م</span>
+                    <span class="fw-bold fs-5 text-white">{% trans "الإجمالي للدفع" %}</span>
+                    <span id="grand-total-display" class="fw-bold gold-text fs-4" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">-- {% trans "ج.م" %}</span>
                 </div>
             </div>
         </div>
 
-        <!-- 3. خيارات الدفع والخصم -->
-        <div class="card border-0 shadow-sm mb-5 p-3 bg-white">
+        <div class="card dark-card shadow-lg mb-5 p-3 border-0">
             
-            <!-- قسم رصيد الدعوات -->
+            {% if personal_vouchers %}
+            <div class="alert border-0 shadow-sm mb-4 rounded-3 position-relative overflow-hidden" style="background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.3) !important;">
+                <div class="position-absolute top-0 start-0 h-100 bg-success" style="width: 4px;"></div>
+                
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-gift text-success fs-4 me-2 animate__animated animate__tada animate__infinite animate__slower"></i>
+                    <h6 class="fw-bold mb-0 text-white">{{ personal_vouchers.first.title }}</h6>
+                </div>
+                <p class="small mb-1 text-muted-dark">
+                    {% blocktrans with pct=personal_vouchers.first.discount_percentage max_amt=personal_vouchers.first.max_discount_amount|floatformat:0 count=personal_vouchers.first.remaining_items %}
+                    تم تفعيل خصم <strong class="text-success">{{ pct }}%</strong> 
+                    (بحد أقصى {{ max_amt }} ج.م) 
+                    متاح على <strong class="text-white">{{ count }}</strong> منتجات.
+                    {% endblocktrans %}
+                    
+                    {% if personal_vouchers.first.free_shipping %}
+                        <br><strong class="gold-text"><i class="fas fa-truck mt-1"></i> {% trans "يتضمن شحن مجاني للطلب!" %}</strong>
+                    {% endif %}
+                </p>
+                <div class="form-text text-success small fw-bold" style="font-size: 10px;">
+                    {% trans "* سيتم خصم قيمة الهدية من الإجمالي النهائي بعد تأكيد الطلب." %}
+                </div>
+                <input type="hidden" name="admin_voucher_code" value="{{ personal_vouchers.first.code }}">
+            </div>
+            {% endif %}
+            
             {% if applicable_discount > 0 %}
-            <div class="bg-warning-subtle p-3 rounded mb-3 border border-warning-subtle">
+            <div class="p-3 rounded mb-4" style="background: rgba(255, 193, 7, 0.05); border: 1px solid rgba(255, 193, 7, 0.2);">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="fw-bold text-dark mb-1"><i class="fas fa-gift me-2"></i> رصيد خصم</h6>
-                        <small class="text-muted">متاح لك خصم {{ applicable_discount }} ج.م</small>
+                        <h6 class="fw-bold gold-text mb-1"><i class="fas fa-wallet me-2"></i> {% trans "رصيد خصم الإحالة" %}</h6>
+                        <small class="text-muted-dark">
+                            {% blocktrans with discount=applicable_discount %}متاح لك خصم {{ discount }} ج.م{% endblocktrans %}
+                        </small>
                     </div>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="use_wallet" id="useWallet" onchange="recalculateTotal()">
-                        <label class="form-check-label fw-bold" for="useWallet">تفعيل</label>
+                        <input class="form-check-input" type="checkbox" name="use_wallet" id="useWallet" onchange="recalculateTotal()" style="cursor: pointer;">
                     </div>
                 </div>
             </div>
             {% endif %}
 
-            <h6 class="fw-bold mb-3 text-primary">طريقة الدفع</h6>
+            <h6 class="fw-bold mb-3 gold-text"><i class="fas fa-credit-card me-2"></i> {% trans "طريقة الدفع" %}</h6>
             
-            <div class="btn-group w-100 mb-3" role="group">
-                <!-- كاش -->
+            <div class="d-flex gap-2 w-100 mb-3" role="group">
                 <input type="radio" class="btn-check" name="payment_method" id="pay_cod" value="COD" checked onchange="recalculateTotal()">
-                <label class="btn btn-outline-secondary py-3" for="pay_cod">
-                    <i class="fas fa-money-bill-wave d-block mb-1 fs-4"></i><br>كاش
+                <label class="btn payment-label flex-fill py-3 m-0" for="pay_cod">
+                    <i class="fas fa-money-bill-wave d-block mb-1 fs-4"></i>{% trans "كاش" %}
                 </label>
 
-                <!-- فيزا -->
                 <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE" onchange="recalculateTotal()">
-                <label class="btn btn-outline-primary py-3" for="pay_online">
-                    <i class="fas fa-credit-card d-block mb-1 fs-4"></i><br>فيزا
+                <label class="btn payment-label flex-fill py-3 m-0" for="pay_online">
+                    <i class="fas fa-credit-card d-block mb-1 fs-4"></i>{% trans "فيزا" %}
                 </label>
 
-                <!-- محفظة -->
                 <input type="radio" class="btn-check" name="payment_method" id="pay_wallet" value="WALLET" onchange="recalculateTotal()">
-                <label class="btn btn-outline-success py-3" for="pay_wallet">
-                    <i class="fas fa-wallet d-block mb-1 fs-4"></i><br>محفظة
+                <label class="btn payment-label flex-fill py-3 m-0" for="pay_wallet">
+                    <i class="fas fa-wallet d-block mb-1 fs-4"></i>{% trans "محفظة" %}
                 </label>
             </div>
 
-            <!-- حقل رقم المحفظة (ديناميكي) -->
-            <div id="wallet-input-container" style="display: none;" class="bg-light p-3 rounded border">
-                <label class="form-label small fw-bold text-muted">رقم المحفظة الإلكترونية</label>
+            <div id="wallet-input-container" style="display: none;" class="p-3 rounded mt-2" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                <label class="form-label small fw-bold text-white">{% trans "رقم المحفظة الإلكترونية المحول منها" %}</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-mobile-alt"></i></span>
-                    <input type="tel" name="wallet_number" id="wallet_number" class="form-control border-start-0" placeholder="010xxxxxxxx">
+                    <span class="input-group-text dark-input-group-text border-end-0"><i class="fas fa-mobile-alt"></i></span>
+                    <input type="tel" name="wallet_number" id="wallet_number" class="form-control dark-input border-start-0" placeholder="010xxxxxxxx">
                 </div>
-                <div class="form-text small">فودافون كاش، اتصالات، أورانج، وي.</div>
+                <div class="form-text text-muted-dark small mt-1">{% trans "فودافون كاش، اتصالات، أورانج، وي." %}</div>
             </div>
         </div>
 
-        <!-- زر التأكيد العائم -->
-        <div class="fixed-bottom bg-white p-3 border-top shadow-lg" style="bottom: 70px; z-index: 990;">
-            <button type="submit" class="btn btn-primary-app w-100 py-3 fw-bold shadow-sm" id="confirm-btn" disabled>
-                <span id="btn-text">تأكيد الطلب (دفع عند الاستلام)</span>
+        <div class="fixed-bottom p-3 shadow-lg rounded-top-4 dark-header" style="bottom: 70px; z-index: 990; border-top: 1px solid rgba(255,193,7,0.2);">
+            <button type="submit" class="btn btn-gold w-100 py-3 fw-bold shadow-sm rounded-pill" id="confirm-btn" disabled style="font-size: 16px;">
+                <span id="btn-text">{% trans "تأكيد الطلب (دفع عند الاستلام)" %}</span>
             </button>
-            <div id="select-city-msg" class="text-center small text-muted mt-2">يرجى اختيار المحافظة لحساب الشحن</div>
+            <div id="select-city-msg" class="text-center small text-danger mt-2 fw-bold">{% trans "يرجى اختيار المحافظة أولاً لحساب الشحن" %}</div>
         </div>
     </form>
 </div>
 
-<style>
-    .last-no-border:last-child { border-bottom: none !important; }
-</style>
-
-<!-- JavaScript Logic (المصحح والشامل) -->
 <script>
     // 1. استقبال المتغيرات
     const feeFixed = parseFloat("{{ fee_fixed|default:0 }}") || 0;
     const feePercent = parseFloat("{{ fee_percent|default:0 }}") || 0;
     const discountValue = parseFloat("{{ applicable_discount|default:0 }}") || 0;
     
-    let rawGrandTotal = 0; // الإجمالي الخام من السيرفر
+    let rawGrandTotal = 0;
+    
+    // تعريف كلمات الترجمة للجافاسكريبت
+    const currencyStr = " {% trans 'ج.م' %}";
+    const msgFree = '<span class="text-success">{% trans "مجاني" %}</span>';
+    const msgLoading = '<i class="fas fa-spinner fa-spin"></i> {% trans "جاري الحساب..." %}';
+    const msgError = "{% trans 'حدث خطأ في الاتصال' %}";
+    const btnVisa = "{% trans 'الانتقال للدفع (فيزا) 💳' %}";
+    const btnWallet = "{% trans 'تأكيد الدفع (محفظة) 📱' %}";
+    const btnCod = "{% trans 'تأكيد الطلب (دفع عند الاستلام) 📦' %}";
 
     // 2. دالة جلب الشحن
     function updateShipping() {
@@ -187,9 +293,8 @@
 
         // Loading
         confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحساب...';
+        confirmBtn.innerHTML = msgLoading;
 
-        // تجميع المنتجات
         const checkboxes = document.querySelectorAll('input[name="selected_items"]');
         let selectedIds = [];
         if (checkboxes.length > 0) {
@@ -201,20 +306,17 @@
         
         const idsParam = selectedIds.join(',');
 
-        // API Call
         fetch(`/api/calc-shipping/?gov_id=${govId}&items=${idsParam}`)
             .then(response => response.json())
             .then(data => {
-                // تحديث التفاصيل
                 if (data.shipping_details) {
                     data.shipping_details.forEach(detail => {
                         const el = document.getElementById(`shipping-merch-${detail.merchant_id}`);
-                        if (el) el.innerHTML = detail.cost == 0 ? '<span class="text-success">مجاني</span>' : detail.cost + " ج.م";
+                        if (el) el.innerHTML = detail.cost == 0 ? msgFree : detail.cost + currencyStr;
                     });
                 }
 
-                // تحديث الإجمالي
-                if (totalShippingEl) totalShippingEl.innerText = data.total_shipping + " ج.م";
+                if (totalShippingEl) totalShippingEl.innerText = data.total_shipping + currencyStr;
                 
                 rawGrandTotal = parseFloat(data.grand_total) || 0;
                 
@@ -225,7 +327,7 @@
             })
             .catch(err => {
                 console.error(err);
-                confirmBtn.innerText = "حدث خطأ في الاتصال";
+                confirmBtn.innerText = msgError;
             });
     }
 
@@ -238,60 +340,47 @@
         const btnText = document.getElementById('btn-text');
         const confirmBtn = document.getElementById('confirm-btn');
         
-        // أ. خصم المحفظة
         const useWallet = document.getElementById('useWallet');
         if (useWallet && useWallet.checked) {
             finalTotal -= discountValue;
         }
 
-        // ب. طريقة الدفع والرسوم
         const payOnline = document.getElementById('pay_online').checked;
         const payWallet = document.getElementById('pay_wallet').checked;
         const walletInput = document.getElementById('wallet-input-container');
         const feesRow = document.getElementById('online-fees-row');
         const feesValue = document.getElementById('online-fees-display');
 
-        // إخفاء حقل المحفظة مبدئياً
         if (walletInput) walletInput.style.display = 'none';
 
+        confirmBtn.className = 'btn btn-gold w-100 py-3 fw-bold shadow-sm rounded-pill';
+
         if (payOnline || payWallet) {
-            // إضافة الرسوم
             let fees = feeFixed + (finalTotal * feePercent / 100);
             finalTotal += fees;
 
             if (feesRow) feesRow.style.display = 'flex';
-            if (feesValue) feesValue.innerText = fees.toFixed(2) + " ج.م";
-            
-            confirmBtn.className = 'btn btn-success w-100 py-3 fw-bold shadow-sm';
+            if (feesValue) feesValue.innerText = fees.toFixed(2) + currencyStr;
             
             if (payOnline) {
-                if (btnText) btnText.innerText = "الانتقال للدفع (فيزا) 💳";
-                else confirmBtn.innerText = "الانتقال للدفع (فيزا) 💳";
+                if (btnText) btnText.innerText = btnVisa;
+                else confirmBtn.innerText = btnVisa;
             } else {
                 if (walletInput) walletInput.style.display = 'block';
-                if (btnText) btnText.innerText = "الدفع بالمحفظة 📱";
-                else confirmBtn.innerText = "الدفع بالمحفظة 📱";
+                if (btnText) btnText.innerText = btnWallet;
+                else confirmBtn.innerText = btnWallet;
             }
 
         } else {
-            // كاش
             if (feesRow) feesRow.style.display = 'none';
-            
-            confirmBtn.className = 'btn btn-primary-app w-100 py-3 fw-bold shadow-sm';
-            if (btnText) btnText.innerText = "تأكيد الطلب (دفع عند الاستلام)";
-            else confirmBtn.innerText = "تأكيد الطلب (دفع عند الاستلام)";
+            if (btnText) btnText.innerText = btnCod;
+            else confirmBtn.innerText = btnCod;
         }
 
-        // ج. التحديث النهائي
         if (finalTotal < 0) finalTotal = 0;
-        if (grandTotalEl) grandTotalEl.innerText = finalTotal.toFixed(2) + " ج.م";
+        if (grandTotalEl) grandTotalEl.innerText = finalTotal.toFixed(2) + currencyStr;
     }
 
-    // دوال الربط
-    function togglePaymentMethod() { recalculateTotal(); }
-    function toggleWalletDiscount() { recalculateTotal(); }
-
-    // التحميل
     document.addEventListener('DOMContentLoaded', function() {
         const citySelect = document.getElementById('city-select');
         if (citySelect && citySelect.value) {

@@ -1,186 +1,321 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr' }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>
+      {% block title %}Elbazaar - {% trans "سوقك الإلكتروني الأول" %}{% endblock %}
+    </title>
+    <meta
+      name="description"
+      content="{% block description %}{% trans 'تسوق أفضل المنتجات بأرخص الأسعار في مصر. ملابس، إلكترونيات، والمزيد.' %}{% endblock %}"
+    />
+    <meta name="keywords" content="{% trans 'تسوق, مصر, أونلاين, ملابس, خصومات' %}" />
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}Elbazaar - سوقك الإلكتروني الأول{% endblock %}</title>
-    <meta name="description" content="{% block description %}تسوق أفضل المنتجات بأرخص الأسعار في مصر. ملابس، إلكترونيات، والمزيد.{% endblock %}">
-    <meta name="keywords" content="تسوق, مصر, أونلاين, ملابس, خصومات">
+    <meta property="og:title" content="{% block og_title %}Elbazaar{% endblock %}" />
+    <meta property="og:description" content="{% block og_description %}{% trans 'أفضل العروض والخصومات' %}{% endblock %}" />
+    <meta property="og:image" content="{% block og_image %}/static/logo.png{% endblock %}" />
+
+    {% if LANGUAGE_BIDI %}
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+    {% else %}
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    {% endif %}
     
-    <!-- Open Graph (فيسبوك واتساب) -->
-    <meta property="og:title" content="{% block og_title %}Elbazaar{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}أفضل العروض والخصومات{% endblock %}">
-    <meta property="og:image" content="{% block og_image %}/static/logo.png{% endblock %}">
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts (Tajawal) -->
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
     <style>
-        /* 1. نظام الألوان الجديد */
-        :root {
-            --primary-blue: #0d6efd;  /* أزرق أساسي */
-            --accent-yellow: #ffc107; /* أصفر مميز */
-            --bg-light: #f8f9fa;      /* خلفية فاتحة */
-            --text-dark: #212529;
-            --white: #ffffff;
-        }
+      /* 1. نظام الألوان الجديد (Premium Dark Theme) */
+      :root {
+          --dark-bg: #091024;        /* كحلي غامق جداً للخلفية الأساسية */
+          --dark-surface: #121d3a;   /* كحلي أفتح للكروت وشريط التنقل */
+          --gold-accent: #ffc107;    /* ذهبي مميز */
+          --gold-gradient: linear-gradient(135deg, #ffc107, #ff9800);
+          --text-light: #ffffff;
+          --text-muted-dark: #8fa0c1;
+      }
 
-        body { 
-            /* هامش سفلي كبير لمنع اختفاء المحتوى وراء النافبار والأزرار العائمة */
-            padding-bottom: 120px !important; 
-            background-color: var(--bg-light); 
-            font-family: 'Tajawal', sans-serif;
-            color: var(--text-dark);
-            -webkit-tap-highlight-color: transparent;
-        }
+      body {
+          background-color: var(--dark-bg);
+          font-family: 'Tajawal', sans-serif;
+          color: var(--text-light);
+          -webkit-tap-highlight-color: transparent;
+          
+          /* هامش سفلي لمنع اختفاء المحتوى وراء النافبار */
+          {% if not is_mobile_app %}
+          padding-bottom: 100px !important;
+          {% else %}
+          padding-bottom: 20px !important;
+          {% endif %}
+      }
 
-        /* 2. شريط التنقل السفلي (Bottom Nav) */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--white);
-            /* ظل ناعم للأعلى */
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
-            z-index: 1000;
-            display: flex;
-            justify-content: space-around;
-            padding: 12px 0;
-            border-radius: 20px 20px 0 0;
-        }
+      /* 2. شريط التنقل السفلي (Bottom Nav) الداكن */
+      .bottom-nav {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: var(--dark-surface);
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          box-shadow: 0 -5px 25px rgba(0,0,0,0.7);
+          z-index: 1000;
+          display: flex;
+          justify-content: space-around;
+          padding: 12px 0 8px 0;
+          border-radius: 24px 24px 0 0;
+      }
 
-        .nav-item { 
-            text-align: center; 
-            color: #adb5bd; /* لون رمادي باهت */
-            text-decoration: none; 
-            font-size: 10px; 
-            font-weight: 500;
-            transition: 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 20%;
-        }
+      .nav-item {
+          text-align: center;
+          color: var(--text-muted-dark);
+          text-decoration: none;
+          font-size: 11px;
+          font-weight: 600;
+          transition: 0.3s;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 20%;
+      }
 
-        .nav-item i { 
-            font-size: 22px; 
-            margin-bottom: 4px; 
-            transition: 0.3s;
-        }
+      .nav-item i {
+          font-size: 22px;
+          margin-bottom: 4px;
+          transition: 0.3s;
+      }
 
-        /* حالة التفعيل (Active) */
-        .nav-item.active { 
-            color: var(--primary-blue); 
-        }
-        
-        .nav-item.active i {
-            transform: translateY(-3px);
-            color: var(--primary-blue);
-        }
+      /* حالة التفعيل (Active) باللون الذهبي */
+      .nav-item.active {
+          color: var(--gold-accent);
+      }
 
-        /* 3. تحسينات عامة */
-        a { text-decoration: none; }
-        
-        /* زر التطبيق الأساسي */
-        .btn-primary-app {
-            background-color: var(--primary-blue);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            transition: 0.2s;
-        }
-        .btn-primary-app:hover {
-            background-color: #0b5ed7;
-            color: white;
-        }
-        .btn-primary-app:active {
-            transform: scale(0.98);
-        }
+      .nav-item.active i {
+          transform: translateY(-4px);
+          color: var(--gold-accent);
+          text-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+      }
 
-        /* إخفاء السكرول بار للموبايل */
-        ::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-        }
+      /* 3. تحسينات عامة */
+      a { text-decoration: none; }
+
+      /* إخفاء السكرول بار للموبايل */
+      ::-webkit-scrollbar {
+          width: 0px;
+          background: transparent;
+      }
     </style>
-</head>
-<body>
-
-    <!-- رسائل التنبيه (Toasts) -->
-    <div class="fixed-top p-3" style="z-index: 2000; pointer-events: none;">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="toast show align-items-center text-white bg-{{ message.tags }} border-0 mb-2 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body fw-bold">
-                            {{ message }}
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-    </div>
-
-    <!-- المحتوى المتغير -->
-    <div class="container-fluid px-0">
-        {% block content %}{% endblock %}
-    </div>
-
-    <!-- Bottom Navigation Bar -->
-    <nav class="bottom-nav">
-        <!-- الرئيسية -->
-        <a href="{% url 'home' %}" class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
-            <i class="fas fa-home"></i> الرئيسية
-        </a>
-        
-        <!-- الأقسام -->
-        <a href="{% url 'categories_page' %}" class="nav-item {% if request.resolver_match.url_name == 'categories_page' %}active{% endif %}">
-            <i class="fas fa-th-large"></i> الأقسام
-        </a>
-        
-        <!-- السلة (الوسطى) -->
-        <a href="{% url 'cart_view' %}" class="nav-item position-relative {% if request.resolver_match.url_name == 'cart_view' %}active{% endif %}">
-            <div class="bg-primary-app rounded-circle p-3 position-absolute top-0 start-50 translate-middle shadow-sm border border-4 border-white" style="margin-top: -20px;">
-                <i class="fas fa-shopping-cart text-white fs-5 m-0"></i>
-            </div>
-            <span style="margin-top: 25px;">السلة</span>
-        </a>
-        
-        <!-- المفضلة -->
-        <a href="{% url 'wishlist' %}" class="nav-item {% if request.resolver_match.url_name == 'wishlist' %}active{% endif %}">
-            <i class="fas fa-heart"></i> المفضلة
-        </a>
-        
-        <!-- حسابي -->
-        <a href="{% url 'profile' %}" class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
-            <i class="fas fa-user"></i> حسابي
-        </a>
-    </nav>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+  <body>
     
-    <!-- لإخفاء الرسائل تلقائياً -->
+    <div class="fixed-top p-3" style="z-index: 2000; pointer-events: none">
+      {% if messages %} {% for message in messages %}
+      <div
+        class="toast show align-items-center text-white bg-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}primary{% endif %} border-0 mb-2 shadow-lg rounded-4"
+        role="alert" aria-live="assertive" aria-atomic="true"
+      >
+        <div class="d-flex">
+          <div class="toast-body fw-bold">
+            {% if message.tags == 'error' %}
+            <i class="fas fa-exclamation-circle me-1"></i>
+            {% elif message.tags == 'success' %}
+            <i class="fas fa-check-circle me-1"></i>
+            {% endif %} {{ message }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" style="pointer-events: auto"></button>
+        </div>
+      </div>
+      {% endfor %} {% endif %}
+    </div>
+
+    <div class="container-fluid px-0">{% block content %}{% endblock %}</div>
+
+    {% if not is_mobile_app %}
+    <nav class="bottom-nav">
+      <a href="{% url 'home' %}" class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+        <i class="fas fa-home"></i> {% trans "الرئيسية" %}
+      </a>
+
+      <a href="{% url 'categories_page' %}" class="nav-item {% if request.resolver_match.url_name == 'categories_page' %}active{% endif %}">
+        <i class="fas fa-th-large"></i> {% trans "الأقسام" %}
+      </a>
+
+      <a href="{% url 'cart_view' %}" class="nav-item position-relative {% if request.resolver_match.url_name == 'cart_view' %}active{% endif %}">
+        <div class="rounded-circle p-3 position-absolute top-0 start-50 translate-middle shadow-lg" 
+             style="margin-top: -22px; background: var(--gold-gradient); border: 4px solid var(--dark-bg); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-shopping-cart text-dark fs-5 m-0" style="text-shadow: none;"></i>
+        </div>
+        <span style="margin-top: 28px">{% trans "السلة" %}</span>
+      </a>
+
+      <a href="{% url 'wishlist' %}" class="nav-item {% if request.resolver_match.url_name == 'wishlist' %}active{% endif %}">
+        <i class="fas fa-heart"></i> {% trans "المفضلة" %}
+      </a>
+
+      <a href="{% url 'profile' %}" class="nav-item {% if request.resolver_match.url_name == 'profile_router' or request.resolver_match.url_name == 'customer_profile' %}active{% endif %}">
+        <i class="fas fa-user"></i> {% trans "حسابي" %}
+      </a>
+    </nav>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        setTimeout(function() {
-            var toasts = document.querySelectorAll('.toast');
-            toasts.forEach(function(toast) {
-                var bsToast = new bootstrap.Toast(toast);
-                bsToast.hide();
-            });
-        }, 3000);
+      document.addEventListener("DOMContentLoaded", function () {
+        var toastElList = [].slice.call(document.querySelectorAll(".toast"));
+        var toastList = toastElList.map(function (toastEl) {
+          return new bootstrap.Toast(toastEl, { delay: 4000 }).show();
+        });
+      });
     </script>
 
-    {% comment %} <a href="{% url 'my_tickets' %}" class="btn btn-dark rounded-circle shadow-lg d-flex align-items-center justify-content-center position-fixed" 
-    style="width: 50px; height: 50px; bottom: 80px; right: 20px; z-index: 1000;">
-        <i class="fas fa-headset fs-4"></i>
-    </a> {% endcomment %}
-</body>
+    {% if active_promo %}
+    <div id="promoOverlay" class="promo-overlay">
+      <div class="promo-content animate__animated animate__fadeIn">
+        
+        <button id="closePromoBtn" class="promo-close-btn">
+          <i class="fas fa-times"></i>
+        </button>
+
+        <a href="{{ active_promo.get_link }}" class="text-decoration-none d-block w-100 h-100">
+          <img src="{{ active_promo.image.url }}" alt="{{ active_promo.title }}" class="fullscreen-img" />
+        </a>
+      </div>
+    </div>
+
+    <style>
+      .promo-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw; 
+        height: 100vh; 
+        background-color: rgba(9, 16, 36, 0.95); /* خلفية كحلي داكنة شبه شفافة */
+        z-index: 99999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+      }
+      .promo-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .fullscreen-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; 
+      }
+      .promo-close-btn {
+        position: absolute;
+        top: 20px;
+        inset-inline-end: 20px; /* 👈 استخدام خاصية منطقية لتتوافق مع الـ RTL والـ LTR */
+        background-color: rgba(0, 0, 0, 0.5); 
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 100000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: 0.3s;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+      .promo-close-btn:hover {
+        background-color: rgba(220, 53, 69, 0.8); /* تحول للأحمر عند اللمس */
+        transform: scale(1.1);
+      }
+    </style>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const currentPromoId = "promo_{{ active_promo.id }}";
+
+        if (sessionStorage.getItem("lastSeenPromo") !== currentPromoId) {
+          const promoOverlay = document.getElementById("promoOverlay");
+          const closePromoBtn = document.getElementById("closePromoBtn");
+
+          promoOverlay.style.display = "flex";
+          sessionStorage.setItem("lastSeenPromo", currentPromoId);
+
+          const closePromo = (e) => {
+            if (e) e.preventDefault();
+            promoOverlay.style.display = "none";
+          };
+
+          closePromoBtn.addEventListener("click", closePromo);
+
+          promoOverlay.addEventListener("click", function (e) {
+            if (e.target === promoOverlay) {
+              closePromo();
+            }
+          });
+
+          // يختفي لوحده بعد 15 ثانية
+          setTimeout(closePromo, 15000);
+        }
+      });
+    </script>
+    {% endif %}
+<script>
+    // الدالة اللي فلاتر بيكلمها
+    window.receiveFCMToken = function(token) {
+        // 🔥 فخ الصيد: دي هتظهر في نص شاشة الموبايل أول ما فلاتر يكلم الموقع
+        //alert("🌐 الموقع استلم التوكن من فلاتر بنجاح!\nجاري الحفظ...");
+        console.log("🔥 FCM Token from Flutter received: ", token);
+        
+        {% if user.is_authenticated %}
+        
+        // 1. قراءة الرابط الحالي واستخراج كود اللغة منه أوتوماتيك (عشان نعالج مشكلة الكاش)
+        let pathArray = window.location.pathname.split('/');
+        let langCode = (pathArray[1] && pathArray[1].length === 2) ? '/' + pathArray[1] : '';
+        
+        // 2. بناء الرابط النهائي (هيبقى مثلا /en/accounts/save-fcm-token/ أو /ar/...)
+        let targetUrl = langCode + '/accounts/save-fcm-token/';
+        
+        console.log("🌐 Sending token to URL: ", targetUrl);
+
+        fetch(targetUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ 'token': token })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                console.log("✅ Token saved perfectly!");
+                //alert("💾 تم حفظ التوكن في قاعدة بيانات جانجو بنجاح!");
+            } else {
+                console.error("⚠️ خطأ في الحفظ: ", data.message);
+                //alert("⚠️ خطأ في الحفظ: " + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('🚨 خطأ في الاتصال بجانجو: ', error);
+            //alert('🚨 خطأ في الاتصال بجانجو: ' + error);
+        });
+        
+        {% else %}
+        // لو اليوزر مش مسجل دخول
+        //alert("⚠️ لم يتم الحفظ لأنك لست مسجلاً للدخول في الموقع!");
+        {% endif %}
+    };
+</script>
+  </body>
 </html>
