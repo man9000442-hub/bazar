@@ -1,1 +1,1 @@
-web: gunicorn bazarna.wsgi
+web: gunicorn bazarna.wsgi --log-file -
