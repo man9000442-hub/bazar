@@ -4,174 +4,204 @@
 {% block content %}
 
 <style>
-  .dark-header {
-    background-color: var(--dark-bg, #091024);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  /* --- متغيرات النظام --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --danger-light: #FEE2E2;
+    --danger: #EF4444;
   }
-  .dark-card {
-    background-color: var(--dark-surface, #121d3a);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  .gold-text {
-    color: var(--gold-accent, #ffc107) !important;
+
+  /* --- أنيميشن --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
-  .text-muted-dark {
-    color: #8fa0c1 !important;
+  .animate-fade-up { animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; opacity: 0; }
+
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   }
-  .btn-gold {
-    background: linear-gradient(135deg, #ffc107, #ff9800);
-    color: #000;
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  }
+
+  /* --- كارت المنتج في السلة (الهيكل الجديد) --- */
+  .neo-cart-item {
+    background: var(--surface);
+    border-radius: 24px;
+    padding: 16px;
     border: none;
-    transition: 0.3s;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
   }
-  .btn-gold:hover {
-    transform: scale(0.98);
-  }
-  .btn-gold-disabled {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: rgba(255, 255, 255, 0.4) !important;
-    border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  }
+  
   .custom-checkbox {
-    width: 22px;
-    height: 22px;
-    accent-color: #ffc107;
-    cursor: pointer;
+    width: 24px; height: 24px;
+    accent-color: var(--accent-dark);
+    cursor: pointer; border: 2px solid rgba(0,0,0,0.1);
   }
-  .qty-control {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+
+  .img-showcase {
+    background: #F4F4F5; border-radius: 20px;
+    width: 85px; height: 85px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 8px;
+  }
+
+  /* --- أزرار الكمية (Pill) --- */
+  .qty-pill {
+    background: #F4F4F5;
     border-radius: 50px;
+    display: inline-flex; align-items: center; padding: 4px;
   }
   .qty-btn {
-    color: #fff;
-    text-decoration: none;
-    padding: 2px 10px;
-    font-weight: bold;
-    transition: 0.2s;
+    color: var(--text-primary); text-decoration: none;
+    width: 28px; height: 28px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-weight: bold; font-size: 16px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
   }
-  .qty-btn:hover {
-    color: #ffc107;
+  .qty-btn:active { transform: scale(0.9); }
+  .qty-val { font-weight: 800; min-width: 24px; text-align: center; font-size: 13px; }
+
+  /* --- زر الحذف --- */
+  .delete-btn-neo {
+    width: 32px; height: 32px;
+    background: var(--danger-light); color: var(--danger);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; text-decoration: none;
   }
-  .qty-val {
-    color: #fff;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0 12px;
-    font-size: 13px;
+  .delete-btn-neo:active { transform: scale(0.85); background: var(--danger); color: #fff; }
+
+  /* --- شريط الدفع السفلي --- */
+  .checkout-bar-ultra {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 32px 32px 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
   }
+
+  .btn-neo-primary {
+    background: var(--accent-dark); color: #fff !important; border: none; font-weight: 800; box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  }
+  .btn-neo-disabled { background: #E4E4E7 !important; color: #A1A1AA !important; border: none; pointer-events: none; }
 </style>
 
-<div class="dark-header p-3 shadow-sm d-flex align-items-center sticky-top" style="z-index: 1020;">
-    <a href="javascript:history.back()" class="text-white me-3 text-decoration-none">
-        <i class="fas fa-arrow-right fs-5"></i>
+<div class="ultra-header p-3 d-flex align-items-center sticky-top">
+    <a href="javascript:history.back()" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
     </a>
-    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">
-        {% trans "سلة المشتريات" %} <span class="gold-text">({{ order.items.count }})</span>
-    </h5>
+    <h4 class="m-0 fw-bold" style="letter-spacing: -0.5px;">
+        {% trans "سلة المشتريات" %} 
+        <span style="color: var(--text-secondary); font-size: 16px; font-weight: 600;">({{ order.items.count }})</span>
+    </h4>
 </div>
 
 <form id="cart-form" method="GET" action="{% url 'checkout' %}">
     <div class="container py-3 mb-5 pb-5" style="min-height: 80vh;">
+        
         {% if order and order.items.count > 0 %}
             
             {% for item in order.items.all %}
-            <div class="card dark-card mb-3 overflow-hidden shadow-lg" style="border-radius: 16px;">
-                <div class="row g-0 align-items-center p-2">
+            <div class="neo-cart-item animate-fade-up mb-3" style="animation-delay: {{ forloop.counter0|add:1|default:1 }}00ms;">
+                <div class="d-flex align-items-center">
                     
-                    <div class="col-1 text-center ps-1">
+                    <div class="pe-2">
                         <input type="checkbox" name="selected_items" value="{{ item.id }}" 
-                               class="form-check-input custom-checkbox item-checkbox shadow-sm" 
+                               class="form-check-input custom-checkbox item-checkbox" 
                                data-price="{{ item.total_price }}" 
                                checked onchange="updateTotal()">
                     </div>
 
-                    <div class="col-3 d-flex align-items-center justify-content-center p-1">
-                        <a href="{% url 'product_detail' item.product_size.product.pk %}" class="d-block w-100">
-                            <div class="bg-white rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="height: 90px; padding: 5px;">
-                                {% if item.product_size.product.image %}
-                                    <img src="{{ item.product_size.product.image.url }}" class="img-fluid" style="max-height: 100%; object-fit: contain;">
-                                {% else %}
-                                    <i class="fas fa-image text-muted opacity-25 fa-2x"></i>
-                                {% endif %}
-                            </div>
-                        </a>
-                    </div>
+                    <a href="{% url 'product_detail' item.product_size.product.pk %}" class="img-showcase text-decoration-none ms-2 me-2 flex-shrink-0">
+                        {% if item.product_size.product.image %}
+                            <img src="{{ item.product_size.product.image.url }}" class="img-fluid" style="max-height: 100%; object-fit: contain; mix-blend-mode: darken;">
+                        {% else %}
+                            <i class="fas fa-box text-muted opacity-25 fa-2x"></i>
+                        {% endif %}
+                    </a>
                     
-                    <div class="col-8">
-                        <div class="card-body p-2 ps-3 position-relative">
-                            <a href="{% url 'product_detail' item.product_size.product.pk %}" class="text-decoration-none text-white">
-                                <h6 class="card-title fw-bold text-truncate mb-1" style="font-size: 14px;">
-                                    {{ item.product_size.product.name }}
-                                </h6>
+                    <div class="flex-grow-1 min-w-0 d-flex justify-content-between">
+                        
+                        <div class="pe-2 flex-grow-1 min-w-0" style="padding-left: 10px;">
+                            <h6 class="fw-bold text-truncate mb-1" style="font-size: 14px; color: var(--text-primary); line-height: 1.4;">
+                                {{ item.product_size.product.name }}
+                            </h6>
+                            <p class="mb-2" style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">
+                                {{ item.product_size.size_label }} • {{ item.product_size.color_label }}
+                            </p>
+                            <span class="fw-bold fs-6" style="color: var(--text-primary);">{{ item.price_at_purchase }} <small style="font-size: 10px;">{% trans "ج.م" %}</small></span>
+                            
+                            {% if item.price_at_purchase < item.product_size.product.base_price %}
+                                <small class="text-decoration-line-through ms-1" style="font-size: 10px; color: var(--text-secondary);">{{ item.product_size.product.base_price }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex flex-column align-items-end justify-content-between flex-shrink-0" style="min-height: 75px;">
+                            <a href="{% url 'remove_from_cart' item.id %}" class="delete-btn-neo mb-2">
+                                <i class="far fa-trash-alt" style="font-size: 13px;"></i>
                             </a>
                             
-                            <p class="text-muted-dark small mb-2" style="font-size: 11px;">
-                                <i class="fas fa-tag me-1 opacity-50"></i> {{ item.product_size.size_label }} | {{ item.product_size.color_label }}
-                            </p>
-                            
-                            {% if item.product_size.product.active_offer.free_shipping %}
-                                <div class="badge mb-2 shadow-sm" style="background: rgba(40, 167, 69, 0.1); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.3); font-size: 9px;">
-                                    <i class="fas fa-truck"></i> 
-                                    {% blocktrans with threshold=item.product_size.product.active_offer.free_shipping_threshold %}
-                                    شحن مجاني (أكثر من {{ threshold }})
-                                    {% endblocktrans %}
-                                </div>
-                            {% endif %}
-                            
-                            <div class="d-flex justify-content-between align-items-end mt-1">
-                                <div>
-                                    <span class="gold-text fw-bold fs-6">{{ item.price_at_purchase }} {% trans "ج.م" %}</span>
-                                    {% if item.price_at_purchase < item.product_size.product.base_price %}
-                                        <small class="text-muted-dark text-decoration-line-through ms-1 d-block" style="font-size: 10px;">{{ item.product_size.product.base_price }} {% trans "ج.م" %}</small>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="d-flex align-items-center qty-control shadow-sm">
-                                    <a href="{% url 'update_cart_qty' item.id 'sub' %}" class="qty-btn fs-5">-</a>
-                                    <span class="qty-val fw-bold">{{ item.quantity }}</span>
-                                    <a href="{% url 'update_cart_qty' item.id 'add' %}" class="qty-btn fs-5">+</a>
-                                </div>
-                            </div>
-
-                            <div class="text-end mt-3 border-top pt-2" style="border-color: rgba(255,255,255,0.05) !important;">
-                                <a href="{% url 'remove_from_cart' item.id %}" class="text-danger text-decoration-none small fw-bold" style="opacity: 0.9;">
-                                    <i class="far fa-trash-alt me-1"></i> {% trans "حذف المنتج" %}
-                                </a>
+                            <div class="qty-pill">
+                                <a href="{% url 'update_cart_qty' item.id 'sub' %}" class="qty-btn">-</a>
+                                <span class="qty-val">{{ item.quantity }}</span>
+                                <a href="{% url 'update_cart_qty' item.id 'add' %}" class="qty-btn">+</a>
                             </div>
                         </div>
+
                     </div>
+
                 </div>
             </div>
             {% endfor %}
 
-            <div class="fixed-bottom dark-card p-3 shadow-lg rounded-top-4" style="bottom: 70px; z-index: 990; border-top: 1px solid rgba(255,193,7,0.2);">
-                <div class="d-flex justify-content-between mb-3 align-items-center px-2">
-                    <span class="text-white-50 small fw-bold">{% trans "الإجمالي المحدد :" %}</span>
-                    <span id="cart-total" class="fw-bold fs-4 gold-text" 
+            <div class="fixed-bottom checkout-bar-ultra p-4" style="bottom: 0; z-index: 990;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold" style="color: var(--text-secondary); font-size: 14px;">{% trans "الإجمالي المحدد" %}</span>
+                    <span id="cart-total" class="fw-bold fs-3" 
                           data-currency="{% trans 'ج.م' %}" 
-                          style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">0.00 {% trans "ج.م" %}</span>
+                          style="color: var(--text-primary); letter-spacing: -0.5px;">0.00 {% trans "ج.م" %}</span>
                 </div>
                 
-                <button type="submit" id="checkout-btn" class="btn w-100 py-3 fw-bold shadow rounded-pill" 
+                <button type="submit" id="checkout-btn" class="btn w-100 py-3 rounded-pill btn-neo-disabled" 
                         disabled 
                         data-text-select="{% trans 'اختر منتجات للشراء' %}"
-                        data-text-checkout="{% trans 'متابعة الشراء' %}"
+                        data-text-checkout="{% trans 'متابعة الدفع' %}"
                         style="font-size: 16px; letter-spacing: 0.5px;">
                     {% trans "اختر منتجات للشراء" %}
                 </button>
             </div>
 
         {% else %}
-            <div class="text-center py-5 mt-5">
-                <div class="d-inline-flex p-4 mb-4 position-relative">
-                    <div class="position-absolute top-50 start-50 translate-middle rounded-circle" style="width: 100px; height: 100px; background: rgba(255, 193, 7, 0.1); filter: blur(20px);"></div>
-                    <i class="fas fa-shopping-cart fa-4x opacity-50 position-relative z-1" style="color: var(--text-muted);"></i>
+            <div class="text-center py-5 mt-5 animate-fade-up">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px; background: var(--surface); box-shadow: 0 15px 35px rgba(0,0,0,0.05);">
+                    <i class="fas fa-shopping-bag fa-3x" style="color: var(--text-secondary); opacity: 0.5;"></i>
                 </div>
-                <h4 class="fw-bold text-white mb-2">{% trans "سلتك فارغة حالياً!" %}</h4>
-                <p class="text-muted-dark small mb-4">{% trans "تصفح منتجاتنا واكتشف أحدث العروض والخصومات." %}</p>
-                <a href="{% url 'home' %}" class="btn btn-gold rounded-pill px-5 py-2 fw-bold shadow-lg text-dark">
-                    <i class="fas fa-store me-2"></i> {% trans "تسوق الآن" %}
+                <h3 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "سلتك فارغة!" %}</h3>
+                <p class="mb-4" style="color: var(--text-secondary); font-weight: 500;">{% trans "ابدأ بإضافة بعض المنتجات الرائعة لتسوقها." %}</p>
+                <a href="{% url 'home' %}" class="btn btn-neo-primary rounded-pill px-5 py-3 shadow-sm">
+                     {% trans "تصفح المنتجات" %} <i class="fas fa-arrow-left ms-2"></i>
                 </a>
             </div>
         {% endif %}
@@ -186,7 +216,6 @@
         const checkoutBtn = document.getElementById('checkout-btn');
         const totalDisplay = document.getElementById('cart-total');
         
-        // جلب النصوص المترجمة من الـ attributes
         const currency = totalDisplay.getAttribute('data-currency');
         const textSelect = checkoutBtn.getAttribute('data-text-select');
         const textCheckout = checkoutBtn.getAttribute('data-text-checkout');
@@ -204,14 +233,13 @@
         if (count === 0) {
             checkoutBtn.disabled = true;
             checkoutBtn.innerText = textSelect;
-            checkoutBtn.classList.add('btn-gold-disabled');
-            checkoutBtn.classList.remove('btn-gold');
+            checkoutBtn.classList.add('btn-neo-disabled');
+            checkoutBtn.classList.remove('btn-neo-primary');
         } else {
             checkoutBtn.disabled = false;
-            // استخدام الكلمة المترجمة لمتابعة الشراء
-            checkoutBtn.innerHTML = `${textCheckout} (${count}) <i class="fas fa-arrow-left ms-2"></i>`;
-            checkoutBtn.classList.remove('btn-gold-disabled');
-            checkoutBtn.classList.add('btn-gold');
+            checkoutBtn.innerHTML = `${textCheckout} (${count}) <i class="fas fa-lock ms-2"></i>`;
+            checkoutBtn.classList.remove('btn-neo-disabled');
+            checkoutBtn.classList.add('btn-neo-primary');
         }
     }
 

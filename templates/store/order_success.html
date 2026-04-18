@@ -1,77 +1,122 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
+
+{% block content %}
 
 <style>
-    .dark-card {
-        background-color: var(--dark-surface, #121d3a);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .gold-text {
-        color: var(--gold-accent, #ffc107) !important;
-    }
-    .text-muted-dark {
-        color: #8fa0c1 !important;
-    }
-    .btn-gold {
-        background: linear-gradient(135deg, #ffc107, #ff9800);
-        color: #000;
-        border: none;
-        transition: 0.3s;
-    }
-    .btn-gold:hover {
-        transform: scale(0.98);
-        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
-    }
-    .btn-outline-light-dark {
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: transparent;
-        transition: 0.3s;
-    }
-    .btn-outline-light-dark:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #ffc107;
-        border-color: #ffc107;
-    }
-    
-    /* توهج أيقونة النجاح */
-    .success-glow {
-        background: rgba(40, 167, 69, 0.1);
-        border: 2px solid rgba(40, 167, 69, 0.3);
-        box-shadow: 0 0 30px rgba(40, 167, 69, 0.2) !important;
-    }
-    .success-icon {
-        color: #4ade80; /* أخضر نيون هادي */
-        text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
-    }
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --success-light: #ECFDF5; /* أخضر باستيل مريح */
+    --success: #10B981; /* أخضر عصري */
+    --border-light: rgba(0, 0, 0, 0.05);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول (Staggered Fade-Up) --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleUp {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  
+  .animate-scale-up {
+    animation: scaleUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- كارت النجاح الفاخر --- */
+  .neo-success-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 48px 24px;
+    border: none;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.04);
+  }
+
+  /* --- أيقونة النجاح --- */
+  .success-icon-box {
+    width: 100px; height: 100px;
+    background: var(--success-light);
+    color: var(--success);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px;
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15);
+  }
+
+  /* --- الأزرار العصرية --- */
+  .btn-neo-primary {
+    background: var(--accent-dark) !important;
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 50px;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  .btn-neo-primary:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
+
+  .btn-neo-outline {
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 2px solid var(--border-light);
+    font-weight: 800;
+    border-radius: 50px;
+    transition: all 0.3s;
+  }
+  .btn-neo-outline:hover { background: #F4F4F5; border-color: transparent; }
+  .btn-neo-outline:active { transform: scale(0.96); }
+
 </style>
 
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 85vh;">
-    <div class="card dark-card shadow-lg border-0 rounded-4 p-5 text-center w-100" style="max-width: 500px;">
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 85vh; padding-bottom: 50px;">
+    
+    <div class="neo-success-card text-center w-100 mx-auto" style="max-width: 480px;">
         
-        <div class="mb-4 animate__animated animate__zoomIn">
-            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto success-glow" style="width: 110px; height: 110px;">
-                <i class="fas fa-check fa-4x success-icon"></i>
+        <div class="mb-4 animate-scale-up">
+            <div class="success-icon-box mx-auto">
+                <i class="fas fa-check"></i>
             </div>
         </div>
         
-        <h3 class="fw-bold text-white mb-3 animate__animated animate__fadeInUp animate__delay-1s" style="letter-spacing: 0.5px;">{% trans "تم الطلب بنجاح! 🎉" %}</h3>
+        <h3 class="fw-bold mb-3 animate-fade-up" style="color: var(--text-primary); letter-spacing: -0.5px; animation-delay: 150ms;">
+            {% trans "تم الطلب بنجاح! 🎉" %}
+        </h3>
         
-        <p class="text-muted-dark mb-5 mx-auto animate__animated animate__fadeInUp animate__delay-1s" style="max-width: 320px; line-height: 1.8; font-size: 15px;">
-            {% trans "شكراً لتسوقك في" %} <span class="gold-text fw-bold">{% trans "البازار" %}</span>{% trans ". رقم طلبك محفوظ بأمان، وسيتم تجهيزه وشحنه في أسرع وقت." %}
+        <p class="mb-5 mx-auto animate-fade-up" style="color: var(--text-secondary); max-width: 320px; line-height: 1.8; font-size: 15px; font-weight: 500; animation-delay: 300ms;">
+            {% trans "شكراً لتسوقك في" %} <strong style="color: var(--text-primary);">{% trans "البازار" %}</strong>{% trans ". رقم طلبك محفوظ بأمان، وسيتم تجهيزه وشحنه في أسرع وقت." %}
         </p>
         
-        <div class="d-grid gap-3 col-12 mx-auto animate__animated animate__fadeInUp animate__delay-2s">
-            <a href="{% url 'my_orders' %}" class="btn btn-gold py-3 fw-bold rounded-pill shadow-lg" style="font-size: 16px;">
-                <i class="fas fa-box-open me-2"></i> {% trans "تتبع طلبي" %}
+        <div class="d-grid gap-3 col-12 mx-auto animate-fade-up" style="animation-delay: 450ms;">
+            <a href="{% url 'my_orders' %}" class="btn btn-neo-primary py-3 fs-6">
+                {% trans "تتبع طلبي" %} <i class="fas fa-box-open ms-2"></i>
             </a>
             
-            <a href="{% url 'home' %}" class="btn btn-outline-light-dark py-3 fw-bold rounded-pill" style="font-size: 16px;">
-                <i class="fas fa-store me-2"></i> {% trans "عودة للرئيسية" %}
+            <a href="{% url 'home' %}" class="btn btn-neo-outline py-3 fs-6">
+                {% trans "عودة للرئيسية" %} <i class="fas fa-store ms-2"></i>
             </a>
         </div>
         
     </div>
+    
 </div>
 
 {% endblock %}

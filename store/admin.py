@@ -4,7 +4,7 @@ from .models import (
     MerchantProfile, Product, ProductSize, ProductImage, 
     Wallet, WalletTransaction, Order, OrderItem, 
     Category, Governorate, MerchantShippingRate,
-    Offer, Favorite, DepositRequest, PaymobTransaction, Notification,SiteSetting
+    Offer, Favorite, DepositRequest, WalletDepositTransaction, Notification,SiteSetting
 )
 
 # ----------------------------------------
@@ -94,9 +94,9 @@ class OrderAdmin(admin.ModelAdmin):
 # ----------------------------------------
 @admin.register(MerchantProfile)
 class MerchantAdmin(admin.ModelAdmin):
-    list_display = ('user', 'national_id', 'is_approved', 'minimum_balance_required')
+    list_display = ('user', 'is_approved', 'minimum_balance_required')
     list_filter = ('is_approved',)
-    search_fields = ('user__username', 'national_id')
+    search_fields = ('user__username', )
 
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
@@ -138,7 +138,7 @@ admin.site.register(Governorate)
 admin.site.register(MerchantShippingRate)
 admin.site.register(Offer)
 admin.site.register(Favorite)
-admin.site.register(PaymobTransaction)
+admin.site.register(WalletDepositTransaction)
 admin.site.register(Notification)
 admin.site.register(SiteSetting)
 

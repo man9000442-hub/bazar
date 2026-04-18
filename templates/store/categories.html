@@ -1,106 +1,175 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
 
+{% block content %}
 <style>
-    .dark-header {
-        background-color: var(--dark-bg, #091024);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .dark-card {
-        background-color: var(--dark-surface, #121d3a);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .gold-text {
-        color: var(--gold-accent, #ffc107) !important;
-    }
-    .text-muted-dark {
-        color: #8fa0c1 !important;
-    }
-    
-    .category-card {
-        height: 160px; /* ارتفاع مناسب للكارت */
-        border-radius: 18px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .category-card img {
-        height: 100%;
-        object-fit: cover; /* ملء المساحة بدون تشويه */
-    }
+  /* --- متغيرات النظام (نفس التناسق مع الرئيسية) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+  }
 
-    .category-overlay {
-        background: linear-gradient(to top, rgba(9, 16, 36, 0.95), rgba(9, 16, 36, 0.2));
-        border-radius: 18px;
-    }
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
-    .text-shadow {
-        text-shadow: 0 4px 8px rgba(0,0,0,0.8);
-        letter-spacing: 1px;
-    }
+  /* --- أنيميشن الدخول الفاخر --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
 
-    /* تأثير عند الضغط */
-    .category-card:active {
-        transform: scale(0.96);
-    }
+  /* --- الهيدر الزجاجي الفاتح --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  }
 
-    /* لمسة ذهبية أسفل الكارت */
-    .card-bottom-accent {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(135deg, #ffc107, #ff9800);
-        opacity: 0.9;
-    }
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- بطاقة القسم العصرية (Neo Category Card) --- */
+  .neo-cat-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    border: none;
+    text-decoration: none;
+  }
+  
+  .neo-cat-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  }
+
+  /* --- حاوية الصورة --- */
+  .cat-img-box {
+    background: #F4F4F5;
+    border-radius: 24px;
+    height: 180px;
+    overflow: hidden;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  
+  .cat-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* لملء المساحة بشكل أنيق */
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .neo-cat-card:hover .cat-img-box img {
+    transform: scale(1.08); /* زووم ناعم للصورة عند اللمس */
+  }
+
+  /* --- نصوص وتفاصيل القسم --- */
+  .cat-info {
+    padding: 16px 8px 8px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cat-title {
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 18px;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  /* --- السهم التفاعلي (اللمسة الداكنة) --- */
+  .cat-arrow {
+    width: 38px; height: 38px;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .neo-cat-card:hover .cat-arrow {
+    background: var(--accent-dark);
+    color: #fff;
+    transform: translateX(-5px); /* حركة خفيفة للسهم */
+  }
+
 </style>
 
-<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-4 sticky-top" style="z-index: 1020;">
-    <a href="javascript:history.back()" class="text-white me-3 text-decoration-none">
-        <i class="fas fa-arrow-right fs-5"></i>
+<div class="ultra-header p-3 d-flex align-items-center sticky-top" style="z-index: 1020;">
+    <a href="javascript:history.back()" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
     </a>
-    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">
-        {% trans "تصفح الأقسام" %} <span class="gold-text">.</span>
-    </h5>
+    <h4 class="m-0 fw-bold text-dark" style="letter-spacing: -0.5px;">
+        {% trans "تصفح الأقسام" %}
+    </h4>
 </div>
 
 <div class="container pb-5 mb-5" style="min-height: 80vh;">
     
-    <div class="row g-3">
+    <div class="row g-3 mt-2">
         {% for cat in categories %}
         <div class="col-12 col-md-6">
-            <a href="{% url 'home' %}?category={{ cat.id }}" class="text-decoration-none">
+            <a href="{% url 'home' %}?category={{ cat.id }}" class="neo-cat-card animate-fade-up" style="animation-delay: {{ forloop.counter0|add:1 }}00ms;">
                 
-                <div class="card dark-card overflow-hidden position-relative category-card shadow-lg">
-                    
+                <div class="cat-img-box">
                     {% if cat.image %}
-                        <img src="{{ cat.image.url }}" class="card-img w-100" alt="{{ cat.name }}">
+                        <img src="{{ cat.image.url }}" alt="{{ cat.name }}">
                     {% else %}
-                        <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background-color: var(--dark-surface);">
-                            <i class="fas fa-th-large fa-4x text-white opacity-25"></i>
-                        </div>
+                        <i class="fas fa-layer-group fa-3x" style="color: var(--text-secondary); opacity: 0.2;"></i>
                     {% endif %}
-                    
-                    <div class="card-img-overlay category-overlay d-flex align-items-end justify-content-center pb-4">
-                        <h3 class="fw-bold text-white mb-0 text-shadow">{{ cat.name }}</h3>
-                    </div>
-
-                    <div class="card-bottom-accent"></div>
                 </div>
+                
+                <div class="cat-info">
+                    <h3 class="cat-title">{{ cat.name }}</h3>
+                    <div class="cat-arrow">
+                        <i class="fas fa-arrow-left"></i>
+                    </div>
+                </div>
+
             </a>
         </div>
         {% endfor %}
     </div>
 
     {% if not categories %}
-    <div class="text-center py-5 mt-5">
-        <div class="dark-card rounded-circle d-inline-flex p-4 shadow-lg mb-3">
-            <i class="fas fa-layer-group fa-3x" style="color: var(--text-muted);"></i>
+    <div class="text-center py-5 mt-5 animate-fade-up">
+        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px; background: var(--surface); box-shadow: 0 15px 35px rgba(0,0,0,0.05);">
+            <i class="fas fa-shapes fa-3x" style="color: var(--text-secondary); opacity: 0.5;"></i>
         </div>
-        <h5 class="fw-bold text-white mb-2">{% trans "لا توجد أقسام حالياً!" %}</h5>
-        <p class="text-muted-dark small">{% trans "سيتم إضافة أقسام ومنتجات جديدة قريباً." %}</p>
+        <h3 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "لا توجد أقسام حالياً!" %}</h3>
+        <p class="mb-4" style="color: var(--text-secondary); font-weight: 500;">{% trans "نعمل على تجهيز أقسام جديدة مميزة قريباً." %}</p>
+        <button onclick="history.back()" class="btn px-5 py-3 rounded-pill" style="background: var(--accent-dark); color: #fff; font-weight: 800; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
+             {% trans "العودة للرئيسية" %} <i class="fas fa-arrow-left ms-2"></i>
+        </button>
     </div>
     {% endif %}
+    
 </div>
 
 {% endblock %}

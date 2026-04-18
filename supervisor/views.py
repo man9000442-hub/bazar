@@ -4,7 +4,7 @@
 import csv
 import json
 import requests
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 from django.urls import reverse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -18,6 +18,8 @@ from django.db import transaction
 from django.db.models import Count, Sum, Q, F, ProtectedError
 from django.db.models.functions import TruncDay, TruncMonth
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
+from django.core.cache import cache
 
 # الموديلات
 from accounts.models import User, CustomRole, Country
@@ -26,30 +28,53 @@ from store.models import (
     WithdrawalRequest, Offer, Category, SiteSetting, OrderItem,
     ProductReview, Wallet, WalletTransaction, Notification, Banner,
     DeliveryComplaint, PersonalVoucher, AboutUs, TermsAndCondition,
-    MerchantShippingRate, PaymobTransaction, ReturnRequest, ProductSize, ProductImage, PromoPopup, Governorate
+    MerchantShippingRate, WalletDepositTransaction, ReturnRequest, ProductSize, ProductImage, PromoPopup, Governorate
 )
 from support.models import SupportTicket, TicketMessage
 
 # ==========================================
-# 🔥 إعداد دوال الإشعارات (تم إزالة الكتمان للعمل بكفاءة)
+# 🔥 إعداد دوال الإشعارات
 # ==========================================
 from store.utils import send_notification, notify_admins, send_push_to_user
 
+
 # ==========================================
-# 🔥 2. دوال مساعدة للفلترة الذكية (الدول والصلاحيات)
+# 🔥 2. دوال مساعدة للفلترة الذكية ومعالجة الأرقام
 # ==========================================
+def parse_decimal(val, default='0.00'):
+    """
+    دالة سحرية لمعالجة الأرقام العربية والفواصل الدولية (Localization)
+    وتحويلها إلى Decimal نظيف لضمان عملية الحفظ بدون أخطاء.
+    """
+    if val is None:
+        return Decimal(default)
+    if isinstance(val, (Decimal, int, float)):
+        return Decimal(str(val))
+    
+    val_str = str(val).strip()
+    if not val_str:
+        return Decimal(default)
+        
+    # تحويل الأرقام العربية إلى إنجليزية
+    arabic_to_english = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+    val_str = val_str.translate(arabic_to_english)
+    
+    # استبدال الفاصلة الدولية بنقطة عشرية
+    val_str = val_str.replace(',', '.')
+    
+    try:
+        return Decimal(val_str)
+    except InvalidOperation:
+        return Decimal(default)
+
 def is_supervisor(user):
-    """التحقق من صلاحيات الدخول للوحة الإدارة (تم إضافة COUNTRY_ADMIN)"""
+    """التحقق من صلاحيات الدخول للوحة الإدارة"""
     return user.is_superuser or user.role in [User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3, User.Role.COUNTRY_ADMIN, User.Role.OWNER]
 
 def get_country_kwargs(user, prefix=''):
-    """
-    دالة سحرية لفلترة البيانات بناءً على دولة المشرف.
-    إذا كان المالك (OWNER)، لا تطبق أي فلتر (يرى الجميع).
-    إذا كان مشرف دولة، تطبق الفلتر على دولته فقط.
-    """
+    """دالة لفلترة البيانات بناءً على دولة المشرف"""
     if user.is_superuser or user.role == 'OWNER':
-        return {} # المالك يرى كل شيء
+        return {} 
     return {f"{prefix}country": user.country}
 
 
@@ -58,33 +83,34 @@ def get_country_kwargs(user, prefix=''):
 # ==========================================
 @login_required
 def supervisor_dashboard(request):
-    if not is_supervisor(request.user): return redirect('home')
+    if not is_supervisor(request.user): 
+        return redirect('home')
+        
+    if request.user.role == 'OWNER' or request.user.is_superuser:
+        return redirect('owner_dashboard')
     
-    # تجهيز فلاتر الدولة لكل موديل
-    c_kwargs = get_country_kwargs(request.user)
-    m_kwargs = get_country_kwargs(request.user, 'merchant__user__')
-    u_kwargs = get_country_kwargs(request.user, 'user__')
-    cust_kwargs = get_country_kwargs(request.user, 'customer__')
+    o_kwargs = get_country_kwargs(request.user, 'customer__')           
+    p_kwargs = get_country_kwargs(request.user, 'merchant__user__')      
+    m_kwargs = get_country_kwargs(request.user, 'merchant__user__')      
+    u_kwargs = get_country_kwargs(request.user, 'user__')                
+    cust_kwargs = get_country_kwargs(request.user, 'customer__')         
 
-    # 1. الإحصائيات العامة (Counters) مضاف لها فلتر الدولة
-    pending_orders = Order.objects.filter(status=Order.Status.PENDING, **c_kwargs).count()
-    pending_products = Product.objects.filter(is_active=False, **c_kwargs).count()
+    pending_orders = Order.objects.filter(status=Order.Status.PENDING, **o_kwargs).count()
+    pending_products = Product.objects.filter(is_active=False, **p_kwargs).count()
     pending_deposits = DepositRequest.objects.filter(status=DepositRequest.Status.PENDING, **m_kwargs).count()
     new_merchants = MerchantProfile.objects.filter(is_approved=False, **u_kwargs).count()
     open_tickets_count = SupportTicket.objects.filter(status='OPEN', **cust_kwargs).count()   
 
-    # 2. المبيعات الحقيقية
     today = timezone.now().date()
     start_of_month = today.replace(day=1)
     valid_statuses = ['PENDING', 'SHIPPED', 'DELIVERED']
     
-    sales_today = Order.objects.filter(status__in=valid_statuses, created_at__date=today, **c_kwargs).aggregate(Sum('final_total'))['final_total__sum'] or 0
-    sales_month = Order.objects.filter(status__in=valid_statuses, created_at__date__gte=start_of_month, **c_kwargs).aggregate(Sum('final_total'))['final_total__sum'] or 0
+    sales_today = Order.objects.filter(status__in=valid_statuses, created_at__date=today, **o_kwargs).aggregate(Sum('final_total'))['final_total__sum'] or 0
+    sales_month = Order.objects.filter(status__in=valid_statuses, created_at__date__gte=start_of_month, **o_kwargs).aggregate(Sum('final_total'))['final_total__sum'] or 0
 
-    # 3. الرسم البياني (آخر 7 أيام)
     last_7_days = today - timedelta(days=6)
     chart_data = Order.objects.filter(
-        status__in=valid_statuses, created_at__date__gte=last_7_days, **c_kwargs
+        status__in=valid_statuses, created_at__date__gte=last_7_days, **o_kwargs
     ).annotate(day=TruncDay('created_at')).values('day').annotate(total=Sum('final_total')).order_by('day')
 
     days_labels, sales_values = [], []
@@ -97,8 +123,7 @@ def supervisor_dashboard(request):
         sales_values.append(float(day_val))
         current_date += timedelta(days=1)
 
-    # 4. آخر 5 طلبات (لدولته فقط)
-    recent_orders = Order.objects.filter(**c_kwargs).select_related('customer').order_by('-created_at')[:5]
+    recent_orders = Order.objects.filter(**o_kwargs).select_related('customer').order_by('-created_at')[:5]
 
     context = {
         'pending_orders': pending_orders, 'pending_products': pending_products,
@@ -117,23 +142,21 @@ def supervisor_dashboard(request):
 def all_orders(request):
     if not is_supervisor(request.user): return redirect('home')
     status = request.GET.get('status')
-    orders = Order.objects.filter(**get_country_kwargs(request.user)).exclude(status=Order.Status.CART).order_by('-created_at')
+    orders = Order.objects.filter(**get_country_kwargs(request.user, 'customer__')).exclude(status=Order.Status.CART).order_by('-created_at')
     if status: orders = orders.filter(status=status)
     return render(request, 'supervisor/all_orders.html', {'orders': orders})
 
 @login_required
 def order_detail(request, order_id):
     if not is_supervisor(request.user): return redirect('home')
-    order = get_object_or_404(Order, order_id=order_id, **get_country_kwargs(request.user))
+    order = get_object_or_404(Order, order_id=order_id, **get_country_kwargs(request.user, 'customer__'))
     
-    # معالجة تغيير حالة الطلب
     if request.method == 'POST' and request.user.has_perm_access('orders'):
         new_status = request.POST.get('status')
         if new_status in dict(Order.Status.choices):
             order.status = new_status
             order.save()
             
-            # إرسال إشعار للعميل بتغير حالة طلبه
             send_notification(order.customer, "تحديث حالة الطلب 📦", f"تم تحديث حالة طلبك #{order.order_id} إلى: {order.get_status_display()}", "/my-orders/")
             send_push_to_user(order.customer, "تحديث الطلب 📦", f"طلبك الآن: {order.get_status_display()}")
             
@@ -150,7 +173,7 @@ def export_orders(request):
     response.write(u'\ufeff'.encode('utf8'))
     writer = csv.writer(response)
     writer.writerow(['رقم الطلب', 'العميل', 'الهاتف', 'الإجمالي', 'الحالة', 'التاريخ'])
-    orders = Order.objects.filter(**get_country_kwargs(request.user)).exclude(status='CART').values_list('order_id', 'customer__first_name', 'shipping_phone', 'final_total', 'status', 'created_at')
+    orders = Order.objects.filter(**get_country_kwargs(request.user, 'customer__')).exclude(status='CART').values_list('order_id', 'customer__first_name', 'shipping_phone', 'final_total', 'status', 'created_at')
     for order in orders: writer.writerow(order)
     return response
 
@@ -161,7 +184,7 @@ def export_orders(request):
 @login_required
 def all_products(request):
     if not is_supervisor(request.user): return redirect('home')
-    products = Product.objects.filter(**get_country_kwargs(request.user)).annotate(
+    products = Product.objects.filter(**get_country_kwargs(request.user, 'merchant__user__')).annotate(
         sales_count=Count('variations__orderitem', filter=Q(variations__orderitem__order__status='DELIVERED'))
     )
     q = request.GET.get('q')
@@ -183,18 +206,18 @@ def all_products(request):
 @login_required
 def pending_products(request):
     if not is_supervisor(request.user): return redirect('home')
-    products = Product.objects.filter(is_approved=False, **get_country_kwargs(request.user)).order_by('-created_at')
+    products = Product.objects.filter(is_approved=False, **get_country_kwargs(request.user, 'merchant__user__')).order_by('-created_at')
     return render(request, 'supervisor/pending_products.html', {'products': products})
 
 @login_required
 def product_review(request, pk):
     if not is_supervisor(request.user): return redirect('home')
-    product = get_object_or_404(Product, pk=pk, **get_country_kwargs(request.user))
+    product = get_object_or_404(Product, pk=pk, **get_country_kwargs(request.user, 'merchant__user__'))
     
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'approve':
-            product.commission_pct = request.POST.get('commission')
+            product.commission_pct = parse_decimal(request.POST.get('commission'))
             product.is_approved = True 
             product.is_active = True
             product.save()
@@ -215,10 +238,10 @@ def product_review(request, pk):
 @login_required
 def edit_product_admin(request, pk):
     if not is_supervisor(request.user): return redirect('home')
-    product = get_object_or_404(Product, pk=pk, **get_country_kwargs(request.user))
+    product = get_object_or_404(Product, pk=pk, **get_country_kwargs(request.user, 'merchant__user__'))
     if request.method == 'POST':
         product.is_active = request.POST.get('is_active') == 'on'
-        product.commission_pct = request.POST.get('commission')
+        product.commission_pct = parse_decimal(request.POST.get('commission'))
         product.save()
         messages.success(request, "تم تحديث المنتج.")
         return redirect('super_all_products')
@@ -227,7 +250,7 @@ def edit_product_admin(request, pk):
 @login_required
 def delete_product_admin(request, pk):
     if not is_supervisor(request.user): return redirect('home')
-    product = get_object_or_404(Product, pk=pk, **get_country_kwargs(request.user))
+    product = get_object_or_404(Product, pk=pk, **get_country_kwargs(request.user, 'merchant__user__'))
     try:
         product_name = product.name
         merchant_user = product.merchant.user
@@ -309,16 +332,21 @@ def toggle_verify_merchant(request, pk):
 def update_merchant_limit(request, pk):
     if not is_supervisor(request.user): return redirect('home')
     merchant = get_object_or_404(MerchantProfile, pk=pk, **get_country_kwargs(request.user, 'user__'))
+    
     if request.method == 'POST':
         new_limit = request.POST.get('product_limit')
-        if new_limit and new_limit.isdigit(): merchant.product_limit = int(new_limit)
+        if new_limit and new_limit.isdigit(): 
+            merchant.product_limit = int(new_limit)
+            
         merchant.subscription_end_date = request.POST.get('subscription_end_date') or None 
+        
         min_balance = request.POST.get('minimum_balance_required')
-        if min_balance:
-            try: merchant.minimum_balance_required = float(min_balance)
-            except ValueError: pass 
+        if min_balance is not None and min_balance.strip() != '':
+            merchant.minimum_balance_required = parse_decimal(min_balance)
+                
         merchant.save()
-        messages.success(request, f"تم تحديث صلاحيات التاجر ({merchant.user.first_name}).")
+        messages.success(request, f"تم تحديث صلاحيات التاجر ({merchant.user.first_name}) بنجاح ✅.")
+        
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required
@@ -432,7 +460,6 @@ def user_edit(request, user_id):
         role = request.POST.get('role')
         if role: user_obj.role = role
         
-        # 🔥 إضافة حفظ الدولة الجديدة
         country_id = request.POST.get('country')
         if country_id:
             user_obj.country_id = country_id
@@ -449,7 +476,6 @@ def user_edit(request, user_id):
         messages.success(request, "تم تحديث المستخدم ✅")
         return redirect('super_users_list')
         
-    # 🔥 جلب الدول النشطة لإرسالها للواجهة (Template)
     countries = Country.objects.filter(is_active=True)
     return render(request, 'supervisor/user_edit.html', {
         'user_obj': user_obj, 
@@ -574,17 +600,18 @@ def reject_withdrawal(request, pk):
     if not is_supervisor(request.user): return redirect('home')
     req = get_object_or_404(WithdrawalRequest, pk=pk, **get_country_kwargs(request.user, 'merchant__user__'))
     if req.status == 'PENDING':
-        req.status = 'REJECTED'
-        req.save()
-        wallet = req.merchant.wallet
-        wallet.balance += req.amount
-        wallet.save()
-        WalletTransaction.objects.create(
-            wallet=wallet, amount=req.amount, transaction_type=WalletTransaction.TxType.COMPENSATION,
-            description=f"استرداد لرفض طلب سحب #{req.id}", balance_after=wallet.balance, is_released=True
-        )
-        send_notification(req.merchant.user, "رفض طلب السحب ❌", f"تم رفض السحب وإعادة {req.amount} لمحفظتك. يرجى مراجعة الدعم.", "/merchant/wallet/")
-        send_push_to_user(req.merchant.user, "رفض سحب ❌", f"تم رفض طلب سحبك وتم استرداد المبلغ للمحفظة.")
+        with transaction.atomic():
+            # 🔥 تأمين
+            req.status = 'REJECTED'
+            req.save()
+            wallet = Wallet.objects.select_for_update().get(id=req.merchant.wallet.id)
+            wallet.balance += req.amount
+            wallet.save()
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=req.amount, transaction_type=WalletTransaction.TxType.COMPENSATION,
+                description=f"استرداد لرفض طلب سحب #{req.id}", balance_after=wallet.balance, is_released=True
+            )
+        send_notification(req.merchant.user, "رفض طلب السحب ❌", f"تم رفض السحب وإعادة {req.amount} لمحفظتك.", "/merchant/wallet/")
         messages.warning(request, f"تم رفض السحب وإعادة المبلغ للتاجر.")
     return redirect('super_pending_withdrawals')
 
@@ -592,7 +619,6 @@ def reject_withdrawal(request, pk):
 def wallets_list(request):
     if not is_supervisor(request.user): return redirect('home')
     
-    # التأكد من وجود محافظ لتجار الدولة المحددة
     for m in MerchantProfile.objects.filter(**get_country_kwargs(request.user, 'user__')): 
         Wallet.objects.get_or_create(merchant=m)
         
@@ -602,13 +628,15 @@ def wallets_list(request):
 @login_required
 def adjust_wallet(request, wallet_id):
     if not is_supervisor(request.user): return redirect('home')
-    wallet = get_object_or_404(Wallet, pk=wallet_id, **get_country_kwargs(request.user, 'merchant__user__'))
+    wallet_obj = get_object_or_404(Wallet, pk=wallet_id, **get_country_kwargs(request.user, 'merchant__user__'))
     if request.method == 'POST':
-        amount = Decimal(request.POST.get('amount'))
+        amount = parse_decimal(request.POST.get('amount'))
         reason = request.POST.get('reason')
         action = request.POST.get('action') 
         
         with transaction.atomic():
+            # 🔥 تأمين
+            wallet = Wallet.objects.select_for_update().get(pk=wallet_obj.pk)
             if action == 'add':
                 wallet.balance += amount
                 desc, msg = f"إضافة إدارية: {reason}", f"تم إضافة {amount} إدارياً لمحفظتك. السبب: {reason}"
@@ -617,33 +645,13 @@ def adjust_wallet(request, wallet_id):
                 desc, msg = f"خصم إداري: {reason}", f"تم خصم {amount} إدارياً من محفظتك. السبب: {reason}"
             
             wallet.save()
-            WalletTransaction.objects.create(
-                wallet=wallet, amount=amount if action=='add' else -amount,
-                transaction_type=WalletTransaction.TxType.COMPENSATION,
-                description=desc, balance_after=wallet.balance, is_released=True
-            )
+            WalletTransaction.objects.create(wallet=wallet, amount=amount if action=='add' else -amount, transaction_type=WalletTransaction.TxType.COMPENSATION, description=desc, balance_after=wallet.balance, is_released=True)
             
-            # 1. إشعار التاجر اللي رصيده اتعدل
             send_notification(wallet.merchant.user, "تحديث رصيد المحفظة 💰", msg, "/merchant/wallet/")
-            send_push_to_user(wallet.merchant.user, "تحديث بالمحفظة 💳", msg)
-            
-            # 2. إشعار للمديرين في الموقع
-            notify_admins(
-                title="تعديل رصيد يدوي ⚠️", 
-                message=f"قام {request.user.first_name} بـ { 'إضافة' if action == 'add' else 'خصم' } مبلغ {amount} لمحفظة التاجر '{wallet.merchant.user.first_name}'. السبب: {reason}",
-                link=reverse('super_wallets_list')  
-            )
-            
-            # 🔥 3. إشعار بوش يوصلك إنت شخصياً (الآدمن اللي عمل التعديل) عشان تتأكد إن شغلك مسمع
-            send_push_to_user(
-                user=request.user, 
-                title="تم التعديل بنجاح 💰", 
-                body=f"تم {'إضافة' if action == 'add' else 'خصم'} {amount} لمحفظة التاجر '{wallet.merchant.user.first_name}'."
-            )
-            
             messages.success(request, "تم تعديل الرصيد بنجاح.")
             return redirect('super_wallets_list')
-    return render(request, 'supervisor/adjust_wallet.html', {'wallet': wallet})
+    return render(request, 'supervisor/adjust_wallet.html', {'wallet': wallet_obj})
+
 
 @login_required
 def finance_overview(request):
@@ -724,51 +732,45 @@ def export_debts_report(request):
 # ==========================================
 # 9. الإعدادات، العروض، الشروط والأقسام
 # ==========================================
-from decimal import Decimal, InvalidOperation
 
 @login_required
 def site_settings_view(request):
     if not is_supervisor(request.user): return redirect('home')
     
-    # تحديد الدولة بناءً على صلاحيات المستخدم
     current_country = request.user.country if request.user.role != 'OWNER' else None
     settings_obj = SiteSetting.get_settings(current_country)
     
     if request.method == 'POST':
         try:
-            # 1. تحديث الهوية
             settings_obj.site_name = request.POST.get('site_name') or "Elbazaar"
             
-            # 2. المالية (تحويل آمن لـ Decimal لمنع إيرور Not Null)
-            settings_obj.platform_fee_fixed = Decimal(request.POST.get('fee_fixed') or '0.00')
-            settings_obj.platform_fee_percentage = Decimal(request.POST.get('fee_percent') or '0.00')
-            settings_obj.min_withdrawal_amount = Decimal(request.POST.get('min_withdrawal') or '0.00')
-            settings_obj.min_wallet_balance = Decimal(request.POST.get('reserved_balance') or '0.00')
-            settings_obj.min_active_balance = Decimal(request.POST.get('min_active') or '0.00')
+            # معالجة الأرقام لتجنب أي أخطاء بالفاصلة 
+            settings_obj.platform_fee_fixed = parse_decimal(request.POST.get('fee_fixed'))
+            settings_obj.platform_fee_percentage = parse_decimal(request.POST.get('fee_percent'))
+            settings_obj.min_withdrawal_amount = parse_decimal(request.POST.get('min_withdrawal'))
+            settings_obj.min_wallet_balance = parse_decimal(request.POST.get('reserved_balance'))
+            settings_obj.min_active_balance = parse_decimal(request.POST.get('min_active'))
+            settings_obj.referral_reward_amount = parse_decimal(request.POST.get('ref_reward'))
             
-            # 3. السياسات والدعوات (تحويل لـ Integer)
             settings_obj.pending_balance_release_hours = int(request.POST.get('release_hours') or 24)
-            settings_obj.referral_reward_amount = Decimal(request.POST.get('ref_reward') or '0.00')
             settings_obj.referral_grace_period_hours = int(request.POST.get('ref_grace') or 24)
             settings_obj.referral_discount_limit_pct = int(request.POST.get('ref_limit') or 10)
             settings_obj.referral_reward_limit_orders = int(request.POST.get('ref_orders_limit') or 1)
+
+            # بوابات الدفع (تغيير البوابة الفعالة)
+            gateway = request.POST.get('active_payment_gateway')
+            if gateway in ['PAYMOB', 'FAWATERK']:
+                settings_obj.active_payment_gateway = gateway
 
             if request.FILES.get('banner'):
                 settings_obj.banner_image = request.FILES.get('banner')
                   
             settings_obj.save()
-            
-            # إشعارات الموبايل والموقع
             notify_admins(title="تحديث الإعدادات ⚙️", message=f"قام {request.user.first_name} بتحديث إعدادات النظام.")
-            send_push_to_user(request.user, "تم الحفظ بنجاح ✅", "تم تحديث إعدادات النظام في قاعدة البيانات.")
             
             messages.success(request, "تم حفظ الإعدادات بنجاح ✅")
-            
-        except (InvalidOperation, ValueError) as e:
-            messages.error(request, f"🚨 خطأ في البيانات: يرجى التأكد من إدخال أرقام صحيحة.")
         except Exception as e:
-            messages.error(request, f"🚨 حدث خطأ غير متوقع: {str(e)}")
-            
+            messages.error(request, f"🚨 خطأ في البيانات: يرجى التأكد من إدخال أرقام صحيحة.")
         return redirect('super_site_settings')
         
     return render(request, 'supervisor/site_settings.html', {'settings': settings_obj})
@@ -801,7 +803,7 @@ def delete_category(request, pk):
 @login_required
 def manage_offers(request):
     if not is_supervisor(request.user): return redirect('supervisor_dashboard')
-    offers = Offer.objects.filter(is_platform_offer=True, **get_country_kwargs(request.user, 'product__')).order_by('-created_at')
+    offers = Offer.objects.filter(is_platform_offer=True, **get_country_kwargs(request.user, 'product__merchant__user__')).order_by('-created_at')
     return render(request, 'supervisor/manage_offers.html', {'offers': offers})
 
 @login_required
@@ -814,7 +816,7 @@ def create_platform_offer(request):
         free_shipping = request.POST.get('free_shipping') == 'on'
         threshold = int(request.POST.get('threshold', 1))
         
-        product = get_object_or_404(Product, pk=product_id, **get_country_kwargs(request.user))
+        product = get_object_or_404(Product, pk=product_id, **get_country_kwargs(request.user, 'merchant__user__'))
         Offer.objects.update_or_create(
             product=product,
             defaults={
@@ -828,12 +830,14 @@ def create_platform_offer(request):
         send_push_to_user(product.merchant.user, "عرض مميز لمنتجك! 🏷️", f"إدارة المنصة أضافت عرض بخصم {percentage}% على '{product.name}'.")
         messages.success(request, "تم إطلاق عرض المنصة!")
         return redirect('supervisor_dashboard')
-    return render(request, 'supervisor/create_offer.html', {'products': Product.objects.filter(is_active=True, **get_country_kwargs(request.user))})
+        
+    products = Product.objects.filter(is_active=True, **get_country_kwargs(request.user, 'merchant__user__'))
+    return render(request, 'supervisor/create_offer.html', {'products': products})
 
 @login_required
 def delete_offer_admin(request, pk):
     if not is_supervisor(request.user): return redirect('supervisor_dashboard')
-    Offer.objects.filter(pk=pk, **get_country_kwargs(request.user, 'product__')).delete()
+    Offer.objects.filter(pk=pk, **get_country_kwargs(request.user, 'product__merchant__user__')).delete()
     messages.success(request, "تم حذف العرض.")
     return redirect('super_manage_offers')
 
@@ -864,11 +868,8 @@ def manage_terms(request):
         
         if action == 'add':
             TermsAndCondition.objects.create(
-                country=c,
-                title=request.POST.get('title'), 
-                content=request.POST.get('content'),
-                order=request.POST.get('order', 1), 
-                document_type=request.POST.get('document_type'),
+                country=c, title=request.POST.get('title'), content=request.POST.get('content'),
+                order=request.POST.get('order', 1), document_type=request.POST.get('document_type'),
                 user_type=request.POST.get('user_type')
             )
             messages.success(request, "تمت إضافة البند بنجاح ✅")
@@ -876,11 +877,8 @@ def manage_terms(request):
         elif action == 'edit':
             term_id = request.POST.get('term_id')
             term = get_object_or_404(TermsAndCondition, id=term_id, **get_country_kwargs(request.user))
-            term.title = request.POST.get('title')
-            term.content = request.POST.get('content')
-            term.order = request.POST.get('order', 1)
-            term.document_type = request.POST.get('document_type')
-            term.user_type = request.POST.get('user_type')
+            term.title, term.content, term.order = request.POST.get('title'), request.POST.get('content'), request.POST.get('order', 1)
+            term.document_type, term.user_type = request.POST.get('document_type'), request.POST.get('user_type')
             term.is_active = request.POST.get('is_active') == 'on' 
             term.save()
             messages.success(request, "تم تحديث البند بنجاح ✏️")
@@ -901,11 +899,8 @@ def edit_term(request, pk):
     if not is_supervisor(request.user): return redirect('home')
     term = get_object_or_404(TermsAndCondition, pk=pk, **get_country_kwargs(request.user))
     if request.method == 'POST':
-        term.title = request.POST.get('title')
-        term.content = request.POST.get('content')
-        term.order = request.POST.get('order', 1)
-        term.document_type = request.POST.get('document_type') 
-        term.user_type = request.POST.get('user_type')        
+        term.title, term.content, term.order = request.POST.get('title'), request.POST.get('content'), request.POST.get('order', 1)
+        term.document_type, term.user_type = request.POST.get('document_type'), request.POST.get('user_type')        
         term.save()
         messages.success(request, "تم تعديل البند بنجاح ✅")
     return redirect('super_manage_terms')
@@ -920,7 +915,7 @@ def delete_term(request, pk):
 def edit_about_us(request):
     if not is_supervisor(request.user): return redirect('home')
     c = request.user.country if request.user.role != 'OWNER' else None
-    about, created = AboutUs.objects.get_or_create(country=c)
+    about, _ = AboutUs.objects.get_or_create(country=c)
     if request.method == 'POST':
         about.content = request.POST.get('content')
         about.save()
@@ -939,9 +934,9 @@ def manage_vouchers(request):
             customer = get_object_or_404(User, id=request.POST.get('customer_id'), **get_country_kwargs(request.user))
             PersonalVoucher.objects.create(
                 customer=customer, title=request.POST.get('title'), code=code.upper(),
-                discount_percentage=request.POST.get('discount_percentage', 0),
-                max_discount_amount=request.POST.get('max_discount_amount', 0),
-                remaining_items=request.POST.get('remaining_items', 1),
+                discount_percentage=int(parse_decimal(request.POST.get('discount_percentage', 0))),
+                max_discount_amount=parse_decimal(request.POST.get('max_discount_amount', 0)),
+                remaining_items=int(parse_decimal(request.POST.get('remaining_items', 1))),
                 free_shipping=request.POST.get('free_shipping') == 'on',
                 expires_at=request.POST.get('expires_at')
             )
@@ -963,7 +958,7 @@ def delete_voucher(request, pk):
 
 
 # ==========================================
-# 🔥 10. فريق العمل (تعديل صلاحيات مدراء الدول)
+# 🔥 10. فريق العمل
 # ==========================================
 AVAILABLE_PERMISSIONS = [
     ('orders', 'إدارة الطلبات'), ('products', 'إدارة المنتجات'), ('categories', 'إدارة الأقسام'),
@@ -974,7 +969,6 @@ AVAILABLE_PERMISSIONS = [
 
 @login_required
 def team_management(request):
-    # السماح للمالك ومدير الدولة فقط بإضافة مشرفين
     if not (request.user.is_superuser or request.user.role in ['OWNER', 'COUNTRY_ADMIN']): 
         return redirect('supervisor_dashboard')
         
@@ -990,28 +984,19 @@ def team_management(request):
                 new_admin = User.objects.create_user(username=username, email=email, password=password, phone_primary=phone)
                 new_admin.is_staff = True 
                 
-                # 🔥 هنا الذكاء في تحديد الرتبة والدولة
                 if request.user.role == 'OWNER':
-                    country_id = request.POST.get('country_id')
-                    base_role = request.POST.get('base_role')
-                    
-                    if country_id:
-                        new_admin.country = Country.objects.get(id=country_id)
+                    country_id, base_role = request.POST.get('country_id'), request.POST.get('base_role')
+                    if country_id: new_admin.country = Country.objects.get(id=country_id)
                     new_admin.role = base_role if base_role else User.Role.ADMIN_LVL3
                 else:
                     new_admin.country = request.user.country
                     new_admin.role = User.Role.ADMIN_LVL3
                     
-                # إضافة الصلاحيات المخصصة (Custom Role) إن وجدت
                 role_id = request.POST.get('custom_role')
-                if role_id:
-                    new_admin.custom_role = CustomRole.objects.get(id=role_id)
-                    
+                if role_id: new_admin.custom_role = CustomRole.objects.get(id=role_id)
                 new_admin.save()
                 
                 notify_admins(title="إضافة مشرف جديد 🛡️", message=f"قام {request.user.first_name} بتعيين مشرف جديد بالنظام.", link=reverse('super_team'))
-                # 🔥 إشعار بوش للآدمن
-                send_push_to_user(request.user, "مشرف جديد 🛡️", f"تم تعيين المشرف {username} بنجاح.")
                 
                 messages.success(request, f"تم تعيين المشرف {username} بنجاح ✅")
             except Exception as e: 
@@ -1019,17 +1004,9 @@ def team_management(request):
                 
         return redirect('super_team')
         
-    # جلب فريق العمل بناءً على صلاحيات المشرف الحالي
     team = User.objects.filter(role__in=[User.Role.COUNTRY_ADMIN, User.Role.ADMIN_LVL2, User.Role.ADMIN_LVL3], **get_country_kwargs(request.user)).exclude(pk=request.user.pk)
-    
-    # جلب الدول عشان نظهرها في الفورم للمالك فقط
     countries = Country.objects.filter(is_active=True) if request.user.role == 'OWNER' else None
-    
-    return render(request, 'supervisor/team_management.html', {
-        'team': team, 
-        'custom_roles': CustomRole.objects.filter(**get_country_kwargs(request.user)),
-        'countries': countries
-    })
+    return render(request, 'supervisor/team_management.html', {'team': team, 'custom_roles': CustomRole.objects.filter(**get_country_kwargs(request.user)), 'countries': countries})
 
 
 @login_required
@@ -1053,20 +1030,16 @@ def delete_role(request, pk):
 
 
 # ==========================================
-# 11. الدعم الفني، الشكاوى والإشعارات العامة
+# 11. الدعم الفني، الشكاوى وتسوية المرتجعات
 # ==========================================
 @login_required
 def send_broadcast(request):
     if not is_supervisor(request.user): return redirect('supervisor_dashboard')
         
     if request.method == 'POST':
-        title = request.POST.get('title')
-        message = request.POST.get('message')
-        target = request.POST.get('target')
-        link = request.POST.get('link') or None  
-        specific_user_id = request.POST.get('specific_user_id') 
+        title, message, target = request.POST.get('title'), request.POST.get('message'), request.POST.get('target')
+        link, specific_user_id = request.POST.get('link') or None, request.POST.get('specific_user_id') 
         
-        # 1. إرسال لمستخدم محدد
         if target == 'SPECIFIC' and specific_user_id:
             try:
                 user = User.objects.get(id=specific_user_id, **get_country_kwargs(request.user))
@@ -1076,7 +1049,6 @@ def send_broadcast(request):
             except User.DoesNotExist:
                 messages.error(request, "لم يتم العثور على المستخدم المحدد (أو لا ينتمي لدولتك).")
                 
-        # 2. إرسال عام (مجموعة)
         else:
             users = User.objects.filter(is_active=True, **get_country_kwargs(request.user)) 
             if target == 'MERCHANTS': users = users.filter(role='MERCHANT')
@@ -1129,6 +1101,10 @@ def admin_complaints_list(request):
     complaints = DeliveryComplaint.objects.filter(**get_country_kwargs(request.user, 'customer__')).order_by('-created_at')
     return render(request, 'supervisor/admin_complaints_list.html', {'complaints': complaints})
 
+
+# ==========================================
+# دوال استرجاع الأموال (Refund Logic)
+# ==========================================
 def process_paymob_refund(transaction_id, amount):
     try:
         auth_response = requests.post("https://accept.paymob.com/api/auth/tokens", json={"api_key": settings.PAYMOB_API_KEY})
@@ -1139,6 +1115,27 @@ def process_paymob_refund(transaction_id, amount):
         if refund_response.status_code in [200, 201]: return True, "تم الإرجاع بنجاح ✅"
         return False, f"Paymob Error: {refund_response.json().get('detail', 'مرفوض')}"
     except Exception as e: return False, f"خطأ اتصال: {str(e)}"
+
+def process_fawaterk_refund(invoice_id, amount):
+    """دالة استرداد الأموال عبر فواتيرك آلياً"""
+    try:
+        headers = {
+            'Authorization': f'Bearer {settings.FAWATERK_API_KEY}',
+            'Content-Type': 'application/json'
+        }
+        data = {
+            "invoice_id": invoice_id,
+            "refund_amount": float(amount)
+        }
+        # استخدم الدومين الخاص بوضع الاختبار (Staging) أو الإنتاج (Live)
+        url = "https://staging.fawaterk.com/api/v2/refund"
+        resp = requests.post(url, json=data, headers=headers)
+        if resp.status_code in [200, 201]: 
+            return True, "تم الإرجاع عبر فواتيرك بنجاح ✅"
+        return False, f"Fawaterk Error: {resp.json().get('message', 'مرفوض')}"
+    except Exception as e: 
+        return False, f"خطأ اتصال: {str(e)}"
+
 
 @login_required
 def admin_resolve_complaint(request, complaint_id):
@@ -1172,12 +1169,25 @@ def admin_resolve_complaint(request, complaint_id):
                     merchant_wallet.save()
 
                 if order.payment_method in ['ONLINE', 'WALLET']:
-                    platform_fees_to_deduct = Decimal(order.platform_fees) if order.platform_fees else Decimal(0)
-                    refund_to_customer = max(Decimal(0), Decimal(order.final_total) - shipping_to_deduct - platform_fees_to_deduct)
-                    if getattr(order, 'paymob_transaction_id', None) and refund_to_customer > 0:
-                        is_success, paymob_msg = process_paymob_refund(order.paymob_transaction_id, float(refund_to_customer))
-                        if is_success: messages.success(request, f"تم التسوية وإرجاع {refund_to_customer} للعميل.")
-                        else: messages.error(request, f"فشل الإرجاع الآلي: {paymob_msg}")
+                    platform_fees_to_deduct = parse_decimal(order.platform_fees)
+                    refund_to_customer = max(Decimal(0), parse_decimal(order.final_total) - shipping_to_deduct - platform_fees_to_deduct)
+                    
+                    if refund_to_customer > 0:
+                        is_success = False
+                        paymob_msg = ""
+                        gateway_used = getattr(order, 'payment_gateway_used', 'PAYMOB')
+                        
+                        # التوجيه للبوابة المناسبة للاسترجاع (Strategy)
+                        if gateway_used == 'FAWATERK' and getattr(order, 'gateway_order_id', None):
+                            is_success, paymob_msg = process_fawaterk_refund(order.gateway_order_id, refund_to_customer)
+                        elif gateway_used == 'PAYMOB' and (getattr(order, 'paymob_transaction_id', None) or getattr(order, 'gateway_transaction_id', None)):
+                            tx_id = getattr(order, 'gateway_transaction_id', getattr(order, 'paymob_transaction_id', None))
+                            is_success, paymob_msg = process_paymob_refund(tx_id, refund_to_customer)
+                        
+                        if is_success: 
+                            messages.success(request, f"تم التسوية وإرجاع {refund_to_customer} للعميل.")
+                        else: 
+                            messages.error(request, f"فشل الإرجاع الآلي: {paymob_msg}")
                 
                 order.status = 'RETURNED'
                 order.save()
@@ -1203,7 +1213,7 @@ def admin_resolve_complaint(request, complaint_id):
 @login_required
 def super_reviews_list(request):
     if not is_supervisor(request.user): return redirect('supervisor_dashboard')
-    reviews = ProductReview.objects.filter(**get_country_kwargs(request.user, 'product__')).order_by('-created_at')
+    reviews = ProductReview.objects.filter(**get_country_kwargs(request.user, 'product__merchant__user__')).order_by('-created_at')
     q, merchant_id, rating = request.GET.get('q'), request.GET.get('merchant'), request.GET.get('rating')
     if q: reviews = reviews.filter(Q(product__name__icontains=q) | Q(user__first_name__icontains=q) | Q(comment__icontains=q))
     if merchant_id: reviews = reviews.filter(product__merchant_id=merchant_id)
@@ -1214,11 +1224,13 @@ def super_reviews_list(request):
 def process_return_refund(request, return_id):
     if not is_supervisor(request.user): return redirect('home')
     return_req = get_object_or_404(ReturnRequest, id=return_id, **get_country_kwargs(request.user, 'customer__'))
-    order, merchant_wallet = return_req.order, return_req.order.merchant.wallet
+    order = return_req.order
 
     if request.method == 'POST':
         action = request.POST.get('action') 
         with transaction.atomic():
+            # 🔥 تأمين
+            merchant_wallet = Wallet.objects.select_for_update().get(id=order.merchant.wallet.id)
             if action == 'refund' and return_req.status == 'APPROVED':
                 old_tx = WalletTransaction.objects.filter(wallet=merchant_wallet, description__icontains=f"#{order.id}", transaction_type='SALE').first()
                 if old_tx:
@@ -1227,27 +1239,15 @@ def process_return_refund(request, return_id):
                     merchant_wallet.save()
                 order.status, return_req.status = 'RETURNED', 'REFUNDED'
                 order.save(); return_req.save()
-                
-                send_notification(order.customer, "تم استرداد المبلغ 💸", f"تمت تسوية المرتجع الخاص بك للطلب #{order.order_id}.")
-                send_push_to_user(order.customer, "تم استرداد المبلغ 💸", f"تمت تسوية المرتجع الخاص بك للطلب #{order.order_id}.")
                 messages.success(request, f"تمت تسوية المرتجع بنجاح.")
-                
             elif action == 'approve':
                 return_req.status = 'APPROVED'
                 return_req.save()
-                
-                send_notification(order.customer, "قبول طلب المرتجع ✅", f"تم قبول طلب الاسترجاع الخاص بك للطلب #{order.order_id}.")
-                send_push_to_user(order.customer, "قبول طلب المرتجع ✅", f"تم قبول طلب الاسترجاع الخاص بك للطلب #{order.order_id}.")
                 messages.success(request, "تم قبول المرتجع.")
-                
             elif action == 'reject':
                 return_req.status = 'REJECTED'
                 return_req.save()
-                
-                send_notification(order.customer, "رفض المرتجع ❌", f"عذراً، تم رفض طلب الاسترجاع للطلب #{order.order_id}.")
-                send_push_to_user(order.customer, "رفض المرتجع ❌", f"عذراً، تم رفض طلب الاسترجاع للطلب #{order.order_id}.")
                 messages.warning(request, "تم الرفض.")
-                
     return redirect(request.META.get('HTTP_REFERER', 'admin_returns_list'))
 
 @login_required
@@ -1260,24 +1260,18 @@ def admin_notifications(request):
 @login_required
 def super_manage_popups(request):
     if not is_supervisor(request.user): return redirect('home')
-    active_offers = Offer.objects.filter(is_active=True, end_date__gt=timezone.now(), **get_country_kwargs(request.user, 'product__'))
+    active_offers = Offer.objects.filter(is_active=True, end_date__gt=timezone.now(), **get_country_kwargs(request.user, 'product__merchant__user__'))
 
     if request.method == 'POST':
-        title = request.POST.get('title')
-        custom_link = request.POST.get('custom_link')
-        offer_id = request.POST.get('offer_id')
-        start_time = request.POST.get('start_time')
-        end_time = request.POST.get('end_time')
+        title, custom_link, offer_id = request.POST.get('title'), request.POST.get('custom_link'), request.POST.get('offer_id')
+        start_time, end_time = request.POST.get('start_time'), request.POST.get('end_time')
         is_active = request.POST.get('is_active') == 'on' 
         image = request.FILES.get('image')
         c = request.user.country if request.user.role != 'OWNER' else None
 
         try:
             selected_offer = Offer.objects.get(id=offer_id) if offer_id else None
-            popup = PromoPopup(
-                country=c, title=title, custom_link=custom_link, offer=selected_offer,
-                start_time=start_time, end_time=end_time, is_active=is_active, image=image
-            )
+            popup = PromoPopup(country=c, title=title, custom_link=custom_link, offer=selected_offer, start_time=start_time, end_time=end_time, is_active=is_active, image=image)
             popup.clean()
             popup.save()
             messages.success(request, "تم جدولة الإعلان المنبثق بنجاح! 🚀")
@@ -1315,25 +1309,17 @@ def manage_countries(request):
         action = request.POST.get('action')
         if action == 'add':
             Country.objects.create(
-                name=request.POST.get('name'),
-                code=request.POST.get('code').upper(),
-                phone_code=request.POST.get('phone_code'),
-                currency_name=request.POST.get('currency_name'),
-                currency_symbol=request.POST.get('currency_symbol'),
-                paymob_integration_id_card=request.POST.get('paymob_card', ''),
-                paymob_integration_id_wallet=request.POST.get('paymob_wallet', ''),
+                name=request.POST.get('name'), code=request.POST.get('code').upper(), phone_code=request.POST.get('phone_code'),
+                currency_name=request.POST.get('currency_name'), currency_symbol=request.POST.get('currency_symbol'),
+                paymob_integration_id_card=request.POST.get('paymob_card', ''), paymob_integration_id_wallet=request.POST.get('paymob_wallet', ''),
                 is_active=request.POST.get('is_active') == 'on'
             )
             messages.success(request, "تمت إضافة الدولة بنجاح 🌍")
         elif action == 'edit':
             country = get_object_or_404(Country, id=request.POST.get('country_id'))
-            country.name = request.POST.get('name')
-            country.code = request.POST.get('code').upper()
-            country.phone_code = request.POST.get('phone_code')
-            country.currency_name = request.POST.get('currency_name')
-            country.currency_symbol = request.POST.get('currency_symbol')
-            country.paymob_integration_id_card = request.POST.get('paymob_card', '')
-            country.paymob_integration_id_wallet = request.POST.get('paymob_wallet', '')
+            country.name, country.code, country.phone_code = request.POST.get('name'), request.POST.get('code').upper(), request.POST.get('phone_code')
+            country.currency_name, country.currency_symbol = request.POST.get('currency_name'), request.POST.get('currency_symbol')
+            country.paymob_integration_id_card, country.paymob_integration_id_wallet = request.POST.get('paymob_card', ''), request.POST.get('paymob_wallet', '')
             country.is_active = request.POST.get('is_active') == 'on'
             country.save()
             messages.success(request, "تم تحديث بيانات الدولة ✏️")
@@ -1363,29 +1349,21 @@ def manage_governorates(request):
         action = request.POST.get('action')
         
         if action == 'add':
-            country_id = request.POST.get('country_id')
-            name = request.POST.get('name')
-            country = get_object_or_404(Country, id=country_id)
-            
-            if request.user.role != 'OWNER' and not request.user.is_superuser:
-                if country != request.user.country:
-                    messages.error(request, "غير مصرح لك بإضافة محافظة لدولة أخرى.")
-                    return redirect('super_manage_governorates')
+            country = get_object_or_404(Country, id=request.POST.get('country_id'))
+            if request.user.role != 'OWNER' and not request.user.is_superuser and country != request.user.country:
+                messages.error(request, "غير مصرح لك بإضافة محافظة لدولة أخرى.")
+                return redirect('super_manage_governorates')
                     
-            Governorate.objects.create(country=country, name=name)
-            messages.success(request, f"تمت إضافة محافظة '{name}' بنجاح 📍")
+            Governorate.objects.create(country=country, name=request.POST.get('name'))
+            messages.success(request, f"تمت إضافة محافظة '{request.POST.get('name')}' بنجاح 📍")
             
         elif action == 'edit':
-            gov_id = request.POST.get('gov_id')
-            name = request.POST.get('name')
-            gov = get_object_or_404(Governorate, id=gov_id)
-            
-            if request.user.role != 'OWNER' and not request.user.is_superuser:
-                if gov.country != request.user.country:
-                    messages.error(request, "غير مصرح لك بتعديل هذه المحافظة.")
-                    return redirect('super_manage_governorates')
+            gov = get_object_or_404(Governorate, id=request.POST.get('gov_id'))
+            if request.user.role != 'OWNER' and not request.user.is_superuser and gov.country != request.user.country:
+                messages.error(request, "غير مصرح لك بتعديل هذه المحافظة.")
+                return redirect('super_manage_governorates')
                     
-            gov.name = name
+            gov.name = request.POST.get('name')
             gov.save()
             messages.success(request, "تم تحديث اسم المحافظة ✏️")
             
@@ -1410,10 +1388,9 @@ def delete_governorate(request, pk):
         
     gov = get_object_or_404(Governorate, pk=pk)
     
-    if request.user.role != 'OWNER' and not request.user.is_superuser:
-        if gov.country != request.user.country:
-            messages.error(request, "غير مصرح لك بحذف هذه المحافظة.")
-            return redirect('super_manage_governorates')
+    if request.user.role != 'OWNER' and not request.user.is_superuser and gov.country != request.user.country:
+        messages.error(request, "غير مصرح لك بحذف هذه المحافظة.")
+        return redirect('super_manage_governorates')
             
     try:
         gov.delete()
@@ -1436,18 +1413,14 @@ def system_translations_view(request):
                 obj = Category.objects.get(id=item_id)
                 obj.name_en = request.POST.get('name_en')
                 obj.save()
-                
             elif model_name == 'Governorate':
                 obj = Governorate.objects.get(id=item_id)
                 obj.name_en = request.POST.get('name_en')
                 obj.save()
-                
             elif model_name == 'TermsAndCondition':
                 obj = TermsAndCondition.objects.get(id=item_id)
-                obj.title_en = request.POST.get('title_en')
-                obj.content_en = request.POST.get('content_en')
+                obj.title_en, obj.content_en = request.POST.get('title_en'), request.POST.get('content_en')
                 obj.save()
-                
             elif model_name == 'AboutUs':
                 obj = AboutUs.objects.get(id=item_id)
                 obj.content_en = request.POST.get('content_en')
@@ -1457,9 +1430,8 @@ def system_translations_view(request):
         except Exception as e:
             messages.error(request, f"حدث خطأ أثناء الحفظ: {e}")
             
-        return redirect('super_system_translations') # اسم الرابط بتاع الصفحة دي
+        return redirect('super_system_translations') 
 
-    # جلب البيانات للعرض (فلترة حسب دولة المشرف لو محتاج)
     context = {
         'categories': Category.objects.all(),
         'governorates': Governorate.objects.filter(**get_country_kwargs(request.user)),
@@ -1467,3 +1439,88 @@ def system_translations_view(request):
         'about_us': AboutUs.objects.filter(**get_country_kwargs(request.user))
     }
     return render(request, 'supervisor/translations.html', context)
+
+
+# ==========================================
+# 👑 لوحة تحكم المالك (المدير العام) - Owner Dashboard
+# ==========================================
+def get_live_rates():
+    rates = cache.get('live_usd_rates')
+    if not rates:
+        try:
+            r = requests.get('https://open.er-api.com/v6/latest/USD', timeout=5)
+            if r.status_code == 200:
+                rates = r.json().get('rates', {})
+                cache.set('live_usd_rates', rates, 43200) 
+        except:
+            rates = {}
+    return rates or {}
+
+@login_required
+def owner_dashboard(request):
+    if request.user.role != 'OWNER' and not request.user.is_superuser:
+        return redirect('supervisor_dashboard')
+
+    today = timezone.now().date()
+    six_months_ago = today - timedelta(days=180)
+    live_rates = get_live_rates()
+    currency_map = {'EG': 'EGP', 'SA': 'SAR', 'AE': 'AED', 'KW': 'KWD', 'JO': 'JOD', 'QA': 'QAR'}
+    countries = Country.objects.filter(is_active=True)
+    
+    global_net_usd = Decimal('0.00')
+    global_sales_usd = Decimal('0.00')
+    detailed_data, exchange_ticker = {}, [] 
+
+    for c in countries:
+        c_code = currency_map.get(c.code, 'USD')
+        rate = Decimal(str(live_rates.get(c_code, 1.0)))
+        
+        if rate > 0: exchange_ticker.append(f"1 USD = {rate:.2f} {c.currency_symbol}")
+
+        c_users = User.objects.filter(country=c, role='CUSTOMER', is_banned=False).count()
+        c_merchants = MerchantProfile.objects.filter(user__country=c, is_approved=True, user__is_banned=False).count()
+        c_banned = User.objects.filter(country=c, is_banned=True).count()
+        
+        c_products_active = Product.objects.filter(merchant__user__country=c, is_active=True, is_approved=True).count()
+        c_products_pending = Product.objects.filter(merchant__user__country=c, is_approved=False).count()
+        
+        orders = Order.objects.filter(customer__country=c)
+        o_delivered = orders.filter(status='DELIVERED').count()
+        o_returned = orders.filter(status='RETURNED').count()
+        o_pending = orders.filter(status__in=['PENDING', 'PROCESSING', 'SHIPPED']).count()
+        
+        sales_local = orders.filter(status='DELIVERED').aggregate(s=Sum('final_total'))['s'] or Decimal('0.00')
+        returns_local = orders.filter(status='RETURNED').aggregate(s=Sum('final_total'))['s'] or Decimal('0.00')
+        
+        commissions = sales_local * Decimal('0.10')
+        compensations = returns_local * Decimal('0.02') 
+        net_profit = commissions - compensations
+
+        if rate > 0:
+            global_sales_usd += (sales_local / rate)
+            global_net_usd += (net_profit / rate)
+
+        c_complaints = SupportTicket.objects.filter(customer__country=c).count()
+        trends = orders.filter(status='DELIVERED', created_at__date__gte=six_months_ago).annotate(m=TruncMonth('created_at')).values('m').annotate(total=Sum('final_total')).order_by('m')
+        
+        trend_labels = [t['m'].strftime('%b') for t in trends]
+        trend_values = [float(t['total']) for t in trends]
+
+        detailed_data[c.id] = {
+            'name': c.name, 'code': c.code, 'flag': f"https://flagcdn.com/w160/{c.code.lower()}.png",
+            'currency': c.currency_symbol, 'rate_to_usd': float(rate),
+            'orders': {'delivered': o_delivered, 'returned': o_returned, 'pending': o_pending},
+            'finance': {'sales': float(sales_local), 'commissions': float(commissions), 'compensations': float(compensations), 'net_profit': float(net_profit)},
+            'people': {'users': c_users, 'merchants': c_merchants, 'banned': c_banned, 'complaints': c_complaints},
+            'products': {'active': c_products_active, 'pending': c_products_pending},
+            'charts': {'labels': trend_labels, 'data': trend_values}
+        }
+
+    context = {
+        'global_sales_usd': float(global_sales_usd),
+        'global_net_usd': float(global_net_usd),
+        'exchange_ticker': "   |   ".join(exchange_ticker),
+        'countries_json': json.dumps(detailed_data, cls=DjangoJSONEncoder),
+        'countries_list': countries,
+    }
+    return render(request, 'supervisor/owner_dashboard.html', context)

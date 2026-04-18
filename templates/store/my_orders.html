@@ -1,140 +1,237 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
+
+{% block content %}
 
 <style>
-    .dark-header {
-        background-color: var(--dark-bg, #091024);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .dark-card {
-        background-color: var(--dark-surface, #121d3a);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .gold-text {
-        color: var(--gold-accent, #ffc107) !important;
-    }
-    .text-muted-dark {
-        color: #8fa0c1 !important;
-    }
-    .btn-gold {
-        background: linear-gradient(135deg, #ffc107, #ff9800);
-        color: #000;
-        border: none;
-        transition: 0.3s;
-    }
-    .btn-gold:hover { transform: scale(0.98); box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3); }
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
     
-    .btn-outline-light-dark {
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: transparent;
-        transition: 0.3s;
-    }
-    .btn-outline-light-dark:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #ffc107;
-        border-color: #ffc107;
-    }
+    /* ألوان الحالات */
+    --status-danger-bg: #FEE2E2; --status-danger-text: #EF4444;
+    --status-success-bg: #ECFDF5; --status-success-text: #10B981;
+    --status-warning-bg: #FEF3C7; --status-warning-text: #D97706;
+    --status-default-bg: #F4F4F5; --status-default-text: #71717A;
+    
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
 
-    /* تنسيق خاص للبادجات (الحالات) في الدارك مود */
-    .badge-dark-danger { background: rgba(220, 53, 69, 0.15); color: #ff6b6b; border: 1px solid rgba(220, 53, 69, 0.3); }
-    .badge-dark-success { background: rgba(40, 167, 69, 0.15); color: #4ade80; border: 1px solid rgba(40, 167, 69, 0.3); }
-    .badge-dark-warning { background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
-    .badge-dark-default { background: rgba(255, 255, 255, 0.05); color: #8fa0c1; border: 1px solid rgba(255, 255, 255, 0.1); }
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- الكروت العصرية --- */
+  .neo-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 24px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    margin-bottom: 24px;
+  }
+
+  /* --- الحالات (Badges) --- */
+  .neo-badge {
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+  }
+  .badge-danger { background: var(--status-danger-bg); color: var(--status-danger-text); }
+  .badge-success { background: var(--status-success-bg); color: var(--status-success-text); }
+  .badge-warning { background: var(--status-warning-bg); color: var(--status-warning-text); }
+  .badge-default { background: var(--status-default-bg); color: var(--status-default-text); }
+
+  /* --- معرض المنتجات المصغر --- */
+  .product-img-box {
+    width: 70px; height: 70px;
+    background: #F4F4F5;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 8px;
+    position: relative;
+  }
+  .product-img-box img { max-height: 100%; object-fit: contain; mix-blend-mode: darken; }
+  
+  .qty-badge {
+    position: absolute;
+    top: -6px; right: -6px;
+    background: var(--accent-dark);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 2px solid var(--surface);
+  }
+
+  /* --- ملخص الطلب المصغر --- */
+  .order-summary-box {
+    background: #F4F4F5;
+    border-radius: 20px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  /* --- الأزرار --- */
+  .btn-neo-primary {
+    background: var(--accent-dark);
+    color: #fff !important;
+    font-weight: 800;
+    border-radius: 50px;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    border: none;
+  }
+  .btn-neo-primary:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
+
+  .btn-neo-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid rgba(0,0,0,0.05);
+    font-weight: 800;
+    border-radius: 50px;
+    transition: all 0.3s;
+  }
+  .btn-neo-outline:hover { background: #F4F4F5; border-color: transparent; }
+  .btn-neo-outline:active { transform: scale(0.96); }
+
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
-<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-4 sticky-top" style="z-index: 1020;">
-    <a href="{% url 'profile' %}" class="text-white me-3 text-decoration-none"><i class="fas fa-arrow-right fs-5"></i></a>
-    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "طلباتي السابقة" %} <span class="gold-text">.</span></h5>
+<div class="ultra-header p-3 d-flex align-items-center sticky-top" style="z-index: 1020;">
+    <a href="{% url 'profile' %}" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <h4 class="m-0 fw-bold" style="letter-spacing: -0.5px; color: var(--text-primary);">{% trans "طلباتي السابقة" %}</h4>
 </div>
 
-<div class="container pb-5 mb-5" style="min-height: 80vh;">
+<div class="container pb-5 mb-5 mt-3" style="min-height: 80vh;">
+    
     {% for order in orders %}
-    <div class="card dark-card shadow-lg mb-4 rounded-4 overflow-hidden">
+    <div class="neo-card animate-fade-up" style="animation-delay: {{ forloop.counter0|add:1 }}00ms;">
         
-        <div class="card-header border-bottom d-flex justify-content-between pt-3 pb-3 align-items-center" style="background-color: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.05) !important;">
-            <span class="text-white fw-bold small">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <span class="fw-bold" style="color: var(--text-primary); font-size: 15px;">
                 {% blocktrans with order_num=order.order_id|default:order.id %}طلب #{{ order_num }}{% endblocktrans %}
             </span>
             
             {% if order.status == 'WAITING_PAYMENT' %}
-                <span class="badge badge-dark-danger px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-exclamation-circle me-1"></i> {% trans "بانتظار الدفع" %}</span>
+                <span class="neo-badge badge-danger"><i class="fas fa-exclamation-circle me-1"></i> {% trans "بانتظار الدفع" %}</span>
             {% elif order.status == 'DELIVERED' %}
-                <span class="badge badge-dark-success px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-check-double me-1"></i> {% trans "تم التسليم" %}</span>
+                <span class="neo-badge badge-success"><i class="fas fa-check-double me-1"></i> {% trans "تم التسليم" %}</span>
             {% elif order.status == 'PENDING' %}
-                <span class="badge badge-dark-warning px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-clock me-1"></i> {% trans "قيد المراجعة" %}</span>
+                <span class="neo-badge badge-warning"><i class="fas fa-clock me-1"></i> {% trans "قيد المراجعة" %}</span>
             {% else %}
-                <span class="badge badge-dark-default px-3 py-2 rounded-pill shadow-sm">{{ order.get_status_display }}</span>
+                <span class="neo-badge badge-default">{{ order.get_status_display }}</span>
             {% endif %}
         </div>
         
-        <div class="card-body py-3">
-            
-            <div class="d-flex overflow-auto mb-3 pb-2" style="gap: 12px;">
-                {% for item in order.items.all %}
-                <div class="position-relative flex-shrink-0">
-                    <div class="bg-white rounded-3 shadow-sm d-flex align-items-center justify-content-center p-1" style="width: 65px; height: 65px;">
-                        {% if item.product_size.product.image %}
-                            <img src="{{ item.product_size.product.image.url }}" style="max-height: 100%; object-fit: contain;">
-                        {% else %}
-                            <i class="fas fa-image text-muted opacity-25"></i>
-                        {% endif %}
-                    </div>
-                    {% if item.quantity > 1 %}
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill" style="background-color: var(--gold-accent); color: #000; font-size: 0.65rem; border: 2px solid var(--dark-surface);">
-                            x{{ item.quantity }}
-                        </span>
+        <div class="d-flex overflow-auto hide-scrollbar mb-3 pb-2" style="gap: 12px;">
+            {% for item in order.items.all %}
+            <div class="position-relative flex-shrink-0">
+                <div class="product-img-box">
+                    {% if item.product_size.product.image %}
+                        <img src="{{ item.product_size.product.image.url }}">
+                    {% else %}
+                        <i class="fas fa-box text-muted opacity-25 fs-3"></i>
                     {% endif %}
                 </div>
-                {% endfor %}
+                {% if item.quantity > 1 %}
+                    <span class="qty-badge">x{{ item.quantity }}</span>
+                {% endif %}
             </div>
-            
-            <div class="rounded-4 p-3 border" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.05) !important;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted-dark small"><i class="fas fa-calendar-alt me-1 gold-text"></i> {{ order.created_at|date:"d M Y" }}</span>
-                    {% trans "كاش" as cash_text %}
-                    <span class="text-muted-dark small"><i class="fas fa-credit-card me-1 gold-text"></i> {{ order.get_payment_method_display|default:cash_text }}</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-1" style="border-color: rgba(255,255,255,0.1) !important;">
-                    <span class="fw-bold text-white small">{% trans "الإجمالي النهائي:" %}</span>
-                    <span class="fw-bold gold-text fs-5" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{{ order.final_total }} <small>{% trans "ج.م" %}</small></span>
-                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="order-summary-box">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-bold" style="color: var(--text-secondary);"><i class="far fa-calendar-alt me-1"></i> {{ order.created_at|date:"d M Y" }}</span>
+                {% trans "كاش" as cash_text %}
+                <span class="small fw-bold" style="color: var(--text-secondary);"><i class="far fa-credit-card me-1"></i> {{ order.get_payment_method_display|default:cash_text }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2" style="border-color: rgba(0,0,0,0.05) !important;">
+                <span class="small fw-bold" style="color: var(--text-primary);">{% trans "الإجمالي النهائي:" %}</span>
+                <span class="fw-bold fs-5" style="color: var(--text-primary); letter-spacing: -0.5px;">{{ order.final_total }} <small style="font-size: 12px; color: var(--text-secondary);">{% trans "ج.م" %}</small></span>
             </div>
         </div>
         
-        <div class="card-footer border-top p-3" style="background-color: transparent; border-color: rgba(255,255,255,0.05) !important;">
+        <div class="mt-4">
             {% if order.status == 'WAITING_PAYMENT' %}
                 <div class="row g-2">
                     <div class="col-8">
-                        <a href="{% url 'retry_payment' order.id %}" class="btn btn-gold w-100 fw-bold rounded-pill shadow-sm">
+                        <a href="{% url 'retry_payment' order.id %}" class="btn btn-neo-primary w-100 py-3">
                             {% trans "إكمال الدفع" %} <i class="fas fa-lock ms-1"></i>
                         </a>
                     </div>
                     <div class="col-4">
-                        <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-outline-light-dark w-100 rounded-pill small">
+                        <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-neo-outline w-100 py-3">
                             {% trans "التفاصيل" %}
                         </a>
                     </div>
                 </div>
             {% else %}
-                <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-outline-light-dark w-100 rounded-pill fw-bold">
+                <a href="{% url 'customer_order_detail' order.id %}" class="btn btn-neo-outline w-100 py-3">
                     {% trans "التفاصيل وتتبع الطلب" %} <i class="fas fa-search-location ms-1"></i>
                 </a>
             {% endif %}
         </div>
+        
     </div>
-    
     {% empty %}
-    <div class="text-center py-5 mt-5">
-        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4 shadow-lg" style="width: 100px; height: 100px; background: rgba(255,255,255,0.05);">
-            <i class="fas fa-box-open fa-3x text-muted-dark opacity-50"></i>
+    
+    <div class="text-center py-5 mt-5 animate-fade-up">
+        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px; background: var(--surface); box-shadow: 0 15px 35px rgba(0,0,0,0.05);">
+            <i class="fas fa-box-open fa-3x" style="color: var(--text-secondary); opacity: 0.5;"></i>
         </div>
-        <h5 class="fw-bold text-white mb-2">{% trans "لا توجد طلبات سابقة!" %}</h5>
-        <p class="text-muted-dark mb-4 small">{% trans "سلة مشترياتك كانت تنتظر هذه اللحظة، ابدأ التسوق الآن." %}</p>
-        <a href="{% url 'home' %}" class="btn btn-gold px-5 py-3 rounded-pill fw-bold shadow-lg">
-            {% trans "تصفح المنتجات" %} <i class="fas fa-store ms-1"></i>
+        <h4 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "لا توجد طلبات سابقة!" %}</h4>
+        <p class="mb-4" style="color: var(--text-secondary); font-weight: 500;">{% trans "سلة مشترياتك كانت تنتظر هذه اللحظة، ابدأ التسوق الآن وتشكيل طلبك الأول." %}</p>
+        <a href="{% url 'home' %}" class="btn btn-neo-primary px-5 py-3">
+            {% trans "تصفح المنتجات" %} <i class="fas fa-store ms-2"></i>
         </a>
     </div>
+    
     {% endfor %}
 </div>
+
 {% endblock %}

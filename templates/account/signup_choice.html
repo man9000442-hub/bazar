@@ -1,27 +1,188 @@
 {% extends 'base.html' %}
-{% load i18n %}
+{% load i18n %} 
+
 {% block content %}
-<div class="container text-center py-5" style="min-height: 80vh;">
-    <h3 class="fw-bold mb-5">{% trans "كيف تريد التسجيل؟" %} 🤔</h3>
-    <div class="row g-4 justify-content-center">
-        <div class="col-12 col-md-5">
-            <a href="{% url 'customer_signup' %}" class="card p-4 p-md-5 text-decoration-none border-0 shadow-sm h-100 hover-up transition-hover rounded-4">
-                <i class="fas fa-shopping-bag fa-4x text-primary mb-3"></i>
-                <h4 class="text-dark fw-bold">{% trans "أنا عميل" %}</h4>
-                <p class="text-muted small mb-0">{% trans "أريد تصفح وشراء المنتجات" %}</p>
-            </a>
-        </div>
-        <div class="col-12 col-md-5">
-            <a href="{% url 'merchant_signup' %}" class="card p-4 p-md-5 text-decoration-none border-0 shadow-sm h-100 hover-up transition-hover rounded-4">
-                <i class="fas fa-store fa-4x text-warning mb-3"></i>
-                <h4 class="text-dark fw-bold">{% trans "أنا تاجر" %}</h4>
-                <p class="text-muted small mb-0">{% trans "أريد بيع منتجاتي على المنصة" %}</p>
-            </a>
-        </div>
-    </div>
-</div>
+
 <style>
-    .transition-hover { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-    .transition-hover:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; }
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول (Staggered Fade-Up) --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- كروت الاختيار الفاخرة --- */
+  .neo-choice-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 40px 24px;
+    border: 2px solid transparent;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.03);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    height: 100%;
+    cursor: pointer;
+  }
+  
+  .neo-choice-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-dark);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+  }
+  
+  .neo-choice-card:active {
+    transform: scale(0.96);
+  }
+
+  /* --- الأيقونات داخل الكروت --- */
+  .choice-icon-box {
+    width: 85px; height: 85px;
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin-bottom: 24px;
+    transition: all 0.4s ease;
+  }
+  
+  .neo-choice-card:hover .choice-icon-box {
+    transform: scale(1.1) rotate(-5deg);
+  }
+
+  /* تخصيص الوان العميل والتاجر */
+  .customer-icon {
+    background: var(--accent-dark);
+    color: var(--surface);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  }
+  
+  .merchant-icon {
+    background: rgba(245, 166, 35, 0.15);
+    color: #D97706;
+    box-shadow: 0 10px 25px rgba(245, 166, 35, 0.15);
+  }
+
+  /* --- النصوص --- */
+  .choice-title {
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+  
+  .choice-desc {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* --- صندوق الأيقونة الترحيبية العلوية --- */
+  .welcome-icon-box {
+    width: 70px; height: 70px;
+    background: #F4F4F5;
+    color: var(--accent-dark);
+    border-radius: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.02);
+    transform: rotate(5deg);
+    margin-bottom: 20px;
+  }
 </style>
+
+<div class="ultra-header p-3 d-flex align-items-center sticky-top" style="z-index: 1020;">
+    <a href="javascript:history.back()" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <h5 class="m-0 fw-bold" style="letter-spacing: -0.5px; color: var(--text-primary);">{% trans "إنشاء حساب جديد" %}</h5>
+</div>
+
+<div class="container d-flex flex-column justify-content-center py-5" style="min-height: 85vh; max-width: 800px;">
+    
+    <div class="text-center mb-5 animate-fade-up" style="animation-delay: 100ms;">
+        <div class="welcome-icon-box mx-auto">
+            <i class="fas fa-magic" style="color: var(--accent-gold);"></i>
+        </div>
+        <h2 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "كيف تريد التسجيل؟" %}</h2>
+        <p style="color: var(--text-secondary); font-weight: 500; font-size: 15px;">{% trans "اختر نوع الحساب الذي يناسبك للبدء في رحلتك معنا." %}</p>
+    </div>
+
+    <div class="row g-4 justify-content-center px-2">
+        
+        <div class="col-12 col-md-6 animate-fade-up" style="animation-delay: 200ms;">
+            <a href="{% url 'customer_signup' %}" class="neo-choice-card">
+                <div class="choice-icon-box customer-icon">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+                <h4 class="choice-title">{% trans "أنا عميل" %}</h4>
+                <p class="choice-desc">{% trans "أريد تصفح وشراء المنتجات بأفضل الأسعار والعروض الحصرية." %}</p>
+            </a>
+        </div>
+        
+        <div class="col-12 col-md-6 animate-fade-up" style="animation-delay: 300ms;">
+            <a href="{% url 'merchant_signup' %}" class="neo-choice-card">
+                <div class="choice-icon-box merchant-icon">
+                    <i class="fas fa-store"></i>
+                </div>
+                <h4 class="choice-title">{% trans "أنا تاجر" %}</h4>
+                <p class="choice-desc">{% trans "أريد افتتاح متجري الخاص وبيع منتجاتي على المنصة بكل سهولة." %}</p>
+            </a>
+        </div>
+
+    </div>
+
+    <div class="text-center mt-5 p-3 rounded-4 animate-fade-up" style="animation-delay: 400ms; background: #F4F4F5;">
+        <span style="color: var(--text-secondary); font-size: 14px; font-weight: 600;">{% trans "لديك حساب بالفعل؟" %}</span>
+        <a href="{% url 'account_login' %}" class="text-decoration-none ms-1" style="color: var(--accent-dark); font-weight: 800; font-size: 14px;">
+            {% trans "تسجيل الدخول" %}
+        </a>
+    </div>
+
+</div>
+
 {% endblock %}

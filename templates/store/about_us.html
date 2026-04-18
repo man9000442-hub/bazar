@@ -3,61 +3,138 @@
 
 {% block content %}
 <style>
-  .dark-card {
-    background-color: #121d3a; /* كحلي فاتح يبرز عن الخلفية الأساسية */
-    border: 1px solid rgba(255, 255, 255, 0.05);
+  /* --- متغيرات النظام (نفس التناسق مع الرئيسية) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
   }
-  .gold-text {
-    color: #ffc107;
+
+  /* --- أنيميشن الدخول الفاخر (Staggered Fade-Up) --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
-  .text-muted-dark {
-    color: #8fa0c1; /* رمادي مريح للعين للقراءة */
+
+  .animate-fade-up {
+    animation: fadeUpIn 0.8s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
   }
-  .btn-gold-outline {
-    color: #ffc107;
-    border: 1px solid #ffc107;
-    background: transparent;
-    transition: 0.3s;
+
+  /* تأخير الأنيميشن لعمل تأثير متتالي مبهر */
+  .delay-1 { animation-delay: 0.1s; opacity: 0; }
+  .delay-2 { animation-delay: 0.2s; opacity: 0; }
+  .delay-3 { animation-delay: 0.3s; opacity: 0; }
+
+  /* --- تصميم الكارت الأبيض الفخم --- */
+  .neo-about-card {
+    background: var(--surface);
+    border-radius: 32px;
+    border: none;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.04); /* ظل ناعم جداً للعمق */
+    overflow: hidden;
+    position: relative;
   }
-  .btn-gold-outline:hover {
-    background: rgba(255, 193, 7, 0.1);
-    color: #ffc107;
-    transform: scale(0.98);
+
+  /* --- مربع الأيقونة (لمسة التباين الأسود) --- */
+  .icon-showcase {
+    width: 75px;
+    height: 75px;
+    background: var(--accent-dark);
+    color: #fff;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    transform: rotate(-6deg); /* ميلان خفيف للعصرية */
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
   }
+  .neo-about-card:hover .icon-showcase {
+    transform: rotate(0deg) scale(1.08); /* يتعدل ويكبر عند تمرير الماوس */
+  }
+
+  .about-title {
+    color: var(--text-primary);
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+  }
+
+  .title-underline {
+    width: 35px;
+    height: 4px;
+    background: var(--accent-gold);
+    border-radius: 10px;
+    margin: 0 auto;
+  }
+
+  /* --- النص الداخلي --- */
+  .about-content-text {
+    color: #3F3F46; /* لون مقروء جداً وأخف من الأسود بقليل لراحة العين */
+    line-height: 2.2;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  /* --- زر العودة التفاعلي --- */
+  .btn-neo-back {
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 2px solid rgba(0,0,0,0.06);
+    border-radius: 50px;
+    font-weight: 700;
+    padding: 14px 32px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-neo-back:hover {
+    background: var(--accent-dark);
+    color: #fff;
+    border-color: var(--accent-dark);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  }
+  .btn-neo-back:active { transform: translateY(0); }
+
 </style>
 
-<div class="container py-5 mb-5" style="min-height: 70vh;">
+<div class="container py-5 mb-5" style="min-height: 80vh;">
     <div class="row justify-content-center">
         <div class="col-md-10 col-lg-8">
-            <div class="card dark-card shadow-lg rounded-4 p-4 p-md-5">
+            
+            <div class="neo-about-card p-4 p-md-5 animate-fade-up">
                 
-                <div class="text-center mb-5">
-                    <div class="d-inline-flex rounded-circle p-4 mb-3 shadow" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.2);">
-                        <i class="fas fa-info fa-2x gold-text"></i>
-                    </div>
+                <div class="text-center mb-5 animate-fade-up delay-1">
+                    <div class="icon-showcase mb-4">
+                        <i class="fas fa-fingerprint"></i> </div>
                     
-                    <h3 class="fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "من نحن" %}</h3>
-                    
-                    <div class="mx-auto mt-3" style="width: 60px; height: 4px; border-radius: 10px; background: linear-gradient(135deg, #ffc107, #ff9800);"></div>
+                    <h3 class="about-title mb-3">{% trans "من نحن" %}</h3>
+                    <div class="title-underline"></div>
                 </div>
                 
-                <div class="text-start text-muted-dark" style="line-height: 2.2; font-size: 16px;">
+                <div class="about-content-text text-start mb-5 animate-fade-up delay-2">
                     {% if about.content %}
-                        <div style="color: #e0e6ed;">
-                            {{ about.content|linebreaksbr }}
-                        </div>
+                        {{ about.content|linebreaksbr }}
                     {% else %}
-                        <p class="text-center" style="opacity: 0.5;">{% trans "جاري تحديث البيانات... يرجى العودة لاحقاً." %}</p>
+                        <div class="text-center py-4" style="color: var(--text-secondary);">
+                            <i class="fas fa-pen-nib mb-3 fs-3 opacity-50"></i>
+                            <p class="mb-0 fw-bold">{% trans "جاري صياغة قصتنا..." %}</p>
+                            <small class="opacity-75">{% trans "يرجى العودة لاحقاً لاكتشاف المزيد عن البازار." %}</small>
+                        </div>
                     {% endif %}
                 </div>
                 
-                <div class="text-center mt-5 pt-4" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
-                    <button onclick="history.back()" class="btn btn-gold-outline rounded-pill px-5 py-2 shadow-sm fw-bold">
-                        <i class="fas fa-arrow-right me-2"></i> {% trans "عودة" %}
+                <div class="text-center pt-4 animate-fade-up delay-3" style="border-top: 1px solid rgba(0, 0, 0, 0.05);">
+                    <button onclick="history.back()" class="btn btn-neo-back">
+                        <i class="fas fa-arrow-right me-2"></i> {% trans "العودة للرئيسية" %}
                     </button>
                 </div>
                 
             </div>
+            
         </div>
     </div>
 </div>

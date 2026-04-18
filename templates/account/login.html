@@ -2,53 +2,182 @@
 {% load i18n account socialaccount %}
 
 {% block content %}
-<div class="container d-flex flex-column justify-content-center py-5" style="min-height: 80vh;">
+
+<style>
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- كارت تسجيل الدخول --- */
+  .neo-auth-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 48px 32px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.03);
+    max-width: 460px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* --- الأيقونة الترحيبية --- */
+  .welcome-icon-box {
+    width: 75px; height: 75px;
+    background: #F4F4F5;
+    color: var(--accent-dark);
+    border-radius: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.03);
+    transform: rotate(-5deg);
+  }
+
+  /* --- خانات الإدخال العصرية --- */
+  .form-label-neo {
+    font-weight: 800;
+    color: var(--text-primary);
+    font-size: 13px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .neo-input {
+    background: #F4F4F5 !important;
+    border: 2px solid transparent !important;
+    border-radius: 16px;
+    padding: 16px 20px;
+    color: var(--text-primary) !important;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: none !important;
+    width: 100%;
+  }
+  .neo-input:focus {
+    background: var(--surface) !important;
+    border-color: var(--accent-dark) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05) !important;
+  }
+  .neo-input::placeholder { color: #A1A1AA !important; font-weight: 500; }
+
+  /* --- الأزرار --- */
+  .btn-neo-primary {
+    background: var(--accent-dark);
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 50px;
+    padding: 16px;
+    font-size: 16px;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  .btn-neo-primary:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
+
+  .btn-neo-google {
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 2px solid var(--border-light);
+    font-weight: 800;
+    border-radius: 50px;
+    padding: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    transition: all 0.3s;
+  }
+  .btn-neo-google:hover { background: #F4F4F5; border-color: transparent; }
+  .btn-neo-google:active { transform: scale(0.96); }
+
+  /* --- الفاصل (أو) --- */
+  .neo-divider {
+    display: flex; align-items: center;
+    text-align: center;
+    margin: 24px 0;
+  }
+  .neo-divider::before, .neo-divider::after {
+    content: ''; flex: 1; border-bottom: 1px solid var(--border-light);
+  }
+  .neo-divider span {
+    padding: 0 16px; color: var(--text-secondary);
+    font-size: 13px; font-weight: 800;
+  }
+</style>
+
+<div class="container d-flex flex-column justify-content-center py-5" style="min-height: 90vh;">
     
-    <div id="app-only-message" class="text-center" style="display: none;">
-        <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex p-4 mb-3 shadow-sm">
-            <i class="fas fa-user-circle fa-4x"></i>
+    <div id="app-only-message" class="neo-auth-card text-center animate-fade-up" style="display: none;">
+        <div class="welcome-icon-box mx-auto mb-4" style="background: rgba(14, 165, 233, 0.1); color: #0284C7; transform: rotate(0);">
+            <i class="fas fa-user-circle"></i>
         </div>
-        <h3 class="fw-bold text-dark mt-3">{% trans "عذراً!" %}</h3>
-        <p class="text-muted fs-5 mt-3">
-            {% trans "اضغط على خانة" %} <b class="text-primary">{% trans "البروفايل" %}</b> {% trans "أسفل الشاشة لتسجيل الدخول." %}
+        <h3 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "عذراً!" %}</h3>
+        <p style="color: var(--text-secondary); font-weight: 500; font-size: 15px; line-height: 1.8;">
+            {% trans "اضغط على خانة" %} <strong style="color: var(--text-primary);">{% trans "البروفايل" %}</strong> {% trans "أسفل الشاشة لتسجيل الدخول." %}
         </p>
     </div>
 
-    <div id="web-only-form">
-        <div class="text-center mb-4">
-            <h2 class="fw-bold text-primary mb-1">{% trans "مرحباً بعودتك! 👋" %}</h2>
-            <p class="text-muted">{% trans "سجل الدخول للمتابعة والتسوق" %}</p>
-        </div>
-
-        <form class="login card border-0 shadow-sm p-4 p-md-5 rounded-4 mx-auto bg-white" method="POST" action="{% url 'account_login' %}" style="max-width: 450px;">
+    <div id="web-only-form" class="animate-fade-up">
+        <form class="neo-auth-card" method="POST" action="{% url 'account_login' %}">
             {% csrf_token %}
             
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-muted">{% trans "اسم المستخدم أو رقم الهاتف" %}</label>
-                <input type="text" name="login" class="form-control form-control-lg bg-light border-0 px-3 fw-bold" 
-                    placeholder="{% trans 'أدخل بيانات الدخول' %}" required>
+            <div class="text-center mb-5">
+                <div class="welcome-icon-box mx-auto mb-3" style="color: var(--accent-gold);">
+                    <i class="fas fa-hand-sparkles"></i>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "مرحباً بعودتك! 👋" %}</h3>
+                <p class="small m-0" style="color: var(--text-secondary); font-weight: 500;">{% trans "سجل الدخول للمتابعة والتسوق في البازار" %}</p>
             </div>
             
             <div class="mb-4">
-                <label class="form-label small fw-bold text-muted">{% trans "كلمة المرور" %}</label>
-                <input type="password" name="password" class="form-control form-control-lg bg-light border-0 px-3" placeholder="******" required>
+                <label class="form-label-neo">{% trans "اسم المستخدم أو رقم الهاتف" %}</label>
+                <input type="text" name="login" class="form-control neo-input" placeholder="{% trans 'أدخل بيانات الدخول' %}" required dir="auto">
             </div>
-
-            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm mb-3 rounded-pill fs-5">{% trans "تسجيل الدخول" %}</button>
             
-            <div class="position-relative text-center my-3">
-                <hr class="text-muted opacity-25">
-                <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 small text-muted fw-bold">{% trans "أو" %}</span>
+            <div class="mb-4">
+                <label class="form-label-neo">{% trans "كلمة المرور" %}</label>
+                <input type="password" name="password" class="form-control neo-input" placeholder="••••••••" required dir="ltr">
             </div>
 
-            <a href="{% provider_login_url 'google' %}" class="btn btn-light w-100 py-3 fw-bold border rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 hover-bg-light">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20" height="20" alt="Google Logo">
+            <button type="submit" class="btn btn-neo-primary w-100 mb-3">
+                {% trans "تسجيل الدخول" %} <i class="fas fa-sign-in-alt ms-2"></i>
+            </button>
+            
+            <div class="neo-divider">
+                <span>{% trans "أو الدخول السريع" %}</span>
+            </div>
+
+            <a href="{% provider_login_url 'google' %}" class="btn btn-neo-google w-100 text-decoration-none mb-4">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="22" height="22" alt="Google Logo">
                 {% trans "الدخول باستخدام Google" %}
             </a>
             
-            <div class="text-center mt-4">
-                <span class="text-muted small">{% trans "ليس لديك حساب؟" %}</span>
-                <a href="{% url 'signup_choice' %}" class="fw-bold text-primary text-decoration-none">{% trans "سجل الآن مجاناً" %}</a>
+            <div class="text-center mt-2 p-3 rounded-4" style="background: #F4F4F5;">
+                <span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;">{% trans "ليس لديك حساب؟" %}</span>
+                <a href="{% url 'signup_choice' %}" class="text-decoration-none ms-1" style="color: var(--accent-dark); font-weight: 800; font-size: 13px;">
+                    {% trans "سجل الآن مجاناً" %}
+                </a>
             </div>
         </form>
     </div>
@@ -62,8 +191,5 @@
         document.getElementById('app-only-message').style.display = 'block';
     }
 </script>
-<style>
-    .form-control:focus { background-color: #fff; box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15); }
-    .hover-bg-light:hover { background-color: #f8f9fa !important; border-color: #ccc !important; }
-</style>
+
 {% endblock %}

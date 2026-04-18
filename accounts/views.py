@@ -24,19 +24,47 @@ except ImportError:
         pass  # حماية عشان لو الملف مش موجود السيرفر ميضربش
 
 
+from django.shortcuts import render
+from django.db.models import Q
+# تأكد من استدعاء الموديل الخاص بك في أعلى الملف
+# from .models import TermsAndCondition
+
 def profile_view(request):
-    if request.user.is_authenticated and request.user.role == 'MERCHANT':
-        return render(request, 'merchant/profile.html')
-    # تحديد نوع المستخدم
-    user_type = 'MERCHANT' if hasattr(request.user, 'merchantprofile') else 'CUSTOMER'
-    
-    active_policies = TermsAndCondition.objects.filter(is_active=True, user_type=user_type).order_by('order')
-    
+    # 1. إعطاء قيم افتراضية (عشان الزوار غير المسجلين)
+    user_type = 'CUSTOMER'
+    user_country = None
+
+    # 2. التأكد إن المستخدم مسجل دخول لتجنب أي إيرور (AnonymousUser)
+    if request.user.is_authenticated:
+        # تحديد إن كان تاجراً (بناءً على الصلاحية أو البروفايل)
+        if getattr(request.user, 'role', None) == 'MERCHANT' or hasattr(request.user, 'merchantprofile'):
+            user_type = 'MERCHANT'
+        
+        # سحب دولة المستخدم لفلترة السياسات
+        user_country = getattr(request.user, 'country', None)
+
+    # 3. جلب السياسات المفعلة والمطابقة لنوع المستخدم (عميل / تاجر)
+    active_policies = TermsAndCondition.objects.filter(is_active=True, user_type=user_type)
+
+    # 4. الفلترة حسب الدولة بذكاء
+    if user_country:
+        # لو المستخدم له دولة: هات الشروط الخاصة بدولته + الشروط العامة (اللي ملهاش دولة)
+        active_policies = active_policies.filter(Q(country=user_country) | Q(country__isnull=True))
+    else:
+        # لو ملوش دولة: هات الشروط العامة فقط
+        active_policies = active_policies.filter(country__isnull=True)
+
+    # 5. تجهيز البيانات للـ HTML (بنفس الأسماء الموجودة في قوالب المودال)
     context = {
-        'terms': active_policies.filter(document_type='TERMS'),
-        'privacy': active_policies.filter(document_type='PRIVACY'),
-        'shipping': active_policies.filter(document_type='SHIPPING_RETURN'),
+        'terms_policies': active_policies.filter(document_type='TERMS').order_by('order'),
+        'privacy_policies': active_policies.filter(document_type='PRIVACY').order_by('order'),
+        'shipping_policies': active_policies.filter(document_type='SHIPPING_RETURN').order_by('order'),
     }
+
+    # 6. التوجيه (توجيه التاجر لصفحته، والعميل لصفحته، مع إرسال السياسات للاثنين)
+    if request.user.is_authenticated and getattr(request.user, 'role', None) == 'MERCHANT':
+        return render(request, 'merchant/profile.html', context)
+        
     return render(request, 'account/profile.html', context)
 
 
@@ -393,3 +421,48 @@ def save_fcm_token(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
             
     return JsonResponse({'status': 'invalid method'}, status=400)
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from django.utils.translation import gettext_lazy as _
+from django.conf import settings
+
+@login_required
+def user_settings(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        # 1. تحديث البيانات الأساسية (اسم، هاتف، إيميل، يوزرنيم)
+        if action == 'update_info':
+            user = request.user
+            user.first_name = request.POST.get('first_name', user.first_name)
+            user.last_name = request.POST.get('last_name', user.last_name)
+            user.email = request.POST.get('email', user.email)
+            
+            new_phone = request.POST.get('phone')
+            if new_phone:
+                user.phone_primary = new_phone
+                user.username = new_phone # في نظامك الهاتف هو اسم المستخدم
+                
+            user.save()
+            messages.success(request, _("تم تحديث بياناتك بنجاح ✅"))
+            return redirect('user_settings')
+
+        # 2. تغيير كلمة المرور
+        elif action == 'change_password':
+            form = PasswordChangeForm(request.user, request.POST)
+            if form.is_valid():
+                user = form.save()
+                update_session_auth_hash(request, user) # لمنع تسجيل الخروج بعد التغيير
+                messages.success(request, _("تم تغيير كلمة المرور بنجاح 🔒"))
+            else:
+                messages.error(request, _("خطأ في البيانات، يرجى التأكد من كلمة المرور الحالية."))
+            return redirect('user_settings')
+
+    return render(request, 'account/settings.html', {
+        'languages': settings.LANGUAGES, # إرسال اللغات المتاحة من الإعدادات
+    })

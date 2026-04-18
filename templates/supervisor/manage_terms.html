@@ -1,268 +1,541 @@
-{% extends 'supervisor/base_supervisor.html' %}
-{% load i18n supervisor_tags %}
-{% block head_title %}{% trans "الوثائق القانونية | Elbazaar" %}{% endblock %}
-{% block page_title %}{% trans "الوثائق القانونية (الشروط والخصوصية)" %}{% endblock %}
-
-{% block content %}
+{% extends 'supervisor/base_supervisor.html' %} {% load i18n supervisor_tags %}
+{% block head_title %}{% trans "الوثائق القانونية" %} | {{ site_settings.site_name|default:"Elbazaar" }}{% endblock %} 
+{% block page_title %}{% trans "الوثائق القانونية (الشروط والخصوصية)" %}{% endblock %} {% block content %}
 <div class="container-fluid p-0">
-
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-            <h5 class="fw-bold text-dark m-0"><i class="fas fa-balance-scale text-primary me-2"></i> {% trans "الوثائق والشروط القانونية" %}</h5>
-            <small class="text-muted">{% trans "إدارة بنود سياسة الخصوصية، الشروط والأحكام، وسياسات الاسترجاع." %}</small>
-        </div>
-        <button type="button" class="btn btn-primary shadow-sm rounded-3 px-4 fw-bold d-block d-xl-none" data-bs-toggle="modal" data-bs-target="#addTermModalMobile">
-            <i class="fas fa-plus-circle me-1"></i> {% trans "إضافة بند جديد" %}
-        </button>
+  <div
+    class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"
+  >
+    <div>
+      <h5 class="fw-bold text-dark m-0">
+        <i class="fas fa-balance-scale text-primary me-2"></i> {% trans "الوثائق
+        والشروط القانونية" %}
+      </h5>
+      <small class="text-muted">{% trans "إدارة بنود سياسة الخصوصية، الشروط والأحكام، وسياسات الاسترجاع." %}</small>
     </div>
+    <button
+      type="button"
+      class="btn btn-primary shadow-sm rounded-3 px-4 fw-bold d-block d-xl-none"
+      data-bs-toggle="modal"
+      data-bs-target="#addTermModalMobile"
+    >
+      <i class="fas fa-plus-circle me-1"></i> {% trans "إضافة بند جديد" %}
+    </button>
+  </div>
 
-    <div class="row g-4">
-        
-        <div class="col-12 col-xl-4 d-none d-xl-block">
-            <div class="card p-4 shadow-sm border-0 rounded-4 sticky-top bg-white" style="top: 90px;">
-                <h6 class="fw-bold mb-4 text-primary pb-2 border-bottom border-light"><i class="fas fa-plus-circle me-2"></i> {% trans "صياغة بند جديد" %}</h6>
-                
-                <form method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="add"> 
-                    
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label small text-muted fw-bold">{% trans "القسم" %}</label>
-                            <select name="document_type" class="form-select bg-light border-0 rounded-3 py-2 fw-bold" required>
-                                <option value="TERMS">{% trans "شروط وأحكام" %}</option>
-                                <option value="PRIVACY">{% trans "سياسة الخصوصية" %}</option>
-                                <option value="SHIPPING_RETURN">{% trans "سياسة الشحن والمرتجعات" %}</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small text-muted fw-bold">{% trans "المستهدف" %}</label>
-                            <select name="user_type" class="form-select bg-light border-0 rounded-3 py-2 fw-bold" required>
-                                <option value="CUSTOMER">{% trans "للعملاء" %}</option>
-                                <option value="MERCHANT">{% trans "للتجار" %}</option>
-                            </select>
-                        </div>
-                    </div>
+  <div class="row g-4">
+    <div class="col-12 col-xl-4 d-none d-xl-block">
+      <div
+        class="card p-4 shadow-sm border-0 rounded-4 sticky-top bg-white"
+        style="top: 90px"
+      >
+        <h6 class="fw-bold mb-4 text-primary pb-2 border-bottom border-light">
+          <i class="fas fa-plus-circle me-2"></i> {% trans "صياغة بند جديد" %}
+        </h6>
 
-                    <div class="mb-3">
-                        <label class="form-label small text-muted fw-bold">{% trans "عنوان البند" %} <span class="text-danger">*</span></label>
-                        <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label small text-muted fw-bold">{% trans "النص التفصيلي" %} <span class="text-danger">*</span></label>
-                        <textarea name="content" class="form-control bg-light border-0 rounded-3 p-3" rows="6" required></textarea>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="form-label small text-muted fw-bold">{% trans "الترتيب (رقم)" %}</label>
-                        <input type="number" name="order" class="form-control bg-light border-0 rounded-3 py-2" value="1">
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm d-flex justify-content-center align-items-center gap-2">
-                        <i class="fas fa-save"></i> {% trans "حفظ البند" %}
-                    </button>
-                </form>
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add" />
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small text-muted fw-bold"
+                >{% trans "القسم" %}</label
+              >
+              <select
+                name="document_type"
+                class="form-select bg-light border-0 rounded-3 py-2 fw-bold"
+                required
+              >
+                <option value="TERMS">{% trans "شروط وأحكام" %}</option>
+                <option value="PRIVACY">{% trans "سياسة الخصوصية" %}</option>
+                <option value="SHIPPING_RETURN">
+                  {% trans "سياسة الشحن والمرتجعات" %}
+                </option>
+              </select>
             </div>
-        </div>
+            <div class="col-6">
+              <label class="form-label small text-muted fw-bold"
+                >{% trans "المستهدف" %}</label
+              >
+              <select
+                name="user_type"
+                class="form-select bg-light border-0 rounded-3 py-2 fw-bold"
+                required
+              >
+                <option value="CUSTOMER">{% trans "للعملاء" %}</option>
+                <option value="MERCHANT">{% trans "للتجار" %}</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="col-12 col-xl-8">
-            {% regroup terms by get_document_type_display as grouped_terms %}
+          <div class="mb-3">
+            <label class="form-label small text-muted fw-bold"
+              >{% trans "عنوان البند" %}
+              <span class="text-danger">*</span></label
+            >
+            <input
+              type="text"
+              name="title"
+              class="form-control bg-light border-0 rounded-3 py-2"
+              required
+            />
+          </div>
 
-            {% if grouped_terms %}
-                <div class="accordion shadow-sm rounded-4 bg-white overflow-hidden" id="termsAccordion">
-                    
-                    {% for group in grouped_terms %}
-                    <div class="accordion-item border-0 border-bottom border-light">
-                        <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} fw-bold text-dark bg-white py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}">
-                                <i class="fas fa-folder text-primary ms-2 fs-5"></i> 
-                                {% blocktrans with group_name=group.grouper %}{{ group_name }}{% endblocktrans %}
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-auto me-3 rounded-pill px-3 py-1">
-                                    {% blocktrans count counter=group.list|length %}{{ counter }} بند{% plural %}{{ counter }} بنود{% endblocktrans %}
-                                </span>
-                            </button>
-                        </h2>
-                        
-                        <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#termsAccordion">
-                            <div class="accordion-body bg-light p-3 p-md-4">
-                                
-                                <div class="row g-3">
-                                    {% for term in group.list %}
-                                    <div class="col-12">
-                                        <div class="card border-0 shadow-sm rounded-4 bg-white">
-                                            <div class="card-body p-4">
-                                                <div class="d-flex justify-content-between align-items-start border-bottom border-light pb-3 mb-3">
-                                                    <div class="d-flex align-items-center gap-3 flex-wrap">
-                                                        <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center fw-bold shadow-sm" style="width: 35px; height: 35px;">
-                                                            {{ term.order }}
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="fw-bold m-0 text-dark mb-1">{{ term.title }}</h6>
-                                                            <span class="badge {% if term.user_type == 'CUSTOMER' %}bg-success-subtle text-success border-success-subtle{% else %}bg-warning-subtle text-warning border-warning-subtle{% endif %} border" style="font-size: 11px;">
-                                                                <i class="fas {% if term.user_type == 'CUSTOMER' %}fa-user{% else %}fa-store{% endif %} me-1"></i> {% trans term.get_user_type_display %}
-                                                            </span>
-                                                            {% if not term.is_active %}
-                                                                <span class="badge bg-danger text-white shadow-sm ms-1" style="font-size: 11px;">{% trans "معطل" %}</span>
-                                                            {% endif %}
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div class="d-flex gap-2">
-                                                        <button type="button" class="btn btn-light border text-primary rounded-3 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#editTermModal{{ term.id }}">
-                                                            <i class="fas fa-pen"></i>
-                                                        </button>
-                                                        
-                                                        <form method="POST" class="d-inline" onsubmit="return confirm('{% trans 'تأكيد الإجراء: هل أنت متأكد من حذف هذا البند نهائياً؟' %}');">
-                                                            {% csrf_token %}
-                                                            <input type="hidden" name="action" value="delete">
-                                                            <input type="hidden" name="term_id" value="{{ term.id }}">
-                                                            <button type="submit" class="btn btn-outline-danger rounded-3 px-3 shadow-sm">
-                                                                <i class="fas fa-trash-alt"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                                
-                                                <p class="text-muted small mb-0" style="line-height: 1.8; white-space: pre-wrap;">{{ term.content }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
+          <div class="mb-3">
+            <label class="form-label small text-muted fw-bold"
+              >{% trans "النص التفصيلي" %}
+              <span class="text-danger">*</span></label
+            >
+            <textarea
+              name="content"
+              class="form-control bg-light border-0 rounded-3 p-3"
+              rows="6"
+              required
+            ></textarea>
+          </div>
 
-                                    <div class="modal fade" id="editTermModal{{ term.id }}" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content border-0 shadow-lg rounded-4">
-                                                <div class="modal-header bg-primary text-white border-0 rounded-top-4">
-                                                    <h5 class="modal-title fw-bold"><i class="fas fa-pen me-2"></i> {% trans "تعديل البند القانوني" %}</h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <form method="POST">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="action" value="edit"> 
-                                                    <input type="hidden" name="term_id" value="{{ term.id }}">
-                                                    
-                                                    <div class="modal-body p-4">
-                                                        <div class="row g-3 mb-3">
-                                                            <div class="col-6">
-                                                                <label class="form-label small text-muted fw-bold">{% trans "القسم" %}</label>
-                                                                <select name="document_type" class="form-select bg-light border-0 rounded-3 py-2 fw-bold" required>
-                                                                    <option value="TERMS" {% if term.document_type == 'TERMS' %}selected{% endif %}>{% trans "شروط وأحكام" %}</option>
-                                                                    <option value="PRIVACY" {% if term.document_type == 'PRIVACY' %}selected{% endif %}>{% trans "سياسة الخصوصية" %}</option>
-                                                                    <option value="SHIPPING_RETURN" {% if term.document_type == 'SHIPPING_RETURN' %}selected{% endif %}>{% trans "سياسة الشحن والمرتجعات" %}</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-6">
-                                                                <label class="form-label small text-muted fw-bold">{% trans "المستهدف" %}</label>
-                                                                <select name="user_type" class="form-select bg-light border-0 rounded-3 py-2 fw-bold" required>
-                                                                    <option value="CUSTOMER" {% if term.user_type == 'CUSTOMER' %}selected{% endif %}>{% trans "للعملاء" %}</option>
-                                                                    <option value="MERCHANT" {% if term.user_type == 'MERCHANT' %}selected{% endif %}>{% trans "للتجار" %}</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div class="mb-3">
-                                                            <label class="form-label small text-muted fw-bold">{% trans "العنوان" %}</label>
-                                                            <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2" value="{{ term.title }}" required>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label small text-muted fw-bold">{% trans "النص التفصيلي" %}</label>
-                                                            <textarea name="content" class="form-control bg-light border-0 rounded-3 p-3" rows="6" required>{{ term.content }}</textarea>
-                                                        </div>
-                                                        
-                                                        <div class="row g-3 align-items-center">
-                                                            <div class="col-6">
-                                                                <label class="form-label small text-muted fw-bold">{% trans "الترتيب" %}</label>
-                                                                <input type="number" name="order" class="form-control bg-light border-0 rounded-3 py-2" value="{{ term.order }}">
-                                                            </div>
-                                                            <div class="col-6">
-                                                                <div class="form-check form-switch w-100 bg-primary bg-opacity-10 p-3 rounded-3 d-flex align-items-center justify-content-between border border-primary border-opacity-25 mt-4">
-                                                                    <label class="form-check-label small fw-bold text-primary m-0" for="activeSwitch{{ term.id }}">{% trans "تفعيل البند" %}</label>
-                                                                    <input class="form-check-input m-0" type="checkbox" name="is_active" id="activeSwitch{{ term.id }}" {% if term.is_active %}checked{% endif %} style="transform: scale(1.2);">
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div class="modal-footer border-top-0 px-4 pb-4 pt-0 gap-2">
-                                                        <button type="button" class="btn btn-light border fw-bold flex-grow-1 rounded-3 py-2" data-bs-dismiss="modal">{% trans "إلغاء" %}</button>
-                                                        <button type="submit" class="btn btn-primary fw-bold flex-grow-1 rounded-3 py-2 shadow-sm">
-                                                            <i class="fas fa-save me-1"></i> {% trans "حفظ التعديلات" %}
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="card border-0 shadow-sm rounded-4 text-center py-5 bg-white">
-                    <i class="fas fa-file-contract fa-4x text-muted opacity-25 mb-3"></i>
-                    <h5 class="fw-bold text-dark">{% trans "لا توجد بنود قانونية مضافة حالياً" %}</h5>
-                    <p class="text-muted mb-0 small">{% trans "قم بإضافة أول بند من القائمة الجانبية لتكوين سياسات المنصة." %}</p>
-                </div>
-            {% endif %}
-        </div>
+          <div class="mb-4">
+            <label class="form-label small text-muted fw-bold"
+              >{% trans "الترتيب (رقم)" %}</label
+            >
+            <input
+              type="number"
+              name="order"
+              class="form-control bg-light border-0 rounded-3 py-2"
+              value="1"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm d-flex justify-content-center align-items-center gap-2"
+          >
+            <i class="fas fa-save"></i> {% trans "حفظ البند" %}
+          </button>
+        </form>
+      </div>
     </div>
+
+    <div class="col-12 col-xl-8">
+      {% regroup terms by get_document_type_display as grouped_terms %} {% if
+      grouped_terms %}
+      <div
+        class="accordion shadow-sm rounded-4 bg-white overflow-hidden"
+        id="termsAccordion"
+      >
+        {% for group in grouped_terms %}
+        <div class="accordion-item border-0 border-bottom border-light">
+          <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+            <button
+              class="accordion-button {% if not forloop.first %}collapsed{% endif %} fw-bold text-dark bg-white py-3"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapse{{ forloop.counter }}"
+            >
+              <i class="fas fa-folder text-primary ms-2 fs-5"></i>
+              {% blocktrans with group_name=group.grouper %}{{ group_name }}{% endblocktrans %}
+              <span
+                class="badge bg-primary-subtle text-primary border border-primary-subtle ms-auto me-3 rounded-pill px-3 py-1"
+              >
+                {% blocktrans count counter=group.list|length %}{{ counter }}
+                بند{% plural %}{{ counter }} بنود{% endblocktrans %}
+              </span>
+            </button>
+          </h2>
+
+          <div
+            id="collapse{{ forloop.counter }}"
+            class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+            data-bs-parent="#termsAccordion"
+          >
+            <div class="accordion-body bg-light p-3 p-md-4">
+              <div class="row g-3">
+                {% for term in group.list %}
+                <div class="col-12">
+                  <div class="card border-0 shadow-sm rounded-4 bg-white">
+                    <div class="card-body p-4">
+                      <div
+                        class="d-flex justify-content-between align-items-start border-bottom border-light pb-3 mb-3"
+                      >
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                          <div
+                            class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center fw-bold shadow-sm"
+                            style="width: 35px; height: 35px"
+                          >
+                            {{ term.order }}
+                          </div>
+                          <div>
+                            <h6 class="fw-bold m-0 text-dark mb-1">
+                              {{ term.title }}
+                            </h6>
+                            <span
+                              class="badge {% if term.user_type == 'CUSTOMER' %}bg-success-subtle text-success border-success-subtle{% else %}bg-warning-subtle text-warning border-warning-subtle{% endif %} border"
+                              style="font-size: 11px"
+                            >
+                              <i
+                                class="fas {% if term.user_type == 'CUSTOMER' %}fa-user{% else %}fa-store{% endif %} me-1"
+                              ></i>
+                              {% trans term.get_user_type_display %}
+                            </span>
+                            {% if not term.is_active %}
+                            <span
+                              class="badge bg-danger text-white shadow-sm ms-1"
+                              style="font-size: 11px"
+                              >{% trans "معطل" %}</span
+                            >
+                            {% endif %}
+                          </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                          <button
+                            type="button"
+                            class="btn btn-light border text-primary rounded-3 shadow-sm px-3"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editTermModal{{ term.id }}"
+                          >
+                            <i class="fas fa-pen"></i>
+                          </button>
+
+                          <form
+                            method="POST"
+                            class="d-inline"
+                            onsubmit="return confirm('{% trans 'تأكيد الإجراء: هل أنت متأكد من حذف هذا البند نهائياً؟' %}');"
+                          >
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete" />
+                            <input
+                              type="hidden"
+                              name="term_id"
+                              value="{{ term.id }}"
+                            />
+                            <button
+                              type="submit"
+                              class="btn btn-outline-danger rounded-3 px-3 shadow-sm"
+                            >
+                              <i class="fas fa-trash-alt"></i>
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+
+                      <p
+                        class="text-muted small mb-0"
+                        style="line-height: 1.8; white-space: pre-wrap"
+                      >
+                        {{ term.content }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="modal fade"
+                  id="editTermModal{{ term.id }}"
+                  tabindex="-1"
+                  aria-hidden="true"
+                >
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg rounded-4">
+                      <div
+                        class="modal-header bg-primary text-white border-0 rounded-top-4"
+                      >
+                        <h5 class="modal-title fw-bold">
+                          <i class="fas fa-pen me-2"></i> {% trans "تعديل البند
+                          القانوني" %}
+                        </h5>
+                        <button
+                          type="button"
+                          class="btn-close btn-close-white"
+                          data-bs-dismiss="modal"
+                        ></button>
+                      </div>
+                      <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="edit" />
+                        <input
+                          type="hidden"
+                          name="term_id"
+                          value="{{ term.id }}"
+                        />
+
+                        <div class="modal-body p-4">
+                          <div class="row g-3 mb-3">
+                            <div class="col-6">
+                              <label class="form-label small text-muted fw-bold"
+                                >{% trans "القسم" %}</label
+                              >
+                              <select
+                                name="document_type"
+                                class="form-select bg-light border-0 rounded-3 py-2 fw-bold"
+                                required
+                              >
+                                <option
+                                  value="TERMS"
+                                  {% if term.document_type == "TERMS" %}selected{% endif %}
+                                >
+                                  {% trans "شروط وأحكام" %}
+                                </option>
+                                <option
+                                  value="PRIVACY"
+                                  {% if term.document_type == "PRIVACY" %}selected{% endif %}
+                                >
+                                  {% trans "سياسة الخصوصية" %}
+                                </option>
+                                <option
+                                  value="SHIPPING_RETURN"
+                                  {% if term.document_type == "SHIPPING_RETURN" %}selected{% endif %}
+                                >
+                                  {% trans "سياسة الشحن والمرتجعات" %}
+                                </option>
+                              </select>
+                            </div>
+                            <div class="col-6">
+                              <label class="form-label small text-muted fw-bold"
+                                >{% trans "المستهدف" %}</label
+                              >
+                              <select
+                                name="user_type"
+                                class="form-select bg-light border-0 rounded-3 py-2 fw-bold"
+                                required
+                              >
+                                <option
+                                  value="CUSTOMER"
+                                  {% if term.user_type == "CUSTOMER" %}selected{% endif %}
+                                >
+                                  {% trans "للعملاء" %}
+                                </option>
+                                <option
+                                  value="MERCHANT"
+                                  {% if term.user_type == "MERCHANT" %}selected{% endif %}
+                                >
+                                  {% trans "للتجار" %}
+                                </option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold"
+                              >{% trans "العنوان" %}</label
+                            >
+                            <input
+                              type="text"
+                              name="title"
+                              class="form-control bg-light border-0 rounded-3 py-2"
+                              value="{{ term.title }}"
+                              required
+                            />
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold"
+                              >{% trans "النص التفصيلي" %}</label
+                            >
+                            <textarea
+                              name="content"
+                              class="form-control bg-light border-0 rounded-3 p-3"
+                              rows="6"
+                              required
+                            >
+{{ term.content }}</textarea
+                            >
+                          </div>
+
+                          <div class="row g-3 align-items-center">
+                            <div class="col-6">
+                              <label class="form-label small text-muted fw-bold"
+                                >{% trans "الترتيب" %}</label
+                              >
+                              <input
+                                type="number"
+                                name="order"
+                                class="form-control bg-light border-0 rounded-3 py-2"
+                                value="{{ term.order }}"
+                              />
+                            </div>
+                            <div class="col-6">
+                              <div
+                                class="form-check form-switch w-100 bg-primary bg-opacity-10 p-3 rounded-3 d-flex align-items-center justify-content-between border border-primary border-opacity-25 mt-4"
+                              >
+                                <label
+                                  class="form-check-label small fw-bold text-primary m-0"
+                                  for="activeSwitch{{ term.id }}"
+                                  >{% trans "تفعيل البند" %}</label
+                                >
+                                <input
+                                  class="form-check-input m-0"
+                                  type="checkbox"
+                                  name="is_active"
+                                  id="activeSwitch{{ term.id }}"
+                                  {% if term.is_active %}checked{% endif %}
+                                  style="transform: scale(1.2)"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          class="modal-footer border-top-0 px-4 pb-4 pt-0 gap-2"
+                        >
+                          <button
+                            type="button"
+                            class="btn btn-light border fw-bold flex-grow-1 rounded-3 py-2"
+                            data-bs-dismiss="modal"
+                          >
+                            {% trans "إلغاء" %}
+                          </button>
+                          <button
+                            type="submit"
+                            class="btn btn-primary fw-bold flex-grow-1 rounded-3 py-2 shadow-sm"
+                          >
+                            <i class="fas fa-save me-1"></i> {% trans "حفظ
+                            التعديلات" %}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="card border-0 shadow-sm rounded-4 text-center py-5 bg-white">
+        <i class="fas fa-file-contract fa-4x text-muted opacity-25 mb-3"></i>
+        <h5 class="fw-bold text-dark">
+          {% trans "لا توجد بنود قانونية مضافة حالياً" %}
+        </h5>
+        <p class="text-muted mb-0 small">
+          {% trans "قم بإضافة أول بند من القائمة الجانبية لتكوين سياسات المنصة."
+          %}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
-<div class="modal fade" id="addTermModalMobile" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-primary text-white border-0 rounded-top-4">
-                <h5 class="modal-title fw-bold"><i class="fas fa-plus-circle me-2"></i> {% trans "صياغة بند جديد" %}</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" class="modal-body p-4 text-start">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="add">
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="form-label small text-muted fw-bold">{% trans "القسم" %}</label>
-                        <select name="document_type" class="form-select bg-light border-0 rounded-3 py-2 fw-bold" required>
-                            <option value="TERMS">{% trans "شروط وأحكام" %}</option>
-                            <option value="PRIVACY">{% trans "سياسة الخصوصية" %}</option>
-                            <option value="SHIPPING_RETURN">{% trans "سياسة الشحن والمرتجعات" %}</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label small text-muted fw-bold">{% trans "المستهدف" %}</label>
-                        <select name="user_type" class="form-select bg-light border-0 rounded-3 py-2 fw-bold" required>
-                            <option value="CUSTOMER">{% trans "للعملاء" %}</option>
-                            <option value="MERCHANT">{% trans "للتجار" %}</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small text-muted fw-bold">{% trans "عنوان البند" %} <span class="text-danger">*</span></label>
-                    <input type="text" name="title" class="form-control bg-light border-0 rounded-3 py-2" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small text-muted fw-bold">{% trans "النص التفصيلي" %} <span class="text-danger">*</span></label>
-                    <textarea name="content" class="form-control bg-light border-0 rounded-3 p-3" rows="6" required></textarea>
-                </div>
-                <div class="mb-4">
-                    <label class="form-label small text-muted fw-bold">{% trans "الترتيب (رقم)" %}</label>
-                    <input type="number" name="order" class="form-control bg-light border-0 rounded-3 py-2" value="1">
-                </div>
-                <button type="submit" class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm">
-                    <i class="fas fa-save me-1"></i> {% trans "حفظ البند" %}
-                </button>
-            </form>
+<div
+  class="modal fade"
+  id="addTermModalMobile"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-primary text-white border-0 rounded-top-4">
+        <h5 class="modal-title fw-bold">
+          <i class="fas fa-plus-circle me-2"></i> {% trans "صياغة بند جديد" %}
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <form method="POST" class="modal-body p-4 text-start">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add" />
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label small text-muted fw-bold"
+              >{% trans "القسم" %}</label
+            >
+            <select
+              name="document_type"
+              class="form-select bg-light border-0 rounded-3 py-2 fw-bold"
+              required
+            >
+              <option value="TERMS">{% trans "شروط وأحكام" %}</option>
+              <option value="PRIVACY">{% trans "سياسة الخصوصية" %}</option>
+              <option value="SHIPPING_RETURN">
+                {% trans "سياسة الشحن والمرتجعات" %}
+              </option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small text-muted fw-bold"
+              >{% trans "المستهدف" %}</label
+            >
+            <select
+              name="user_type"
+              class="form-select bg-light border-0 rounded-3 py-2 fw-bold"
+              required
+            >
+              <option value="CUSTOMER">{% trans "للعملاء" %}</option>
+              <option value="MERCHANT">{% trans "للتجار" %}</option>
+            </select>
+          </div>
         </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted fw-bold"
+            >{% trans "عنوان البند" %} <span class="text-danger">*</span></label
+          >
+          <input
+            type="text"
+            name="title"
+            class="form-control bg-light border-0 rounded-3 py-2"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted fw-bold"
+            >{% trans "النص التفصيلي" %}
+            <span class="text-danger">*</span></label
+          >
+          <textarea
+            name="content"
+            class="form-control bg-light border-0 rounded-3 p-3"
+            rows="6"
+            required
+          ></textarea>
+        </div>
+        <div class="mb-4">
+          <label class="form-label small text-muted fw-bold"
+            >{% trans "الترتيب (رقم)" %}</label
+          >
+          <input
+            type="number"
+            name="order"
+            class="form-control bg-light border-0 rounded-3 py-2"
+            value="1"
+          />
+        </div>
+        <button
+          type="submit"
+          class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm"
+        >
+          <i class="fas fa-save me-1"></i> {% trans "حفظ البند" %}
+        </button>
+      </form>
     </div>
+  </div>
 </div>
 
 <style>
-    /* تحسين شكل الأكورديون (Accordion) ليصبح أكثر عصرية */
-    .accordion-button:not(.collapsed) { background-color: #f8fafc; color: #2563eb; box-shadow: none; border-bottom: 2px solid #e2e8f0; }
-    .accordion-button:focus { box-shadow: none; border-color: rgba(0,0,0,.05); }
-    .accordion-item { border: 1px solid #f1f5f9; margin-bottom: 0.5rem; border-radius: 1rem !important; }
-    .accordion-button { border-radius: 1rem !important; }
+  /* تحسين شكل الأكورديون (Accordion) ليصبح أكثر عصرية */
+  .accordion-button:not(.collapsed) {
+    background-color: #f8fafc;
+    color: #2563eb;
+    box-shadow: none;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(0, 0, 0, 0.05);
+  }
+  .accordion-item {
+    border: 1px solid #f1f5f9;
+    margin-bottom: 0.5rem;
+    border-radius: 1rem !important;
+  }
+  .accordion-button {
+    border-radius: 1rem !important;
+  }
 </style>
 {% endblock %}

@@ -1,12 +1,142 @@
-{% extends 'base.html' %} {% block title %}الصفحة غير موجودة | 404{% endblock %}
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "الصفحة غير موجودة | 404" %}{% endblock %}
 
 {% block content %}
-<div style="text-align: center; padding: 100px 20px;">
-    <h1 style="font-size: 80px; color: #ff9800; margin-bottom: 10px;">404</h1>
-    <h2 style="font-size: 30px; color: #333;">عذراً، الصفحة التي تبحث عنها غير موجودة!</h2>
-    <p style="color: #666; margin-bottom: 30px;">يبدو أن الرابط الذي اتبعته خاطئ، أو تم حذف الصفحة.</p>
-    <a href="/" style="background-color: #ff9800; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-        العودة للصفحة الرئيسية
-    </a>
+
+<style>
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes floatAnimation {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- الكارت الرئيسي --- */
+  .error-card-neo {
+    background: var(--surface);
+    border-radius: 40px;
+    padding: 60px 30px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.03);
+    max-width: 450px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  /* --- تصميم الرقم 404 --- */
+  .error-number {
+    font-size: 110px;
+    font-weight: 900;
+    color: var(--accent-dark);
+    line-height: 1;
+    letter-spacing: -5px;
+    position: relative;
+    display: inline-block;
+    margin-bottom: 24px;
+    animation: floatAnimation 4s ease-in-out infinite;
+  }
+  
+  /* اللمسة الذهبية خلف الرقم */
+  .error-number::after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    right: -10px; /* متوافق مع الـ RTL */
+    width: 35px;
+    height: 35px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    z-index: -1;
+  }
+
+  /* --- الأزرار العصرية --- */
+  .btn-neo-primary {
+    background: var(--accent-dark) !important;
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 50px;
+    padding: 16px;
+    font-size: 15px;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .btn-neo-primary:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
+
+  .btn-neo-outline {
+    background: transparent;
+    color: var(--text-primary) !important;
+    border: 2px solid var(--border-light);
+    font-weight: 800;
+    border-radius: 50px;
+    padding: 16px;
+    font-size: 15px;
+    transition: all 0.3s;
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .btn-neo-outline:hover { background: #F4F4F5; border-color: transparent; }
+  .btn-neo-outline:active { transform: scale(0.96); }
+
+</style>
+
+<div class="container d-flex flex-column justify-content-center align-items-center py-5" style="min-height: 85vh;">
+    
+    <div class="error-card-neo animate-fade-up">
+        
+        <div class="error-number">404</div>
+        
+        <h3 class="fw-bold mb-3" style="color: var(--text-primary); letter-spacing: -0.5px;">
+            {% trans "عذراً، فقدنا الأثر!" %}
+        </h3>
+        
+        <p class="mb-5" style="color: var(--text-secondary); font-weight: 500; font-size: 15px; line-height: 1.8;">
+            {% trans "يبدو أن الصفحة التي تبحث عنها غير موجودة. ربما تم تغيير الرابط أو تم حذف الصفحة." %}
+        </p>
+        
+        <div class="d-grid gap-3">
+            <a href="{% url 'home' %}" class="btn-neo-primary">
+                <i class="fas fa-home"></i> {% trans "العودة للرئيسية" %}
+            </a>
+            <a href="javascript:history.back()" class="btn-neo-outline">
+                <i class="fas fa-arrow-right"></i> {% trans "الرجوع للخلف" %}
+            </a>
+        </div>
+        
+    </div>
+
 </div>
+
 {% endblock %}

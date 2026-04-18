@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-08 20:17+0200\n"
+"POT-Creation-Date: 2026-04-11 10:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -74,7 +74,7 @@ msgid "رقم الهاتف هذا مسجل بالفعل."
 msgstr "This phone number is already registered."
 
 #: .\accounts\forms.py:63 .\templates\merchant\order_detail.html:80
-#: .\templates\store\checkout.html:127
+#: .\templates\store\checkout.html:185
 #: .\templates\supervisor\support_ticket_detail.html:66
 #: .\templates\supervisor\team_management.html:35
 msgid "رقم الهاتف"
@@ -152,76 +152,52 @@ msgid "English"
 msgstr "English"
 
 #: .\store\models.py:340
-#, fuzzy
-#| msgid "اسم المستلم"
 msgid "اسم الموقع/الفرع"
-msgstr "Recipient name"
+msgstr "Site/Branch name"
 
 #: .\store\models.py:341
-#, fuzzy
-#| msgid "رسوم الشحن"
 msgid "رسوم ثابتة"
-msgstr "Shipping fees"
+msgstr "Fixed fees"
 
 #: .\store\models.py:342
-#, fuzzy
-#| msgid "نسبة الخصم (%%)"
 msgid "نسبة العمولة (%)"
-msgstr "Discount percentage (%%)"
+msgstr "Commission percentage (%)"
 
-#: .\store\models.py:343 .\templates\supervisor\site_settings.html:57
-#, fuzzy
-#| msgid "الحد الأدنى للرصيد"
+#: .\store\models.py:343 .\templates\supervisor\site_settings.html:41
 msgid "الحد الأدنى للسحب"
-msgstr "Minimum balance"
+msgstr "Minimum withdrawal"
 
 #: .\store\models.py:344
-#, fuzzy
-#| msgid "الرصيد الحالي في المحفظة"
 msgid "المبلغ المحجوز في المحفظة"
-msgstr "Current balance in wallet"
+msgstr "Reserved amount in wallet"
 
 #: .\store\models.py:345
-#, fuzzy
-#| msgid "الحد الأقصى للمنتجات"
 msgid "الحد الأدنى لتفعيل المنتجات"
-msgstr "Maximum products limit"
+msgstr "Minimum limit to activate products"
 
 #: .\store\models.py:346
-#, fuzzy
-#| msgid "إجمالي الرصيد المتاح"
 msgid "مدة تعليق الرصيد (ساعة)"
-msgstr "Total Available Balance"
+msgstr "Balance suspension duration (hours)"
 
 #: .\store\models.py:349
-#, fuzzy
-#| msgid "الطلبات المؤكدة والمسلمة"
 msgid "عدد الطلبات المؤهلة للمكافأة"
-msgstr "Confirmed and delivered orders"
+msgstr "Number of eligible orders for reward"
 
 #: .\store\models.py:350
-#, fuzzy
-#| msgid "كلمة المرور الدائمة"
 msgid "مهلة إدخال كود الدعوة (ساعة)"
-msgstr "Permanent Password"
+msgstr "Invitation code grace period (hours)"
 
 #: .\store\models.py:351
-#, fuzzy
-#| msgid "قيمة الخصم والمدة"
 msgid "قيمة المكافأة"
-msgstr "Discount value and duration"
+msgstr "Reward value"
 
 #: .\store\models.py:352
-#, fuzzy
-#| msgid "نسبة عمولة المنصة (%%)"
 msgid "أقصى نسبة خصم للمنتج (%)"
-msgstr "Platform Commission Percentage (%%)"
+msgstr "Maximum discount percentage for product (%)"
 
 #: .\store\models.py:354
-#, fuzzy
-#| msgid "صورة الإعلان"
 msgid "صورة البانر"
-msgstr "Ad image"
+msgstr "Banner image"
 
 #: .\templates\account\banned.html:7
 msgid "حساب محظور"
@@ -284,11 +260,12 @@ msgid "و"
 msgstr "and"
 
 #: .\templates\account\complete_profile.html:62
-#: .\templates\account\profile.html:202
+#: .\templates\account\profile.html:416
 #: .\templates\account\signup_customer.html:61
 #: .\templates\account\signup_merchant.html:139
 #: .\templates\merchant\profile.html:143 .\templates\merchant\profile.html:192
-#: .\templates\store\privacy_policy.html:7
+#: .\templates\store\privacy_policy.html:4
+#: .\templates\store\privacy_policy.html:121
 #: .\templates\supervisor\manage_terms.html:34
 #: .\templates\supervisor\manage_terms.html:150
 #: .\templates\supervisor\manage_terms.html:229
@@ -359,7 +336,7 @@ msgstr "Username or phone number"
 msgid "أدخل بيانات الدخول"
 msgstr "Enter login details"
 
-#: .\templates\account\login.html:37
+#: .\templates\account\login.html:37 .\templates\account\profile.html:299
 #: .\templates\account\signup_customer.html:73
 msgid "تسجيل الدخول"
 msgstr "Login"
@@ -397,113 +374,148 @@ msgstr "Yes, logout"
 msgid "تراجع والبقاء"
 msgstr "Go back and stay"
 
-#: .\templates\account\profile.html:25
+#: .\templates\account\profile.html:119
 msgid "حساب تاجر"
 msgstr "Merchant account"
 
-#: .\templates\account\profile.html:51
+#: .\templates\account\profile.html:143
 msgid "لوحة تحكم التاجر"
 msgstr "Merchant dashboard"
 
-#: .\templates\account\profile.html:52
+#: .\templates\account\profile.html:144
 msgid "إدارة منتجاتك ومبيعاتك"
 msgstr "Manage your products and sales"
 
-#: .\templates\account\profile.html:64
+#: .\templates\account\profile.html:156
 msgid "لوحة الإشراف والإدارة"
 msgstr "Admin and supervision dashboard"
 
-#: .\templates\account\profile.html:65
+#: .\templates\account\profile.html:157
 msgid "إدارة المنصة وعرض التقارير"
 msgstr "Manage platform and view reports"
 
-#: .\templates\account\profile.html:76 .\templates\base.html:163
-#: .\templates\merchant\base_merchant.html:197
-msgid "حسابي"
-msgstr "My account"
+#: .\templates\account\profile.html:166
+msgid "إعدادات الحساب"
+msgstr "Account settings"
 
-#: .\templates\account\profile.html:85 .\templates\store\my_orders.html:48
+#: .\templates\account\profile.html:175 .\templates\store\my_orders.html:146
 msgid "طلباتي السابقة"
 msgstr "My previous orders"
 
-#: .\templates\account\profile.html:86
+#: .\templates\account\profile.html:176
 msgid "تتبع مشترياتك وحالة طلبك"
 msgstr "Track your purchases and order status"
 
-#: .\templates\account\profile.html:96 .\templates\base.html:159
-#: .\templates\store\wishlist.html:55
+#: .\templates\account\profile.html:186 .\templates\base.html:222
+#: .\templates\store\wishlist.html:152
 msgid "المفضلة"
 msgstr "Wishlist"
 
-#: .\templates\account\profile.html:97
+#: .\templates\account\profile.html:187
 msgid "المنتجات التي أعجبتك"
 msgstr "Products you liked"
 
-#: .\templates\account\profile.html:107
+#: .\templates\account\profile.html:197
 msgid "مركز الهدايا والدعوات"
 msgstr "Gifts and invitations center"
 
-#: .\templates\account\profile.html:108
+#: .\templates\account\profile.html:198
 msgid "شارك واربح رصيد مجاني!"
 msgstr "Share and win free balance!"
 
-#: .\templates\account\profile.html:118
+#: .\templates\account\profile.html:219 .\templates\account\profile.html:324
+msgid "تغيير لغة التطبيق"
+msgstr "Change app language"
+
+#: .\templates\account\profile.html:220 .\templates\account\profile.html:325
+msgid "العربية / English"
+msgstr "العربية / English"
+
+#: .\templates\account\profile.html:236
 msgid "الأمان وكلمة المرور"
 msgstr "Security and password"
 
-#: .\templates\account\profile.html:119
+#: .\templates\account\profile.html:237
 msgid "تغيير بيانات الدخول"
 msgstr "Change login details"
 
-#: .\templates\account\profile.html:129
-msgid "حذف الحساب"
-msgstr "Delete account"
+#: .\templates\account\profile.html:245
+msgid "الدعم والسياسات"
+msgstr "Support and policies"
 
-#: .\templates\account\profile.html:130
-msgid "طلب إزالة بياناتي نهائياً"
-msgstr "Request permanent removal of my data"
-
-#: .\templates\account\profile.html:138
-msgid "المساعدة والمعلومات"
-msgstr "Help and information"
-
-#: .\templates\account\profile.html:147
+#: .\templates\account\profile.html:254
 msgid "الدعم الفني والمساعدة"
 msgstr "Technical support and help"
 
-#: .\templates\account\profile.html:148
+#: .\templates\account\profile.html:255
 msgid "تواصل معنا لحل أي مشكلة"
 msgstr "Contact us to resolve any issue"
 
-#: .\templates\account\profile.html:157 .\templates\store\about_us.html:2
-#: .\templates\store\about_us.html:39
-#: .\templates\supervisor\translations.html:24
-msgid "من نحن"
-msgstr "About us"
-
-#: .\templates\account\profile.html:166
+#: .\templates\account\profile.html:265 .\templates\account\profile.html:341
 msgid "المركز القانوني والسياسات"
 msgstr "Legal center and policies"
 
-#: .\templates\account\profile.html:167
+#: .\templates\account\profile.html:266 .\templates\account\profile.html:342
 msgid "الشروط، الخصوصية، والاسترجاع"
 msgstr "Terms, privacy, and returns"
 
-#: .\templates\account\profile.html:176 .\templates\merchant\profile.html:161
+#: .\templates\account\profile.html:274 .\templates\merchant\profile.html:161
 msgid "تسجيل الخروج بأمان"
 msgstr "Logout securely"
 
-#: .\templates\account\profile.html:188
+#: .\templates\account\profile.html:291
+msgid "مرحباً بك في المنصة"
+msgstr "Welcome to the platform"
+
+#: .\templates\account\profile.html:292
+msgid "سجل دخولك الآن لتجربة تسوق أفضل"
+msgstr "Login now for a better shopping experience"
+
+#: .\templates\account\profile.html:300
+msgid "سجل الدخول للوصول إلى طلباتك، محفظتك، وإعدادات حسابك."
+msgstr "Login to access your orders, wallet, and account settings."
+
+#: .\templates\account\profile.html:302
+msgid "تسجيل الدخول أو إنشاء حساب"
+msgstr "Login or create an account"
+
+#: .\templates\account\profile.html:306
+msgid "إعدادات عامة والسياسات"
+msgstr "General settings and policies"
+
+#: .\templates\account\profile.html:359
 msgid "مركز السياسات"
 msgstr "Policy center"
 
-#: .\templates\account\profile.html:196
+#: .\templates\account\profile.html:367
+msgid "الشروط"
+msgstr "Terms"
+
+#: .\templates\account\profile.html:373
+msgid "الخصوصية"
+msgstr "Privacy"
+
+#: .\templates\account\profile.html:379
+msgid "الاسترجاع"
+msgstr "Returns"
+
+#: .\templates\account\profile.html:392
 msgid "الأحكام والشروط"
 msgstr "Terms and conditions"
 
-#: .\templates\account\profile.html:208
-msgid "الشحن والاسترجاع"
-msgstr "Shipping and returns"
+#: .\templates\account\profile.html:402 .\templates\account\profile.html:426
+#: .\templates\account\profile.html:450
+msgid "لا توجد بنود متاحة حالياً."
+msgstr "No terms available currently."
+
+#: .\templates\account\profile.html:406 .\templates\account\profile.html:430
+#: .\templates\account\profile.html:454
+msgid "رجوع للمركز"
+msgstr "Back to center"
+
+#: .\templates\account\profile.html:440
+msgid "سياسة الشحن والاسترجاع"
+msgstr "Shipping and return policy"
 
 #: .\templates\account\signup_choice.html:5
 #: .\templates\account\signup_unified.html:5
@@ -644,37 +656,41 @@ msgstr "Your request will be reviewed by management within 24 hours."
 msgid "تم إرفاق الصورة"
 msgstr "Image attached"
 
-#: .\templates\base.html:13
+#: .\templates\base.html:10
 msgid "سوقك الإلكتروني الأول"
 msgstr "Your first e-marketplace"
 
-#: .\templates\base.html:17
+#: .\templates\base.html:12
 msgid "تسوق أفضل المنتجات بأرخص الأسعار في مصر. ملابس، إلكترونيات، والمزيد."
 msgstr ""
 "Shop the best products at the cheapest prices in Egypt. Clothes, "
 "electronics, and more."
 
-#: .\templates\base.html:19
+#: .\templates\base.html:13
 msgid "تسوق, مصر, أونلاين, ملابس, خصومات"
 msgstr "Shop, Egypt, online, clothes, discounts"
 
-#: .\templates\base.html:22
+#: .\templates\base.html:16
 msgid "أفضل العروض والخصومات"
 msgstr "Best offers and discounts"
 
-#: .\templates\base.html:143 .\templates\merchant\base_merchant.html:177
+#: .\templates\base.html:207 .\templates\merchant\base_merchant.html:177
 #: .\templates\supervisor\base_supervisor.html:158
 msgid "الرئيسية"
 msgstr "Home"
 
-#: .\templates\base.html:147 .\templates\supervisor\base_supervisor.html:200
+#: .\templates\base.html:211 .\templates\supervisor\base_supervisor.html:200
 #: .\templates\supervisor\translations.html:15
 msgid "الأقسام"
 msgstr "Categories"
 
-#: .\templates\base.html:155
+#: .\templates\base.html:218
 msgid "السلة"
 msgstr "Cart"
+
+#: .\templates\base.html:226 .\templates\merchant\base_merchant.html:197
+msgid "حسابي"
+msgstr "My account"
 
 #: .\templates\merchant\add_offer.html:5
 msgid "إدارة العروض | لوحة التاجر"
@@ -802,7 +818,6 @@ msgstr "Select..."
 
 #: .\templates\merchant\add_product.html:44
 #: .\templates\merchant\edit_product.html:34
-#: .\templates\store\product_detail.html:235
 msgid "وصف المنتج"
 msgstr "Product description"
 
@@ -959,8 +974,8 @@ msgstr "Offers"
 msgid "آخر الطلبات"
 msgstr "Latest orders"
 
-#: .\templates\merchant\dashboard.html:124 .\templates\store\home.html:199
-#: .\templates\store\home.html:260 .\templates\supervisor\dashboard.html:155
+#: .\templates\merchant\dashboard.html:124 .\templates\store\home.html:305
+#: .\templates\supervisor\dashboard.html:155
 msgid "عرض الكل"
 msgstr "View all"
 
@@ -1030,7 +1045,7 @@ msgid "الإشعارات 🔔"
 msgstr "Notifications 🔔"
 
 #: .\templates\merchant\notifications.html:60
-#: .\templates\store\notifications.html:77
+#: .\templates\store\notifications.html:172
 #: .\templates\supervisor\admin_notifications.html:42
 msgid "لا توجد إشعارات حالياً"
 msgstr "No notifications currently"
@@ -1040,6 +1055,7 @@ msgid "سنقوم بإخطارك عند حدوث أي نشاط جديد في م�
 msgstr "We will notify you of any new activity in your store"
 
 #: .\templates\merchant\notifications.html:63
+#: .\templates\store\about_us.html:132 .\templates\store\categories.html:168
 msgid "العودة للرئيسية"
 msgstr "Back to home"
 
@@ -1068,7 +1084,7 @@ msgid "بيانات العميل"
 msgstr "Customer details"
 
 #: .\templates\merchant\order_detail.html:61
-#: .\templates\store\checkout.html:117
+#: .\templates\store\checkout.html:175
 msgid "اسم المستلم"
 msgstr "Recipient name"
 
@@ -1081,7 +1097,7 @@ msgid "طلب للغير"
 msgstr "Order for someone else"
 
 #: .\templates\merchant\order_detail.html:91
-#: .\templates\store\checkout.html:112
+#: .\templates\store\checkout.html:170
 msgid "العنوان بالتفصيل"
 msgstr "Detailed address"
 
@@ -1090,7 +1106,7 @@ msgid "تم نسخ العنوان"
 msgstr "Address copied"
 
 #: .\templates\merchant\order_detail.html:103
-#: .\templates\store\customer_order_detail.html:59
+#: .\templates\store\customer_order_detail.html:154
 #: .\templates\supervisor\order_detail.html:31
 msgid "المنتجات المطلوبة"
 msgstr "Ordered products"
@@ -1100,7 +1116,7 @@ msgid "الفاتورة وتفاصيل الدفع"
 msgstr "Invoice and payment details"
 
 #: .\templates\merchant\order_detail.html:138
-#: .\templates\store\checkout.html:160
+#: .\templates\store\checkout.html:218
 #: .\templates\supervisor\all_products.html:27
 msgid "إجمالي المنتجات"
 msgstr "Products total"
@@ -1233,7 +1249,7 @@ msgstr "Preparing"
 msgid "جاري الشحن"
 msgstr "Shipping"
 
-#: .\templates\merchant\orders.html:34 .\templates\store\my_orders.html:63
+#: .\templates\merchant\orders.html:34 .\templates\store\my_orders.html:162
 #: .\templates\supervisor\all_orders.html:38
 msgid "تم التسليم"
 msgstr "Delivered"
@@ -1249,11 +1265,11 @@ msgid "ملغي"
 msgstr "Canceled"
 
 #: .\templates\merchant\orders.html:74
-#: .\templates\store\customer_order_detail.html:79
+#: .\templates\store\customer_order_detail.html:178
 msgid "الكمية:"
 msgstr "Quantity:"
 
-#: .\templates\merchant\orders.html:88 .\templates\store\my_orders.html:115
+#: .\templates\merchant\orders.html:88 .\templates\store\my_orders.html:209
 msgid "التفاصيل"
 msgstr "Details"
 
@@ -1749,19 +1765,24 @@ msgstr ""
 msgid "تأكيد وإرسال الطلب"
 msgstr "Confirm and send request"
 
-#: .\templates\store\about_us.html:50
-msgid "جاري تحديث البيانات... يرجى العودة لاحقاً."
-msgstr "Updating data... please check back later."
+#: .\templates\store\about_us.html:2 .\templates\store\about_us.html:114
+#: .\templates\supervisor\translations.html:24
+msgid "من نحن"
+msgstr "About us"
 
-#: .\templates\store\about_us.html:56
-msgid "عودة"
-msgstr "Back"
+#: .\templates\store\about_us.html:124
+msgid "جاري صياغة قصتنا..."
+msgstr "Crafting our story..."
 
-#: .\templates\store\cart.html:70
+#: .\templates\store\about_us.html:125
+msgid "يرجى العودة لاحقاً لاكتشاف المزيد عن البازار."
+msgstr "Please check back later to discover more about Elbazaar."
+
+#: .\templates\store\cart.html:158
 msgid "سلة المشتريات"
 msgstr "Shopping cart"
 
-#: .\templates\store\cart.html:116
+#: .\templates\store\cart.html:206
 #, fuzzy, python-format
 #| msgid ""
 #| "\n"
@@ -1769,38 +1790,38 @@ msgstr "Shopping cart"
 #| "                                    "
 msgid ""
 "\n"
-"                                    شحن مجاني (أكثر من %(threshold)s)\n"
-"                                    "
+"                                شحن مجاني (أكثر من %(threshold)s)\n"
+"                                "
 msgstr ""
 "\n"
 "                                    Free shipping (over %(threshold)s)\n"
 "                                    "
 
-#: .\templates\store\cart.html:124 .\templates\store\cart.html:126
-#: .\templates\store\cart.html:152 .\templates\store\cart.html:153
-#: .\templates\store\checkout.html:146 .\templates\store\checkout.html:161
-#: .\templates\store\checkout.html:170 .\templates\store\checkout.html:177
-#: .\templates\store\checkout.html:273
-#: .\templates\store\customer_order_detail.html:78
-#: .\templates\store\customer_order_detail.html:102
-#: .\templates\store\customer_order_detail.html:107
-#: .\templates\store\customer_order_detail.html:113
-#: .\templates\store\customer_order_detail.html:122
-#: .\templates\store\customer_order_detail.html:132
-#: .\templates\store\home.html:241 .\templates\store\home.html:245
-#: .\templates\store\merchant_shop.html:112
-#: .\templates\store\merchant_shop.html:116
-#: .\templates\store\my_orders.html:100
-#: .\templates\store\product_detail.html:170
-#: .\templates\store\product_detail.html:171
-#: .\templates\store\product_detail.html:177
-#: .\templates\store\product_detail.html:200
-#: .\templates\store\product_detail.html:342
-#: .\templates\store\referral_center.html:70
-#: .\templates\store\retry_payment.html:91
-#: .\templates\store\retry_payment.html:127
-#: .\templates\store\retry_payment.html:131
-#: .\templates\store\retry_payment.html:152 .\templates\store\wishlist.html:83
+#: .\templates\store\cart.html:214 .\templates\store\cart.html:216
+#: .\templates\store\cart.html:236 .\templates\store\cart.html:237
+#: .\templates\store\checkout.html:204 .\templates\store\checkout.html:219
+#: .\templates\store\checkout.html:228 .\templates\store\checkout.html:235
+#: .\templates\store\checkout.html:333
+#: .\templates\store\customer_order_detail.html:176
+#: .\templates\store\customer_order_detail.html:214
+#: .\templates\store\customer_order_detail.html:219
+#: .\templates\store\customer_order_detail.html:225
+#: .\templates\store\customer_order_detail.html:234
+#: .\templates\store\customer_order_detail.html:246
+#: .\templates\store\home.html:334 .\templates\store\home.html:337
+#: .\templates\store\merchant_shop.html:226
+#: .\templates\store\merchant_shop.html:230
+#: .\templates\store\my_orders.html:195
+#: .\templates\store\product_detail.html:259
+#: .\templates\store\product_detail.html:260
+#: .\templates\store\product_detail.html:266
+#: .\templates\store\product_detail.html:289
+#: .\templates\store\product_detail.html:423
+#: .\templates\store\referral_center.html:158
+#: .\templates\store\retry_payment.html:147
+#: .\templates\store\retry_payment.html:190
+#: .\templates\store\retry_payment.html:194
+#: .\templates\store\retry_payment.html:219 .\templates\store\wishlist.html:182
 #: .\templates\supervisor\adjust_wallet.html:7
 #: .\templates\supervisor\all_orders.html:6
 #: .\templates\supervisor\all_products.html:7
@@ -1809,104 +1830,101 @@ msgstr ""
 #: .\templates\supervisor\dashboard.html:6
 #: .\templates\supervisor\finance_logs.html:6
 #: .\templates\supervisor\finance_overview.html:6
-#: .\templates\supervisor\site_settings.html:42
+#: .\templates\supervisor\site_settings.html:26
 #: .\templates\support\create_ticket.html:3
 msgid "ج.م"
 msgstr "EGP"
 
-#: .\templates\store\cart.html:139
-msgid "حذف المنتج"
-msgstr "Remove product"
+#: .\templates\store\cart.html:234
+msgid "الإجمالي المحدد"
+msgstr "Selected total"
 
-#: .\templates\store\cart.html:150
-msgid "الإجمالي المحدد :"
-msgstr "Selected total :"
-
-#: .\templates\store\cart.html:158 .\templates\store\cart.html:161
+#: .\templates\store\cart.html:242 .\templates\store\cart.html:245
 msgid "اختر منتجات للشراء"
 msgstr "Select products to buy"
 
-#: .\templates\store\cart.html:159
-msgid "متابعة الشراء"
-msgstr "Continue to checkout"
+#: .\templates\store\cart.html:243
+msgid "متابعة الدفع"
+msgstr "Proceed to checkout"
 
-#: .\templates\store\cart.html:171
-msgid "سلتك فارغة حالياً!"
-msgstr "Your cart is currently empty!"
+#: .\templates\store\cart.html:254
+msgid "سلتك فارغة!"
+msgstr "Your cart is empty!"
 
-#: .\templates\store\cart.html:172
-msgid "تصفح منتجاتنا واكتشف أحدث العروض والخصومات."
-msgstr "Browse our products and discover the latest offers and discounts."
+#: .\templates\store\cart.html:255
+msgid "ابدأ بإضافة بعض المنتجات الرائعة لتسوقها."
+msgstr "Start adding some great products to shop."
 
-#: .\templates\store\cart.html:174
-msgid "تسوق الآن"
-msgstr "Shop now"
+#: .\templates\store\cart.html:257 .\templates\store\my_orders.html:230
+#: .\templates\store\wishlist.html:197
+msgid "تصفح المنتجات"
+msgstr "Browse products"
 
-#: .\templates\store\categories.html:63
+#: .\templates\store\categories.html:129
 msgid "تصفح الأقسام"
 msgstr "Browse categories"
 
-#: .\templates\store\categories.html:100
+#: .\templates\store\categories.html:165
 msgid "لا توجد أقسام حالياً!"
 msgstr "No categories currently!"
 
-#: .\templates\store\categories.html:101
-msgid "سيتم إضافة أقسام ومنتجات جديدة قريباً."
-msgstr "New categories and products will be added soon."
+#: .\templates\store\categories.html:166
+msgid "نعمل على تجهيز أقسام جديدة مميزة قريباً."
+msgstr "We are working on preparing new special categories soon."
 
-#: .\templates\store\checkout.html:85
+#: .\templates\store\checkout.html:143
 msgid "تأكيد الطلب والدفع"
 msgstr "Confirm order and payment"
 
-#: .\templates\store\checkout.html:98
+#: .\templates\store\checkout.html:156
 msgid "بيانات الشحن"
 msgstr "Shipping details"
 
-#: .\templates\store\checkout.html:102
+#: .\templates\store\checkout.html:160
 msgid "المحافظة"
 msgstr "Governorate"
 
-#: .\templates\store\checkout.html:104
+#: .\templates\store\checkout.html:162
 msgid "اختر المحافظة..."
 msgstr "Select governorate..."
 
-#: .\templates\store\checkout.html:113
+#: .\templates\store\checkout.html:171
 msgid "اسم الشارع، رقم العمارة..."
 msgstr "Street name, building number..."
 
-#: .\templates\store\checkout.html:121
+#: .\templates\store\checkout.html:179
 msgid "اسم الشخص الذي سيستلم الطلب"
 msgstr "Name of the person receiving the order"
 
-#: .\templates\store\checkout.html:123
+#: .\templates\store\checkout.html:181
 msgid "يمكنك تغييره إذا كنت ترسل الطلب لشخص آخر."
 msgstr "You can change it if you are sending the order to someone else."
 
-#: .\templates\store\checkout.html:133
-#: .\templates\store\customer_order_detail.html:39
+#: .\templates\store\checkout.html:191
+#: .\templates\store\customer_order_detail.html:126
 #: .\templates\supervisor\order_detail.html:4
 msgid "تفاصيل الطلب"
 msgstr "Order details"
 
-#: .\templates\store\checkout.html:152
+#: .\templates\store\checkout.html:210
 #: .\templates\supervisor\order_detail.html:72
 msgid "تكلفة الشحن:"
 msgstr "Shipping cost:"
 
-#: .\templates\store\checkout.html:164
+#: .\templates\store\checkout.html:222
 msgid "إجمالي الشحن"
 msgstr "Total shipping"
 
-#: .\templates\store\checkout.html:169
-#: .\templates\store\customer_order_detail.html:112
+#: .\templates\store\checkout.html:227
+#: .\templates\store\customer_order_detail.html:224
 msgid "رسوم الدفع الإلكتروني"
 msgstr "E-payment fees"
 
-#: .\templates\store\checkout.html:176
+#: .\templates\store\checkout.html:234
 msgid "الإجمالي للدفع"
 msgstr "Total to pay"
 
-#: .\templates\store\checkout.html:193
+#: .\templates\store\checkout.html:249
 #, fuzzy, python-format
 #| msgid ""
 #| "\n"
@@ -1918,11 +1936,9 @@ msgstr "Total to pay"
 #| "                    "
 msgid ""
 "\n"
-"                    تم تفعيل خصم <strong class=\"text-success\">%(pct)s%%</"
-"strong> \n"
+"                    تم تفعيل خصم <strong>%(pct)s%%</strong> \n"
 "                    (بحد أقصى %(max_amt)s ج.م) \n"
-"                    متاح على <strong class=\"text-white\">%(count)s</strong> "
-"منتجات.\n"
+"                    متاح على <strong>%(count)s</strong> منتجات.\n"
 "                    "
 msgstr ""
 "\n"
@@ -1933,525 +1949,521 @@ msgstr ""
 "strong> products.\n"
 "                    "
 
-#: .\templates\store\checkout.html:200
+#: .\templates\store\checkout.html:256
 msgid "يتضمن شحن مجاني للطلب!"
 msgstr "Includes free shipping for the order!"
 
-#: .\templates\store\checkout.html:204
+#: .\templates\store\checkout.html:260
 msgid "* سيتم خصم قيمة الهدية من الإجمالي النهائي بعد تأكيد الطلب."
 msgstr ""
 "* The gift value will be deducted from the final total after order "
 "confirmation."
 
-#: .\templates\store\checkout.html:214
+#: .\templates\store\checkout.html:269
 msgid "رصيد خصم الإحالة"
 msgstr "Referral discount balance"
 
-#: .\templates\store\checkout.html:216
+#: .\templates\store\checkout.html:271
 #, python-format
 msgid "متاح لك خصم %(discount)s ج.م"
 msgstr "You have a discount of %(discount)s EGP available"
 
-#: .\templates\store\checkout.html:226
+#: .\templates\store\checkout.html:280
 msgid "طريقة الدفع"
 msgstr "Payment method"
 
-#: .\templates\store\checkout.html:231 .\templates\store\my_orders.html:95
-#: .\templates\store\retry_payment.html:101
+#: .\templates\store\checkout.html:286 .\templates\store\my_orders.html:190
+#: .\templates\store\retry_payment.html:161
 msgid "كاش"
 msgstr "Cash"
 
-#: .\templates\store\checkout.html:236 .\templates\store\retry_payment.html:106
+#: .\templates\store\checkout.html:293 .\templates\store\retry_payment.html:167
 msgid "فيزا"
 msgstr "Visa"
 
-#: .\templates\store\checkout.html:241 .\templates\store\retry_payment.html:111
+#: .\templates\store\checkout.html:300 .\templates\store\retry_payment.html:173
 msgid "محفظة"
 msgstr "Wallet"
 
-#: .\templates\store\checkout.html:246 .\templates\store\retry_payment.html:116
+#: .\templates\store\checkout.html:306
 msgid "رقم المحفظة الإلكترونية المحول منها"
 msgstr "E-wallet number transferred from"
 
-#: .\templates\store\checkout.html:251 .\templates\store\retry_payment.html:121
+#: .\templates\store\checkout.html:311 .\templates\store\retry_payment.html:184
 msgid "فودافون كاش، اتصالات، أورانج، وي."
 msgstr "Vodafone Cash, Etisalat, Orange, WE."
 
-#: .\templates\store\checkout.html:257
+#: .\templates\store\checkout.html:317
 msgid "تأكيد الطلب (دفع عند الاستلام)"
 msgstr "Confirm order (Cash on Delivery)"
 
-#: .\templates\store\checkout.html:259
+#: .\templates\store\checkout.html:319
 msgid "يرجى اختيار المحافظة أولاً لحساب الشحن"
 msgstr "Please select a governorate first to calculate shipping"
 
-#: .\templates\store\checkout.html:274 .\templates\store\home.html:164
+#: .\templates\store\checkout.html:334
 msgid "مجاني"
 msgstr "Free"
 
-#: .\templates\store\checkout.html:275
+#: .\templates\store\checkout.html:335
 msgid "جاري الحساب..."
 msgstr "Calculating..."
 
-#: .\templates\store\checkout.html:276
+#: .\templates\store\checkout.html:336
 msgid "حدث خطأ في الاتصال"
 msgstr "Connection error occurred"
 
-#: .\templates\store\checkout.html:277
+#: .\templates\store\checkout.html:337
 msgid "الانتقال للدفع (فيزا) 💳"
 msgstr "Proceed to payment (Visa) 💳"
 
-#: .\templates\store\checkout.html:278
+#: .\templates\store\checkout.html:338
 msgid "تأكيد الدفع (محفظة) 📱"
 msgstr "Confirm payment (Wallet) 📱"
 
-#: .\templates\store\checkout.html:279
+#: .\templates\store\checkout.html:339
 msgid "تأكيد الطلب (دفع عند الاستلام) 📦"
 msgstr "Confirm order (Cash on delivery) 📦"
 
-#: .\templates\store\confirm_delivery.html:81
-#, python-format
-msgid "تأكيد استلام الطلب #%(order_id)s"
-msgstr "Confirm receipt of order #%(order_id)s"
+#: .\templates\store\confirm_delivery.html:185
+#: .\templates\supervisor\order_detail.html:110
+msgid "حالة الطلب"
+msgstr "Order Status"
 
-#: .\templates\store\confirm_delivery.html:83
-#: .\templates\store\confirm_delivery.html:91
+#: .\templates\store\confirm_delivery.html:197
+#: .\templates\store\confirm_delivery.html:209
+#, python-format
+msgid "الطلب #%(order_id)s"
+msgstr "Order #%(order_id)s"
+
+#: .\templates\store\confirm_delivery.html:200
+#: .\templates\store\confirm_delivery.html:212
 msgid "التاجر يفيد بأنه"
 msgstr "The merchant reports that"
 
-#: .\templates\store\confirm_delivery.html:83
+#: .\templates\store\confirm_delivery.html:200
 msgid "تم تسليم"
 msgstr "delivered"
 
-#: .\templates\store\confirm_delivery.html:83
+#: .\templates\store\confirm_delivery.html:200
 msgid "طلبك. يرجى تأكيد ذلك للمتابعة."
 msgstr "your order. Please confirm this to proceed."
 
-#: .\templates\store\confirm_delivery.html:89
-#, python-format
-msgid "تأكيد إرجاع الطلب #%(order_id)s"
-msgstr "Confirm return of order #%(order_id)s"
-
-#: .\templates\store\confirm_delivery.html:91
+#: .\templates\store\confirm_delivery.html:212
 msgid "تم إرجاع"
 msgstr "returned"
 
-#: .\templates\store\confirm_delivery.html:91
+#: .\templates\store\confirm_delivery.html:212
 msgid "طلبك ولم تستلمه. هل هذا صحيح؟"
 msgstr "your order and you didn't receive it. Is this correct?"
 
-#: .\templates\store\confirm_delivery.html:102
+#: .\templates\store\confirm_delivery.html:224
 msgid "نعم، استلمت الطلب بنجاح"
 msgstr "Yes, I received the order successfully"
 
-#: .\templates\store\confirm_delivery.html:104
+#: .\templates\store\confirm_delivery.html:226
 msgid "نعم، لم أستلم / أرجعت الطلب"
 msgstr "Yes, I didn't receive / returned the order"
 
-#: .\templates\store\confirm_delivery.html:111
+#: .\templates\store\confirm_delivery.html:233
 msgid "لا، لم أستلم شيئاً (يوجد مشكلة)"
 msgstr "No, I haven't received anything (there's an issue)"
 
-#: .\templates\store\confirm_delivery.html:113
+#: .\templates\store\confirm_delivery.html:235
 msgid "لا، لقد استلمت الطلب ودفعت ثمنه!"
 msgstr "No, I received the order and paid for it!"
 
-#: .\templates\store\confirm_delivery.html:121
-msgid "ما تقييمك للتجربة والمنتجات؟"
-msgstr "What's your review of the experience and products?"
+#: .\templates\store\confirm_delivery.html:243
+msgid "كيف كانت تجربتك معنا؟"
+msgstr "How was your experience with us?"
 
-#: .\templates\store\confirm_delivery.html:130
+#: .\templates\store\confirm_delivery.html:253
 msgid "أخبرنا برأيك في المنتجات (اختياري)"
 msgstr "Tell us what you think of the products (Optional)"
 
-#: .\templates\store\confirm_delivery.html:131
+#: .\templates\store\confirm_delivery.html:254
 msgid "جودة الخامة، سرعة التوصيل، التغليف..."
 msgstr "Material quality, delivery speed, packaging..."
 
-#: .\templates\store\confirm_delivery.html:133
+#: .\templates\store\confirm_delivery.html:258
 msgid "إرسال التقييم والمتابعة"
 msgstr "Submit review and continue"
 
-#: .\templates\store\confirm_delivery.html:137
+#: .\templates\store\confirm_delivery.html:264
 msgid "سيتم إغلاق الطلب رسمياً كمرتجع ولن يتم مطالبتك بأي مصاريف."
 msgstr ""
 "The order will be officially closed as a return and you will not be charged "
 "any fees."
 
-#: .\templates\store\confirm_delivery.html:139
+#: .\templates\store\confirm_delivery.html:267
 msgid "تأكيد المرتجع والمتابعة"
 msgstr "Confirm return and continue"
 
-#: .\templates\store\confirm_delivery.html:147
-msgid "سبب المشكلة / لماذا لم تستلم؟"
-msgstr "Issue reason / Why didn't you receive it?"
+#: .\templates\store\confirm_delivery.html:277
+msgid "لماذا لم تستلم الطلب؟"
+msgstr "Why didn't you receive the order?"
 
-#: .\templates\store\confirm_delivery.html:149
+#: .\templates\store\confirm_delivery.html:279
 msgid "إبلاغ عن تلاعب المندوب:"
 msgstr "Report courier manipulation:"
 
-#: .\templates\store\confirm_delivery.html:155
+#: .\templates\store\confirm_delivery.html:286
 msgid "مثال: المندوب لم يتواصل معي حتى الآن..."
 msgstr "e.g., The courier hasn't contacted me yet..."
 
-#: .\templates\store\confirm_delivery.html:155
+#: .\templates\store\confirm_delivery.html:286
 msgid "مثال: لقد استلمت الطلب يوم الخميس ودفعت الفلوس للمندوب كاش..."
 msgstr "e.g., I received the order on Thursday and paid the courier in cash..."
 
-#: .\templates\store\confirm_delivery.html:158
+#: .\templates\store\confirm_delivery.html:289
 msgid "رقم الواتساب للتواصل المباشر والتحقيق"
 msgstr "WhatsApp number for direct contact and investigation"
 
-#: .\templates\store\confirm_delivery.html:169
+#: .\templates\store\confirm_delivery.html:300
 msgid "سنقوم بالتواصل معك فوراً لضمان حقك وحل المشكلة."
 msgstr ""
 "We will contact you immediately to ensure your rights and resolve the issue."
 
-#: .\templates\store\confirm_delivery.html:172
+#: .\templates\store\confirm_delivery.html:304
 msgid "إرسال الشكوى العاجلة"
 msgstr "Send urgent complaint"
 
-#: .\templates\store\customer_order_detail.html:53
+#: .\templates\store\customer_order_detail.html:146
 msgid "طريقة الدفع:"
 msgstr "Payment method:"
 
-#: .\templates\store\customer_order_detail.html:75
-msgid "المقاس:"
-msgstr "Size:"
-
-#: .\templates\store\customer_order_detail.html:75
-msgid "اللون:"
-msgstr "Color:"
-
-#: .\templates\store\customer_order_detail.html:88
+#: .\templates\store\customer_order_detail.html:188
 #: .\templates\supervisor\order_detail.html:163
 msgid "عنوان التوصيل"
 msgstr "Delivery address"
 
-#: .\templates\store\customer_order_detail.html:91
+#: .\templates\store\customer_order_detail.html:192
 msgid "المستلم:"
 msgstr "Recipient:"
 
-#: .\templates\store\customer_order_detail.html:92
-msgid "رقم الهاتف:"
-msgstr "Phone number:"
+#: .\templates\store\customer_order_detail.html:196
+#: .\templates\supervisor\merchants_list.html:61
+#: .\templates\supervisor\team_management.html:141
+msgid "الهاتف:"
+msgstr "Phone:"
 
-#: .\templates\store\customer_order_detail.html:93
+#: .\templates\store\customer_order_detail.html:200
 msgid "العنوان:"
 msgstr "Address:"
 
-#: .\templates\store\customer_order_detail.html:98
+#: .\templates\store\customer_order_detail.html:208
 #: .\templates\supervisor\order_detail.html:65
 msgid "ملخص الدفع"
 msgstr "Payment summary"
 
-#: .\templates\store\customer_order_detail.html:101
+#: .\templates\store\customer_order_detail.html:213
 msgid "مجموع المنتجات"
 msgstr "Total products"
 
-#: .\templates\store\customer_order_detail.html:106
+#: .\templates\store\customer_order_detail.html:218
 msgid "رسوم الشحن"
 msgstr "Shipping fees"
 
-#: .\templates\store\customer_order_detail.html:120
+#: .\templates\store\customer_order_detail.html:232
 msgid "الإجمالي النهائي"
 msgstr "Final total"
 
-#: .\templates\store\customer_order_detail.html:131
+#: .\templates\store\customer_order_detail.html:244
 msgid "المطلوب دفعه:"
 msgstr "Amount to pay:"
 
-#: .\templates\store\customer_order_detail.html:136
+#: .\templates\store\customer_order_detail.html:251
 msgid "إكمال الدفع الآن"
 msgstr "Complete payment now"
 
-#: .\templates\store\home.html:97
-msgid "ابحث في البازار"
-msgstr "Search in Elbazaar"
+#: .\templates\store\home.html:214
+msgid "ما الذي تبحث عنه؟"
+msgstr "What are you looking for?"
 
-#: .\templates\store\home.html:129 .\templates\supervisor\all_orders.html:23
+#: .\templates\store\home.html:247 .\templates\supervisor\all_orders.html:23
 #: .\templates\supervisor\merchant_profile_admin.html:99
 #: .\templates\supervisor\support_tickets.html:24
 msgid "الكل"
 msgstr "All"
 
-#: .\templates\store\home.html:144
-msgid "عروض مميزة"
-msgstr "Special offers"
+#: .\templates\store\home.html:262
+msgid "عروض حصرية"
+msgstr "Exclusive offers"
 
-#: .\templates\store\home.html:198
-msgid "وصل حديثاً ✨"
-msgstr "Newly arrived ✨"
+#: .\templates\store\home.html:304
+msgid "وصل حديثاً"
+msgstr "Newly arrived"
 
-#: .\templates\store\home.html:259
-msgid "لا توجد منتجات حالياً."
-msgstr "No products currently."
+#: .\templates\store\home.html:355 .\templates\store\merchant_shop.html:247
+msgid "لا توجد منتجات حالياً"
+msgstr "No products currently"
 
-#: .\templates\store\home.html:316 .\templates\store\home.html:317
-#: .\templates\store\product_detail.html:363
+#: .\templates\store\home.html:356
+msgid "نعمل على توفير أفضل المنتجات قريباً."
+msgstr "We are working to provide the best products soon."
+
+#: .\templates\store\home.html:412 .\templates\store\product_detail.html:445
 msgid "يوم و"
 msgstr "day(s) and"
 
-#: .\templates\store\legal_page.html:45
-msgid "آخر تحديث للبنود:"
-msgstr "Last updated terms:"
+#: .\templates\store\legal_page.html:127
+msgid "آخر تحديث:"
+msgstr "Last updated:"
 
-#: .\templates\store\legal_page.html:65
-msgid "جاري تحديث هذه الصفحة..."
-msgstr "Updating this page..."
+#: .\templates\store\legal_page.html:151
+msgid "جاري الصياغة والتحديث..."
+msgstr "Crafting and updating..."
 
-#: .\templates\store\legal_page.html:66
+#: .\templates\store\legal_page.html:152
 msgid "لم يتم إضافة البنود الخاصة بهذا القسم حتى الآن، يرجى العودة لاحقاً."
 msgstr ""
 "Terms for this section haven't been added yet, please check back later."
 
-#: .\templates\store\legal_page.html:75
-msgid "إغلاق والعودة"
-msgstr "Close and go back"
+#: .\templates\store\legal_page.html:160
+msgid "العودة والتصفح"
+msgstr "Back to browse"
 
-#: .\templates\store\merchant_shop.html:58
+#: .\templates\store\merchant_shop.html:157
+msgid "متجر التاجر"
+msgstr "Merchant store"
+
+#: .\templates\store\merchant_shop.html:181
 msgid "شريك معتمد في البازار"
 msgstr "Verified partner in Elbazaar"
 
-#: .\templates\store\merchant_shop.html:63
+#: .\templates\store\merchant_shop.html:186
 msgid "منتج"
 msgstr "Product"
 
-#: .\templates\store\merchant_shop.html:67
+#: .\templates\store\merchant_shop.html:192
 msgid "التقييم"
 msgstr "Rating"
 
-#: .\templates\store\merchant_shop.html:75
-msgid "منتجات المتجر"
-msgstr "Store products"
+#: .\templates\store\merchant_shop.html:198
+msgid "جميع المنتجات"
+msgstr "All products"
 
-#: .\templates\store\merchant_shop.html:129
-msgid "لا توجد منتجات حالياً!"
-msgstr "No products currently!"
-
-#: .\templates\store\merchant_shop.html:130
+#: .\templates\store\merchant_shop.html:248
 msgid "هذا التاجر لم يقم بإضافة أي منتجات حتى الآن."
 msgstr "This merchant hasn't added any products yet."
 
-#: .\templates\store\my_orders.html:57
+#: .\templates\store\my_orders.html:156
 #, python-format
 msgid "طلب #%(order_num)s"
 msgstr "Order #%(order_num)s"
 
-#: .\templates\store\my_orders.html:61
+#: .\templates\store\my_orders.html:160
 #: .\templates\supervisor\all_orders.html:29
 msgid "بانتظار الدفع"
 msgstr "Awaiting payment"
 
-#: .\templates\store\my_orders.html:65
+#: .\templates\store\my_orders.html:164
 #: .\templates\supervisor\all_products.html:124
 #: .\templates\supervisor\pending_merchants.html:41
 msgid "قيد المراجعة"
 msgstr "Under review"
 
-#: .\templates\store\my_orders.html:99
+#: .\templates\store\my_orders.html:194
 #: .\templates\supervisor\order_detail.html:90
 msgid "الإجمالي النهائي:"
 msgstr "Final total:"
 
-#: .\templates\store\my_orders.html:110
+#: .\templates\store\my_orders.html:204
 msgid "إكمال الدفع"
 msgstr "Complete payment"
 
-#: .\templates\store\my_orders.html:121
+#: .\templates\store\my_orders.html:215
 msgid "التفاصيل وتتبع الطلب"
 msgstr "Details and order tracking"
 
-#: .\templates\store\my_orders.html:132
+#: .\templates\store\my_orders.html:227
 msgid "لا توجد طلبات سابقة!"
 msgstr "No previous orders!"
 
-#: .\templates\store\my_orders.html:133
-msgid "سلة مشترياتك كانت تنتظر هذه اللحظة، ابدأ التسوق الآن."
-msgstr "Your cart has been waiting for this moment, start shopping now."
+#: .\templates\store\my_orders.html:228
+msgid "سلة مشترياتك كانت تنتظر هذه اللحظة، ابدأ التسوق الآن وتشكيل طلبك الأول."
+msgstr "Your cart has been waiting for this moment, start shopping now and create your first order."
 
-#: .\templates\store\my_orders.html:135 .\templates\store\wishlist.html:97
-msgid "تصفح المنتجات"
-msgstr "Browse products"
-
-#: .\templates\store\notifications.html:44
+#: .\templates\store\notifications.html:138
 msgid "الإشعارات"
 msgstr "Notifications"
 
-#: .\templates\store\notifications.html:78
-msgid "سنخبرك بأي عروض أو تحديثات تخص طلباتك هنا."
+#: .\templates\store\notifications.html:173
+msgid "سنخبرك بأي عروض مميزة أو تحديثات تخص طلباتك هنا."
 msgstr ""
-"We will notify you of any offers or updates regarding your orders here."
+"We will notify you of any special offers or updates regarding your orders here."
 
-#: .\templates\store\order_success.html:58
+#: .\templates\store\order_success.html:101
 msgid "تم الطلب بنجاح! 🎉"
 msgstr "Order placed successfully! 🎉"
 
-#: .\templates\store\order_success.html:61
+#: .\templates\store\order_success.html:105
 msgid "شكراً لتسوقك في"
 msgstr "Thank you for shopping at"
 
-#: .\templates\store\order_success.html:61
+#: .\templates\store\order_success.html:105
 msgid "البازار"
 msgstr "Elbazaar"
 
-#: .\templates\store\order_success.html:61
+#: .\templates\store\order_success.html:105
 msgid ". رقم طلبك محفوظ بأمان، وسيتم تجهيزه وشحنه في أسرع وقت."
 msgstr ""
 ". Your order number is saved securely, and will be prepared and shipped as "
 "soon as possible."
 
-#: .\templates\store\order_success.html:66
+#: .\templates\store\order_success.html:110
 msgid "تتبع طلبي"
 msgstr "Track my order"
 
-#: .\templates\store\order_success.html:70
+#: .\templates\store\order_success.html:114
 msgid "عودة للرئيسية"
 msgstr "Back to home"
 
-#: .\templates\store\paymob_iframe.html:47
+#: .\templates\store\paymob_iframe.html:126
 msgid "الدفع الآمن"
 msgstr "Secure payment"
 
-#: .\templates\store\paymob_iframe.html:49
-#: .\templates\supervisor\admin_complaints_list.html:126
-#: .\templates\supervisor\admin_complaints_list.html:156
-#: .\templates\supervisor\categories.html:69
-#: .\templates\supervisor\categories.html:113
-#: .\templates\supervisor\manage_terms.html:187
-msgid "إلغاء"
-msgstr "Cancel"
+#: .\templates\store\paymob_iframe.html:129
+msgid "إلغاء والعودة"
+msgstr "Cancel and go back"
 
-#: .\templates\store\paymob_iframe.html:56
-msgid "جاري تحميل بوابة الدفع..."
-msgstr "Loading payment gateway..."
+#: .\templates\store\paymob_iframe.html:137
+msgid "جاري تأمين بوابة الدفع..."
+msgstr "Securing payment gateway..."
 
-#: .\templates\store\privacy_policy.html:25
-msgid "المركز القانوني"
-msgstr "Legal center"
+#: .\templates\store\paymob_iframe.html:138
+msgid "يرجى الانتظار ولا تقم بإغلاق هذه الصفحة."
+msgstr "Please wait and do not close this page."
 
-#: .\templates\store\privacy_policy.html:33
+#: .\templates\store\privacy_policy.html:134
 msgid "سياسة خصوصية العملاء"
 msgstr "Customer privacy policy"
 
-#: .\templates\store\privacy_policy.html:34
-msgid "نحن نهتم بخصوصيتك ونلتزم بحماية بياناتك الشخصية."
+#: .\templates\store\privacy_policy.html:136
+msgid "نحن نهتم بخصوصيتك ونلتزم بحماية بياناتك الشخصية في البازار."
 msgstr ""
 "We care about your privacy and are committed to protecting your personal "
-"data."
+"data at Elbazaar."
 
-#: .\templates\store\privacy_policy.html:64
-msgid "جاري تحديث سياسة الخصوصية. يرجى العودة لاحقاً."
-msgstr "Updating privacy policy. Please check back later."
+#: .\templates\store\privacy_policy.html:166
+msgid "جاري تحديث سياسة الخصوصية"
+msgstr "Updating privacy policy"
 
-#: .\templates\store\privacy_policy.html:72
+#: .\templates\store\privacy_policy.html:167
+msgid "يرجى العودة لاحقاً لمراجعة التحديثات الجديدة."
+msgstr "Please check back later to review new updates."
+
+#: .\templates\store\privacy_policy.html:175
 msgid "استخدامك لتطبيق البازار يعني موافقتك على هذه الشروط والسياسات."
 msgstr "Using the Elbazaar app means you agree to these terms and policies."
 
-#: .\templates\store\privacy_policy.html:79
-msgid "تطبيق البازار (Elbazaar). جميع الحقوق محفوظة."
-msgstr "Elbazaar App. All rights reserved."
-
-#: .\templates\store\product_detail.html:4
+#: .\templates\store\product_detail.html:5
 #, python-format
 msgid "اشترِ %(name)s بسعر %(price)s ج.م. أفضل جودة وتوصيل سريع."
 msgstr "Buy %(name)s for %(price)s EGP. Best quality and fast delivery."
 
-#: .\templates\store\product_detail.html:183
+#: .\templates\store\product_detail.html:272
 msgid "عرض محدود"
 msgstr "Limited offer"
 
-#: .\templates\store\product_detail.html:191
+#: .\templates\store\product_detail.html:280
 msgid "شحن مجاني"
 msgstr "Free shipping"
 
-#: .\templates\store\product_detail.html:192
+#: .\templates\store\product_detail.html:281
 #, python-format
 msgid "عند شراء %(threshold)s قطع أو أكثر"
 msgstr "When buying %(threshold)s pieces or more"
 
-#: .\templates\store\product_detail.html:222
+#: .\templates\store\product_detail.html:310
 msgid "تاجر ذهبي"
 msgstr "Gold merchant"
 
-#: .\templates\store\product_detail.html:224
+#: .\templates\store\product_detail.html:312
 msgid "تاجر موثوق"
 msgstr "Trusted merchant"
 
-#: .\templates\store\product_detail.html:226
+#: .\templates\store\product_detail.html:314
 msgid "تاجر معتمد"
 msgstr "Verified merchant"
 
-#: .\templates\store\product_detail.html:246
-msgid "المنتج غير متوفر للشراء حالياً بسبب تحديثات في متجر التاجر."
+#: .\templates\store\product_detail.html:321
+#: .\templates\supervisor\merchant_profile_admin.html:165
+msgid "الوصف"
+msgstr "Description"
+
+#: .\templates\store\product_detail.html:331
+msgid ""
+"المنتج غير متوفر للشراء حالياً بسبب تحديثات في متجر التاجر. يرجى المحاولة "
+"لاحقاً."
 msgstr ""
 "The product is currently unavailable for purchase due to updates in the "
-"merchant's store."
+"merchant's store. Please try again later."
 
-#: .\templates\store\product_detail.html:256
+#: .\templates\store\product_detail.html:341
 msgid "1. اختر اللون"
 msgstr "1. Select color"
 
-#: .\templates\store\product_detail.html:269
+#: .\templates\store\product_detail.html:354
 msgid "2. اختر المقاس"
 msgstr "2. Select size"
 
-#: .\templates\store\product_detail.html:281
-msgid "الكمية المتاحة في المخزن"
-msgstr "Quantity available in stock"
+#: .\templates\store\product_detail.html:366
+msgid "الكمية المتاحة"
+msgstr "Available Quantity"
 
-#: .\templates\store\product_detail.html:283
+#: .\templates\store\product_detail.html:368
 #, python-format
 msgid "%(qty)s قطعة"
 msgstr "%(qty)s piece(s)"
 
-#: .\templates\store\product_detail.html:312
-#: .\templates\store\product_detail.html:356
+#: .\templates\store\product_detail.html:394
+#: .\templates\store\product_detail.html:438
 msgid "اختر المقاس أولاً"
 msgstr "Select size first"
 
-#: .\templates\store\product_detail.html:316
-#: .\templates\store\product_detail.html:357
+#: .\templates\store\product_detail.html:398
+#: .\templates\store\product_detail.html:439
 msgid "إضافة للسلة"
 msgstr "Add to cart"
 
-#: .\templates\store\product_detail.html:326
+#: .\templates\store\product_detail.html:407
 msgid "قد يعجبك أيضاً"
 msgstr "You may also like"
 
-#: .\templates\store\product_detail.html:358
+#: .\templates\store\product_detail.html:440
 msgid "نفذت الكمية"
 msgstr "Out of stock"
 
-#: .\templates\store\product_detail.html:359
+#: .\templates\store\product_detail.html:441
 msgid "متاح:"
 msgstr "Available:"
 
-#: .\templates\store\product_detail.html:361
+#: .\templates\store\product_detail.html:443
 msgid "اكتشف هذا المنتج الرائع على البازار!"
 msgstr "Discover this great product on Elbazaar!"
 
-#: .\templates\store\product_detail.html:362
+#: .\templates\store\product_detail.html:444
 msgid "تم نسخ رابط المنتج بنجاح!"
 msgstr "Product link copied successfully!"
 
-#: .\templates\store\referral_center.html:59
+#: .\templates\store\referral_center.html:142
 msgid "برنامج الإحالة"
 msgstr "Referral program"
 
-#: .\templates\store\referral_center.html:68
+#: .\templates\store\referral_center.html:156
 msgid "رصيد الإحالة المتاح"
 msgstr "Available referral balance"
 
-#: .\templates\store\referral_center.html:72
-msgid "يمكنك استخدامه كخصم إضافي عند إتمام طلبك القادم."
-msgstr "You can use it as an extra discount when completing your next order."
+#: .\templates\store\referral_center.html:162
+msgid "هذا الرصيد حقيقي! يمكنك استخدامه كخصم إضافي عند إتمام طلبك القادم."
+msgstr "This balance is real! You can use it as an extra discount when completing your next order."
 
-#: .\templates\store\referral_center.html:76
+#: .\templates\store\referral_center.html:167
 msgid "كود الدعوة الخاص بك"
 msgstr "Your invitation code"
 
-#: .\templates\store\referral_center.html:77
+#: .\templates\store\referral_center.html:169
 msgid ""
 "شارك الكود مع أصدقائك، وسيحصل كل منكم على رصيد مجاني عند تسجيلهم وإتمام أول "
 "طلب!"
@@ -2459,65 +2471,73 @@ msgstr ""
 "Share the code with your friends, and both of you will get free balance upon "
 "their registration and completing their first order!"
 
-#: .\templates\store\referral_center.html:94
+#: .\templates\store\referral_center.html:187
 msgid "لديك كود دعوة من صديق؟"
 msgstr "Have an invitation code from a friend?"
 
-#: .\templates\store\referral_center.html:96
+#: .\templates\store\referral_center.html:189
 #, python-format
 msgid "أدخله الآن للحصول على رصيدك (مهلة %(hours)s ساعة)"
 msgstr "Enter it now to get your balance (%(hours)s hours limit)"
 
-#: .\templates\store\referral_center.html:103
+#: .\templates\store\referral_center.html:196
 msgid "أدخل الكود هنا"
 msgstr "Enter code here"
 
-#: .\templates\store\referral_center.html:104
-msgid "تفعيل"
-msgstr "Activate"
+#: .\templates\store\referral_center.html:197
+msgid "تفعيل الكود"
+msgstr "Activate Code"
 
-#: .\templates\store\retry_payment.html:90
+#: .\templates\store\retry_payment.html:141
 msgid "إكمال الدفع للطلب"
 msgstr "Complete payment for order"
 
-#: .\templates\store\retry_payment.html:91
-msgid "المبلغ المستحق الصافي:"
-msgstr "Net amount due:"
+#: .\templates\store\retry_payment.html:142
+msgid "طلب رقم"
+msgstr "Order Number"
 
-#: .\templates\store\retry_payment.html:96
-msgid "اختر طريقة الدفع الجديدة:"
-msgstr "Choose a new payment method:"
+#: .\templates\store\retry_payment.html:145
+msgid "المبلغ المستحق الصافي"
+msgstr "Net amount due"
 
-#: .\templates\store\retry_payment.html:126
+#: .\templates\store\retry_payment.html:155
+msgid "اختر طريقة الدفع:"
+msgstr "Select payment method:"
+
+#: .\templates\store\retry_payment.html:179
+msgid "رقم المحفظة الإلكترونية"
+msgstr "E-wallet number"
+
+#: .\templates\store\retry_payment.html:189
 msgid "رسوم الدفع الإلكتروني:"
 msgstr "E-payment fees:"
 
-#: .\templates\store\retry_payment.html:130
-msgid "الإجمالي النهائي للدفع:"
-msgstr "Final total to pay:"
+#: .\templates\store\retry_payment.html:193
+msgid "الإجمالي المطلوب:"
+msgstr "Total required:"
 
-#: .\templates\store\retry_payment.html:136
-#: .\templates\store\retry_payment.html:155
+#: .\templates\store\retry_payment.html:200
+#: .\templates\store\retry_payment.html:222
 msgid "تأكيد الطلب (كاش)"
 msgstr "Confirm order (Cash)"
 
-#: .\templates\store\retry_payment.html:139
+#: .\templates\store\retry_payment.html:204
 msgid "إلغاء والعودة للطلب"
 msgstr "Cancel and return to order"
 
-#: .\templates\store\retry_payment.html:153
-msgid "الانتقال للدفع (فيزا)"
-msgstr "Proceed to payment (Visa)"
+#: .\templates\store\retry_payment.html:220
+msgid "الانتقال للدفع الآمن (فيزا)"
+msgstr "Proceed to secure payment (Visa)"
 
-#: .\templates\store\retry_payment.html:154
-msgid "تأكيد الدفع (محفظة)"
-msgstr "Confirm payment (Wallet)"
+#: .\templates\store\retry_payment.html:221
+msgid "تأكيد والدفع بالمحفظة"
+msgstr "Confirm and pay with wallet"
 
-#: .\templates\store\wishlist.html:94
+#: .\templates\store\wishlist.html:194
 msgid "قائمة المفضلة فارغة!"
 msgstr "Wishlist is empty!"
 
-#: .\templates\store\wishlist.html:95
+#: .\templates\store\wishlist.html:195
 msgid "لم تقم بإضافة أي منتجات للمفضلة بعد، اكتشف المنتجات المميزة الآن."
 msgstr ""
 "You haven't added any products to your wishlist yet, discover featured "
@@ -2670,6 +2690,14 @@ msgstr "Write management notes (for closure archive)"
 #: .\templates\supervisor\admin_complaints_list.html:122
 msgid "مثال: تم التأكد من عيب الصناعة وإرجاع المبلغ..."
 msgstr "e.g., Manufacturing defect confirmed and amount refunded..."
+
+#: .\templates\supervisor\admin_complaints_list.html:126
+#: .\templates\supervisor\admin_complaints_list.html:156
+#: .\templates\supervisor\categories.html:69
+#: .\templates\supervisor\categories.html:113
+#: .\templates\supervisor\manage_terms.html:187
+msgid "إلغاء"
+msgstr "Cancel"
 
 #: .\templates\supervisor\admin_complaints_list.html:127
 msgid "تأكيد المرتجع"
@@ -3082,6 +3110,7 @@ msgid "الحسابات المالية"
 msgstr "Financial accounts"
 
 #: .\templates\supervisor\base_supervisor.html:246
+#: .\templates\supervisor\owner_dashboard.html:111
 msgid "نظرة عامة"
 msgstr "Overview"
 
@@ -3456,6 +3485,7 @@ msgid "إيداعات معلقة"
 msgstr "Pending deposits"
 
 #: .\templates\supervisor\dashboard.html:128
+#: .\templates\supervisor\owner_dashboard.html:215
 msgid "تذاكر مفتوحة"
 msgstr "Open tickets"
 
@@ -3649,10 +3679,8 @@ msgstr ""
 "Manage markets, currencies, and payment gateways (Paymob) for each country."
 
 #: .\templates\supervisor\manage_countries.html:18
-#, fuzzy
-#| msgid "أسعار المحافظات"
 msgid "إدارة المحافظات"
-msgstr "Governorates prices"
+msgstr "Manage governorates"
 
 #: .\templates\supervisor\manage_countries.html:22
 #: .\templates\supervisor\manage_countries.html:114
@@ -3660,6 +3688,7 @@ msgid "إضافة دولة جديدة"
 msgstr "Add new country"
 
 #: .\templates\supervisor\manage_countries.html:43
+#: .\templates\supervisor\owner_dashboard.html:171
 msgid "سوق نشط"
 msgstr "Active market"
 
@@ -3782,52 +3811,36 @@ msgid "تحديث البيانات"
 msgstr "Update details"
 
 #: .\templates\supervisor\manage_governorates.html:4
-#, fuzzy
-#| msgid "إدارة الصلاحيات والبيانات"
 msgid "إدارة المحافظات والمدن"
-msgstr "Manage Permissions and Data"
+msgstr "Manage governorates and cities"
 
 #: .\templates\supervisor\manage_governorates.html:11
-#, fuzzy
-#| msgid "إضافة دولة جديدة"
 msgid "إضافة محافظة جديدة"
-msgstr "Add new country"
+msgstr "Add new governorate"
 
 #: .\templates\supervisor\manage_governorates.html:18
-#, fuzzy
-#| msgid "الحالة الحالية"
 msgid "الدولة التابعة لها"
-msgstr "Current Status"
+msgstr "Affiliated country"
 
 #: .\templates\supervisor\manage_governorates.html:27
-#, fuzzy
-#| msgid "رقم المحفظة (المحلية)"
 msgid "اسم المحافظة / المدينة"
-msgstr "Wallet number (local)"
+msgstr "Governorate / City name"
 
 #: .\templates\supervisor\manage_governorates.html:28
-#, fuzzy
-#| msgid "مثال: جنيه مصري"
 msgid "مثال: القاهرة، الرياض..."
-msgstr "e.g., Egyptian Pound"
+msgstr "e.g., Cairo, Riyadh..."
 
 #: .\templates\supervisor\manage_governorates.html:32
-#, fuzzy
-#| msgid "المحافظة"
 msgid "حفظ المحافظة"
-msgstr "Governorate"
+msgstr "Save governorate"
 
 #: .\templates\supervisor\manage_governorates.html:41
-#, fuzzy
-#| msgid "الحسابات المالية"
 msgid "المحافظات المسجلة"
-msgstr "Financial accounts"
+msgstr "Registered governorates"
 
 #: .\templates\supervisor\manage_governorates.html:49
-#, fuzzy
-#| msgid "المحافظة"
 msgid "اسم المحافظة"
-msgstr "Governorate"
+msgstr "Governorate name"
 
 #: .\templates\supervisor\manage_governorates.html:50
 #: .\templates\supervisor\manage_roles.html:51
@@ -3835,28 +3848,20 @@ msgid "تحكم"
 msgstr "Control"
 
 #: .\templates\supervisor\manage_governorates.html:66
-#, fuzzy
-#| msgid "هل أنت متأكد من الحذف النهائي؟"
 msgid "هل أنت متأكد من الحذف؟"
-msgstr "Are you sure of permanent deletion?"
+msgstr "Are you sure of deletion?"
 
 #: .\templates\supervisor\manage_governorates.html:79
-#, fuzzy
-#| msgid "تعديل رصيد المحفظة"
 msgid "تعديل المحافظة"
-msgstr "Adjust wallet balance"
+msgstr "Edit governorate"
 
 #: .\templates\supervisor\manage_governorates.html:83
-#, fuzzy
-#| msgid "رقم المحفظة (المحلية)"
 msgid "اسم المحافظة الجديد"
-msgstr "Wallet number (local)"
+msgstr "New governorate name"
 
 #: .\templates\supervisor\manage_governorates.html:96
-#, fuzzy
-#| msgid "لا توجد معاملات مسجلة."
 msgid "لا توجد محافظات مسجلة."
-msgstr "No registered transactions."
+msgstr "No governorates registered."
 
 #: .\templates\supervisor\manage_offers.html:2
 msgid "إدارة عروض المنصة"
@@ -4528,10 +4533,6 @@ msgstr "Amount"
 msgid "النوع"
 msgstr "Type"
 
-#: .\templates\supervisor\merchant_profile_admin.html:165
-msgid "الوصف"
-msgstr "Description"
-
 #: .\templates\supervisor\merchant_profile_admin.html:166
 msgid "التاريخ"
 msgstr "Date"
@@ -4675,11 +4676,6 @@ msgstr "Blue Verified"
 msgid "موثق فضي"
 msgstr "Silver Verified"
 
-#: .\templates\supervisor\merchants_list.html:61
-#: .\templates\supervisor\team_management.html:141
-msgid "الهاتف:"
-msgstr "Phone:"
-
 #: .\templates\supervisor\merchants_list.html:65
 msgid "المنتجات:"
 msgstr "Products:"
@@ -4741,10 +4737,6 @@ msgstr "Compensated Discount from Management:"
 msgid "تم الدفع إلكترونياً"
 msgstr "Paid Electronically"
 
-#: .\templates\supervisor\order_detail.html:110
-msgid "حالة الطلب"
-msgstr "Order Status"
-
 #: .\templates\supervisor\order_detail.html:117
 #: .\templates\supervisor\support_ticket_detail.html:80
 msgid "الحالة الحالية"
@@ -4777,6 +4769,59 @@ msgstr "Recipient Name:"
 #: .\templates\supervisor\order_detail.html:190
 msgid "سبب الرفض / الإرجاع"
 msgstr "Reason for Rejection / Return"
+
+#: .\templates\supervisor\owner_dashboard.html:112
+msgid "مركز قيادة الإدارة العليا"
+msgstr "Senior Management Command Center"
+
+#: .\templates\supervisor\owner_dashboard.html:115
+msgid "المدراء"
+msgstr "Managers"
+
+#: .\templates\supervisor\owner_dashboard.html:125
+msgid "إجمالي المبيعات العالمية"
+msgstr "Total global sales"
+
+#: .\templates\supervisor\owner_dashboard.html:136
+#: .\templates\supervisor\send_broadcast.html:50
+msgid "عميل"
+msgstr "Customer"
+
+#: .\templates\supervisor\owner_dashboard.html:145
+msgid "متجر موثق"
+msgstr "Verified store"
+
+#: .\templates\supervisor\owner_dashboard.html:150
+msgid "إحصائيات الدول (اضغط للتفاصيل)"
+msgstr "Countries statistics (Click for details)"
+
+#: .\templates\supervisor\owner_dashboard.html:175
+msgid "مدير الدولة"
+msgstr "Country Manager"
+
+#: .\templates\supervisor\owner_dashboard.html:181
+msgid "حجم المبيعات الإقليمي"
+msgstr "Regional sales volume"
+
+#: .\templates\supervisor\owner_dashboard.html:191
+msgid "طلبات ناجحة"
+msgstr "Successful orders"
+
+#: .\templates\supervisor\owner_dashboard.html:199
+msgid "طلبات معلقة"
+msgstr "Pending requests"
+
+#: .\templates\supervisor\owner_dashboard.html:207
+msgid "منتجات نشطة"
+msgstr "Active products"
+
+#: .\templates\supervisor\owner_dashboard.html:223
+msgid "عملاء مسجلين"
+msgstr "Registered customers"
+
+#: .\templates\supervisor\owner_dashboard.html:231
+msgid "متاجر فعالة"
+msgstr "Active stores"
 
 #: .\templates\supervisor\pending_deposits.html:3
 msgid "طلبات الإيداع | Elbazaar"
@@ -5214,10 +5259,6 @@ msgstr "Search by Name or Phone Number"
 msgid "تاجر"
 msgstr "Merchant"
 
-#: .\templates\supervisor\send_broadcast.html:50
-msgid "عميل"
-msgstr "Customer"
-
 #: .\templates\supervisor\send_broadcast.html:58
 msgid "نص الإشعار التفصيلي"
 msgstr "Detailed Notification Text"
@@ -5250,79 +5291,65 @@ msgstr "Site Settings"
 msgid "الإعدادات العامة"
 msgstr "General Settings"
 
-#: .\templates\supervisor\site_settings.html:19
-msgid "الهوية والبصرية"
-msgstr "Branding & Visuals"
-
-#: .\templates\supervisor\site_settings.html:22
-msgid "اسم الموقع / الفرع"
-msgstr "Site / Branch Name"
-
-#: .\templates\supervisor\site_settings.html:26
-msgid "البانر الرئيسي"
-msgstr "Main Banner"
-
-#: .\templates\supervisor\site_settings.html:29
-msgid "يوجد ملف مرفوع حالياً"
-msgstr "A file is currently uploaded"
-
-#: .\templates\supervisor\site_settings.html:36
+#: .\templates\supervisor\site_settings.html:20
 msgid "المالية والعمولات"
 msgstr "Finance & Commissions"
 
-#: .\templates\supervisor\site_settings.html:39
+#: .\templates\supervisor\site_settings.html:23
 msgid "الرسوم الثابتة"
 msgstr "Fixed Fees"
 
-#: .\templates\supervisor\site_settings.html:46
+#: .\templates\supervisor\site_settings.html:30
 msgid "نسبة العمولة"
 msgstr "Commission Percentage"
 
-#: .\templates\supervisor\site_settings.html:54
+#: .\templates\supervisor\site_settings.html:38
 msgid "سياسات السحب والأرباح"
 msgstr "Withdrawal & Profits Policies"
 
-#: .\templates\supervisor\site_settings.html:61
+#: .\templates\supervisor\site_settings.html:45
 msgid "المبلغ المحجوز"
 msgstr "Reserved Balance"
 
-#: .\templates\supervisor\site_settings.html:65
+#: .\templates\supervisor\site_settings.html:49
 msgid "حد المديونية"
 msgstr "Debt Limit"
 
-#: .\templates\supervisor\site_settings.html:69
+#: .\templates\supervisor\site_settings.html:53
 msgid "مدة تعليق الأرباح (بالساعات)"
 msgstr "Profit Suspension Duration (Hours)"
 
-#: .\templates\supervisor\site_settings.html:72
+#: .\templates\supervisor\site_settings.html:56
 msgid "ساعة"
 msgstr "Hour(s)"
 
-#: .\templates\supervisor\site_settings.html:74
+#: .\templates\supervisor\site_settings.html:58
 msgid "الوقت اللازم لتحويل الرصيد من معلق إلى متاح للتاجر بعد تسليم الطلب."
-msgstr "The time required to transfer the balance from pending to available for the merchant after order delivery."
+msgstr ""
+"The time required to transfer the balance from pending to available for the "
+"merchant after order delivery."
 
-#: .\templates\supervisor\site_settings.html:80
+#: .\templates\supervisor\site_settings.html:64
 msgid "نظام المكافآت والدعوات"
 msgstr "Rewards & Referrals System"
 
-#: .\templates\supervisor\site_settings.html:83
+#: .\templates\supervisor\site_settings.html:67
 msgid "قيمة مكافأة الدعوة"
 msgstr "Referral Reward Value"
 
-#: .\templates\supervisor\site_settings.html:87
+#: .\templates\supervisor\site_settings.html:71
 msgid "مهلة الكود (بالساعات)"
 msgstr "Code Grace Period (Hours)"
 
-#: .\templates\supervisor\site_settings.html:91
+#: .\templates\supervisor\site_settings.html:75
 msgid "أقصى نسبة خصم"
 msgstr "Maximum Discount Percentage"
 
-#: .\templates\supervisor\site_settings.html:98
+#: .\templates\supervisor\site_settings.html:82
 msgid "مرات الاستفادة من الدعوة"
 msgstr "Referral Usage Limit"
 
-#: .\templates\supervisor\site_settings.html:105
+#: .\templates\supervisor\site_settings.html:89
 msgid "حفظ جميع الإعدادات"
 msgstr "Save All Settings"
 
@@ -5667,16 +5694,12 @@ msgid "رقم الهاتف (اسم الدخول الأساسي)"
 msgstr "Phone Number (Primary Login Name)"
 
 #: .\templates\supervisor\user_edit.html:61
-#, fuzzy
-#| msgid "تعديل الحساب"
 msgid "دولة الحساب"
-msgstr "Edit Account"
+msgstr "Account country"
 
 #: .\templates\supervisor\user_edit.html:63
-#, fuzzy
-#| msgid "اسم الدولة"
 msgid "اختر الدولة"
-msgstr "Country name"
+msgstr "Select country"
 
 #: .\templates\supervisor\user_edit.html:75
 msgid "الصلاحيات وحالة الحساب"
@@ -6022,6 +6045,98 @@ msgstr "No terms or conditions have been added to the platform yet."
 #: .\templates\terms.html:78
 msgid "إغلاق والعودة للتسجيل"
 msgstr "Close and return to registration"
+
+#~ msgid "حذف الحساب"
+#~ msgstr "Delete account"
+
+#~ msgid "طلب إزالة بياناتي نهائياً"
+#~ msgstr "Request permanent removal of my data"
+
+#~ msgid "المساعدة والمعلومات"
+#~ msgstr "Help and information"
+
+#~ msgid "جاري تحديث البيانات... يرجى العودة لاحقاً."
+#~ msgstr "Updating data... please check back later."
+
+#~ msgid "عودة"
+#~ msgstr "Back"
+
+#~ msgid "حذف المنتج"
+#~ msgstr "Remove product"
+
+#~ msgid "متابعة الشراء"
+#~ msgstr "Continue to checkout"
+
+#~ msgid "تصفح منتجاتنا واكتشف أحدث العروض والخصومات."
+#~ msgstr "Browse our products and discover the latest offers and discounts."
+
+#~ msgid "تسوق الآن"
+#~ msgstr "Shop now"
+
+#, python-format
+#~ msgid "تأكيد استلام الطلب #%(order_id)s"
+#~ msgstr "Confirm receipt of order #%(order_id)s"
+
+#, python-format
+#~ msgid "تأكيد إرجاع الطلب #%(order_id)s"
+#~ msgstr "Confirm return of order #%(order_id)s"
+
+#~ msgid "ما تقييمك للتجربة والمنتجات؟"
+#~ msgstr "What's your review of the experience and products?"
+
+#~ msgid "سبب المشكلة / لماذا لم تستلم؟"
+#~ msgstr "Issue reason / Why didn't you receive it?"
+
+#~ msgid "المقاس:"
+#~ msgstr "Size:"
+
+#~ msgid "اللون:"
+#~ msgstr "Color:"
+
+#~ msgid "رقم الهاتف:"
+#~ msgstr "Phone number:"
+
+#~ msgid "ابحث في البازار"
+#~ msgstr "Search in Elbazaar"
+
+#~ msgid "عروض مميزة"
+#~ msgstr "Special offers"
+
+#~ msgid "لا توجد منتجات حالياً!"
+#~ msgstr "No products currently!"
+
+#~ msgid "المركز القانوني"
+#~ msgstr "Legal center"
+
+#~ msgid "جاري تحديث سياسة الخصوصية. يرجى العودة لاحقاً."
+#~ msgstr "Updating privacy policy. Please check back later."
+
+#~ msgid "تطبيق البازار (Elbazaar). جميع الحقوق محفوظة."
+#~ msgstr "Elbazaar App. All rights reserved."
+
+#~ msgid "الكمية المتاحة في المخزن"
+#~ msgstr "Quantity available in stock"
+
+#~ msgid "تفعيل"
+#~ msgstr "Activate"
+
+#~ msgid "اختر طريقة الدفع الجديدة:"
+#~ msgstr "Choose a new payment method:"
+
+#~ msgid "الإجمالي النهائي للدفع:"
+#~ msgstr "Final total to pay:"
+
+#~ msgid "الهوية والبصرية"
+#~ msgstr "Branding & Visuals"
+
+#~ msgid "اسم الموقع / الفرع"
+#~ msgstr "Site / Branch Name"
+
+#~ msgid "البانر الرئيسي"
+#~ msgstr "Main Banner"
+
+#~ msgid "يوجد ملف مرفوع حالياً"
+#~ msgstr "A file is currently uploaded"
 
 #~ msgid "تحديد الكل كمقروء"
 #~ msgstr "Mark all as read"

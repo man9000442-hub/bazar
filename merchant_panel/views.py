@@ -1,34 +1,36 @@
 # ==========================================
-# 1. الاستدعاءات (Imports) مرتبة ومنظمة
+# 1. الاستدعاءات (Imports)
 # ==========================================
 import json
 from decimal import Decimal
 from datetime import timedelta
 from collections import defaultdict
-
+from store.fawaterk__utils import FawaterkManager
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.db import transaction
-from django.db.models import Sum, Count, F
+from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import TruncDay, TruncMonth
 from django.conf import settings
 from django.http import HttpResponse
 
-# موديلات النظام
+# نماذج البيانات (Models)
 from accounts.models import User
 from store.models import (
     Category, Product, ProductSize, ProductImage, Order, OrderItem, 
     Wallet, WalletTransaction, MerchantProfile, Governorate, 
     MerchantShippingRate, DepositRequest, WithdrawalRequest, 
-    Offer, PaymobTransaction, SiteSetting
+    Offer, WalletDepositTransaction, SiteSetting, TermsAndCondition
 )
+
+# مدير بوابات الدفع
 from store.paymob_utils import PaymobManager
 
 # ==========================================
-# إعداد دوال الإشعارات (الداخلية والموبايل)
+# 2. إعداد دوال الإشعارات المركزية
 # ==========================================
 try:
     from store.utils import send_notification
@@ -36,7 +38,6 @@ except ImportError:
     def send_notification(user, title, message, link=None):
         pass
 
-# 🔥 استدعاء دالة إشعارات الموبايل (Push Notifications) الجديدة
 try:
     from store.utils import send_push_to_user 
 except ImportError:
@@ -44,29 +45,35 @@ except ImportError:
         pass
 
 
+# ==========================================
+# 3. الدوال المساعدة (Helper Functions)
+# ==========================================
+def is_merchant(user):
+    """
+    التحقق مما إذا كان المستخدم يمتلك ملف تاجر معتمد ونشط.
+    يتم استخدام هذه الدالة كطبقة حماية إضافية قبل تنفيذ أي إجراء خاص بالتجار.
+    """
+    return user.role == User.Role.MERCHANT and hasattr(user, 'merchant_profile') and user.merchant_profile.is_approved
+
+
 @login_required
 def merchant_pending_approval(request):
-    # لو التاجر أصلاً متفعل، رجعه للداشبورد عشان ميقفش هنا بالغلط
+    """
+    صفحة الانتظار للتجار الجدد الذين لم يتم تفعيل حساباتهم بعد.
+    تقوم بتوجيه التاجر المعتمد تلقائياً إلى لوحة التحكم لتجنب بقائه هنا.
+    """
     if hasattr(request.user, 'merchant_profile') and request.user.merchant_profile.is_approved:
         return redirect('merchant_dashboard')
     
     return render(request, 'merchant/pending_approval.html')
 
-# ==========================================
-# 2. الدوال المساعدة (Helper Functions)
-# ==========================================
-def is_merchant(user):
-    """التحقق مما إذا كان المستخدم تاجراً معتمداً"""
-    return user.role == User.Role.MERCHANT and hasattr(user, 'merchant_profile') and user.merchant_profile.is_approved
-
 
 # ==========================================
-# 3. دوال لوحة تحكم التاجر (Merchant Views)
+# 4. لوحة التحكم والمنتجات (Dashboard & Products)
 # ==========================================
-
 @login_required
 def dashboard(request):
-    """الرئيسية والإحصائيات السريعة للتاجر"""
+    """عرض الإحصائيات السريعة للتاجر في لوحة التحكم الرئيسية."""
     if not is_merchant(request.user):
         return redirect('home')
 
@@ -93,7 +100,7 @@ def dashboard(request):
 
 @login_required
 def my_products(request):
-    """عرض قائمة منتجات التاجر"""
+    """عرض قائمة منتجات التاجر."""
     if not is_merchant(request.user):
         return redirect('home')
         
@@ -103,13 +110,12 @@ def my_products(request):
 
 @login_required
 def add_product(request):
-    """إضافة منتج جديد بمتغيرات أو بدون"""
+    """إضافة منتج جديد مع دعم المتغيرات (المقاسات والألوان) والتأكد من عدم تجاوز الحد المسموح."""
     if not is_merchant(request.user): 
         return redirect('home')
 
     merchant = request.user.merchant_profile
     
-    # فحص الحد الأقصى للمنتجات
     current_count = Product.objects.filter(merchant=merchant).count()
     if current_count >= merchant.product_limit:
         messages.error(request, f"لقد وصلت للحد الأقصى المسموح لك ({merchant.product_limit} منتج). يرجى التواصل مع الإدارة لزيادة الحد.")
@@ -132,6 +138,7 @@ def add_product(request):
 
         has_variations = request.POST.get('has_variations') == 'on'
         
+        # معالجة المنتجات البسيطة أو المتعددة المتغيرات
         if not has_variations:
             simple_stock = int(request.POST.get('simple_stock', 0))
             if simple_stock > 0:
@@ -155,15 +162,13 @@ def add_product(request):
         for img in request.FILES.getlist('gallery_images'):
             ProductImage.objects.create(product=product, image=img)
 
-        # --- [إشعار الداخلي] ---
+        # إرسال الإشعارات للتاجر بنجاح الإضافة
         send_notification(
             user=request.user,
             title="تم إضافة المنتج بنجاح 📦",
             message=f"تم رفع المنتج '{product.name}' إلى متجرك بنجاح وهو الآن قيد المراجعة.",
             link="/merchant/products/"
         )
-
-        # 🔥 --- [إشعار الموبايل Push Notification] ---
         send_push_to_user(
             user=request.user,
             title="إضافة منتج جديد 📦",
@@ -179,7 +184,7 @@ def add_product(request):
 
 @login_required
 def edit_product(request, product_id):
-    """تعديل منتج موجود"""
+    """تعديل بيانات المنتج والمخزون الخاص به."""
     if not is_merchant(request.user): 
         return redirect('home')
         
@@ -193,6 +198,7 @@ def edit_product(request, product_id):
         product.description = request.POST.get('description')
         product.save()
 
+        # تحديث المخزون
         if is_simple_product:
             simple_qty = request.POST.get('simple_stock')
             if simple_qty is not None:
@@ -221,15 +227,8 @@ def edit_product(request, product_id):
                                 product=product, color_label=color_name, size_label=sizes[i], stock_quantity=qtys[i]
                             )
 
-        # --- [إشعار الداخلي] ---
         send_notification(request.user, "تم تحديث المنتج ✏️", f"تم حفظ التعديلات على المنتج '{product.name}'.", "/merchant/products/")
-        
-        # 🔥 --- [إشعار الموبايل Push Notification] ---
-        send_push_to_user(
-            user=request.user,
-            title="تحديث منتج ✏️",
-            body=f"تم حفظ التعديلات بنجاح على منتج '{product.name}'."
-        )
+        send_push_to_user(request.user, "تحديث منتج ✏️", f"تم حفظ التعديلات بنجاح على منتج '{product.name}'.")
 
         messages.success(request, "تم تحديث المنتج بنجاح ✅")
         return redirect('merchant_products')
@@ -251,7 +250,7 @@ def edit_product(request, product_id):
 
 @login_required
 def delete_product(request, product_id):
-    """حذف أو أرشفة منتج"""
+    """الحذف الآمن للمنتجات التي لم تباع، وأرشفة المنتجات المرتبطة بطلبات سابقة."""
     if not is_merchant(request.user):
         return redirect('home')
         
@@ -262,10 +261,7 @@ def delete_product(request, product_id):
         product.is_active = False 
         product.save()
         messages.warning(request, "تم إخفاء المنتج بدلاً من حذفه (لأنه موجود في طلبات سابقة).")
-        
         send_notification(request.user, "أرشفة منتج 📦", f"تم إيقاف عرض '{product.name}' نظراً لارتباطه بطلبات سابقة.", "/merchant/products/")
-        
-        # 🔥 --- [إشعار الموبايل Push Notification] ---
         send_push_to_user(request.user, "أرشفة منتج 📦", f"تم إخفاء '{product.name}' لوجود طلبات سابقة عليه.")
     else:
         product.delete()
@@ -274,9 +270,12 @@ def delete_product(request, product_id):
     return redirect('merchant_products')
 
 
+# ==========================================
+# 5. العروض الترويجية (Offers)
+# ==========================================
 @login_required
 def add_offer(request, product_id):
-    """إضافة عرض على منتج"""
+    """إضافة أو تحديث الخصومات على المنتجات."""
     if not is_merchant(request.user):
         return redirect('home')
     
@@ -312,8 +311,6 @@ def add_offer(request, product_id):
         )
         
         send_notification(request.user, "تم إطلاق العرض 🏷️", f"تم تطبيق عرض {percentage}% على '{product.name}'.", "/merchant/products/")
-        
-        # 🔥 --- [إشعار الموبايل Push Notification] ---
         send_push_to_user(request.user, "إطلاق عرض جديد 🏷️", f"تم تطبيق خصم {percentage}% على '{product.name}'.")
 
         messages.success(request, "تم حفظ العرض ✅")
@@ -326,7 +323,6 @@ def add_offer(request, product_id):
 
 @login_required
 def cancel_offer(request, offer_id):
-    """إلغاء عرض"""
     offer = get_object_or_404(Offer, pk=offer_id, product__merchant=request.user.merchant_profile)
     if offer.is_platform_offer:
         messages.error(request, "لا يمكنك إلغاء عرض المنصة.")
@@ -336,9 +332,12 @@ def cancel_offer(request, offer_id):
     return redirect('merchant_products')
 
 
+# ==========================================
+# 6. إدارة الطلبات وحالاتها (Orders Management)
+# ==========================================
 @login_required
 def merchant_orders(request):
-    """عرض قائمة الطلبات الواردة للتاجر"""
+    """جلب وتصفية الطلبات الخاصة بالتاجر فقط."""
     if not is_merchant(request.user): return redirect('home')
     
     excluded_statuses = [Order.Status.CART, Order.Status.WAITING_PAYMENT]
@@ -351,7 +350,6 @@ def merchant_orders(request):
 
 @login_required
 def merchant_order_detail(request, order_id):
-    """عرض تفاصيل طلب محدد"""
     if not is_merchant(request.user): return redirect('home')
     
     order = get_object_or_404(Order, order_id=order_id)
@@ -367,13 +365,9 @@ def merchant_order_detail(request, order_id):
 
 @login_required
 def update_order_status(request, order_id):
-    """تحديث حالة الطلب وإدارة العمولات وإرسال إشعارات للعميل"""
-    if not hasattr(request.user, 'merchant_profile'):
-        return redirect('home')
-    
+    if not hasattr(request.user, 'merchant_profile'): return redirect('home')
     order = get_object_or_404(Order, order_id=order_id)
     merchant = request.user.merchant_profile
-    
     is_owner = (order.merchant == merchant)
     has_items = order.items.filter(product_size__product__merchant=merchant).exists()
     
@@ -385,17 +379,11 @@ def update_order_status(request, order_id):
         new_status = request.POST.get('status')
         old_status = order.status
 
-        # 1. حالة المرتجع (استلام التاجر للمنتج)
         if new_status == 'MERCHANT_RECEIVED_RETURN':
             order.merchant_received_return = True
             order.status = 'RETURNED' 
             order.save()
-            
             send_notification(request.user, "تأكيد استلام المرتجع 📦", f"تم إثبات استلامك لمرتجع الطلب #{order.order_id}.", f"/merchant/order/{order.order_id}/")
-            
-            # 🔥 إشعار الموبايل للتاجر
-            send_push_to_user(request.user, "استلام مرتجع 📦", f"تم تأكيد استلامك للمرتجع الخاص بالطلب #{order.order_id}.")
-            
             messages.success(request, "تم تأكيد استلام المرتجع من المندوب بنجاح!")
             return redirect('merchant_order_detail', order_id=order.order_id)
 
@@ -403,125 +391,58 @@ def update_order_status(request, order_id):
             messages.error(request, "حالة غير صالحة.")
             return redirect('merchant_order_detail', order_id=order.order_id)
 
-        # حساب عمولة المنصة
-        total_commission = Decimal('0.00')
-        for item in order.items.all():
-            if item.product_size.product.merchant == merchant:
-                pct = item.product_size.product.commission_pct / 100
-                total_commission += (item.price_at_purchase * pct * Decimal(item.quantity))
-
-        wallet = merchant.wallet
+        total_commission = sum((item.price_at_purchase * (item.product_size.product.commission_pct / 100) * Decimal(item.quantity)) for item in order.items.all() if item.product_size.product.merchant == merchant)
         status_changed_successfully = False
 
-        # 2. بدء الشحن (خصم العمولة)
         if new_status == 'SHIPPED' and old_status in ['PENDING', 'PREPARING']:
-            if wallet.balance < total_commission:
-                messages.error(request, f"رصيدك غير كافٍ لخصم عمولة المنصة ({total_commission} ج.م). يرجى الشحن.")
-                return redirect('merchant_order_detail', order_id=order.order_id)
-            
             with transaction.atomic():
+                # 🔥 القفل هنا
+                wallet = Wallet.objects.select_for_update().get(merchant=merchant)
+                if wallet.balance < total_commission:
+                    messages.error(request, f"رصيدك غير كافٍ لخصم عمولة المنصة ({total_commission} ج.م). يرجى الشحن.")
+                    return redirect('merchant_order_detail', order_id=order.order_id)
+                
                 order.status = 'SHIPPED'
                 order.save()
-                
                 wallet.balance -= total_commission
                 wallet.save()
-                
-                WalletTransaction.objects.create(
-                    wallet=wallet, amount=-total_commission,
-                    transaction_type='SALE', related_order_id=order.order_id,
-                    description=f"خصم عمولة مبكر (شحن طلب #{order.order_id})",
-                    balance_after=wallet.balance, is_released=True
-                )
+                WalletTransaction.objects.create(wallet=wallet, amount=-total_commission, transaction_type='SALE', related_order_id=order.order_id, description=f"خصم عمولة مبكر (شحن طلب #{order.order_id})", balance_after=wallet.balance, is_released=True)
             
             send_notification(request.user, "تم بدء الشحن 📦", f"تم تحويل الطلب #{order.order_id} إلى جاري الشحن وخصم العمولة.", f"/merchant/order/{order.order_id}/")
-            
-            # 🔥 إشعار الموبايل للتاجر
-            send_push_to_user(request.user, "شحن الطلب 🚚", f"تم تحويل الطلب #{order.order_id} للشحن بنجاح.")
-
             messages.success(request, f"تم بدء الشحن وخصم عمولة {total_commission} ج.م")
             status_changed_successfully = True
 
-        # 3. إلغاء الطلب بعد الشحن (استرداد العمولة)
         elif new_status == 'CANCELLED' and old_status == 'SHIPPED':
             with transaction.atomic():
+                # 🔥 القفل هنا
+                wallet = Wallet.objects.select_for_update().get(merchant=merchant)
                 order.status = 'CANCELLED'
                 order.save()
-                
                 wallet.balance += total_commission
                 wallet.save()
-                
-                WalletTransaction.objects.create(
-                    wallet=wallet, amount=total_commission,
-                    transaction_type='COMPENSATION', related_order_id=order.order_id,
-                    description=f"استرداد عمولة (إلغاء شحن #{order.order_id})",
-                    balance_after=wallet.balance, is_released=True
-                )
+                WalletTransaction.objects.create(wallet=wallet, amount=total_commission, transaction_type='COMPENSATION', related_order_id=order.order_id, description=f"استرداد عمولة (إلغاء شحن #{order.order_id})", balance_after=wallet.balance, is_released=True)
             messages.warning(request, "تم إلغاء الطلب واسترداد العمولة.")
             status_changed_successfully = True
 
-        # 4. تغيير حالة عادي (مثل جاري التحضير أو تم التسليم)
         elif new_status != old_status:
             order.status = new_status
             order.save()
             messages.success(request, f"تم تغيير الحالة إلى {order.get_status_display()}")
             status_changed_successfully = True
 
-        # ==========================================
-        # 5. [الجديد]: إرسال الإشعار للعميل بناءً على الحالة
-        # ==========================================
-        if status_changed_successfully:
-            # قاموس رسائل الإشعارات (ديناميكي)
-            customer_notifications = {
-                'PREPARING': (
-                    "جاري تحضير طلبك 📦", 
-                    f"التاجر يقوم الآن بتجهيز طلبك رقم #{order.order_id}. سنخبرك فور شحنه!"
-                ),
-                'SHIPPED': (
-                    "طلبك في الطريق إليك! 🚚", 
-                    f"تم تسليم طلبك رقم #{order.order_id} لمندوب الشحن. استعد لاستلامه قريباً."
-                ),
-                'DELIVERED': (
-                    "تم تسليم الطلب 🎉", 
-                    f"تم تسليم طلبك رقم #{order.order_id} بنجاح. نتمنى أن ينال إعجابك!"
-                ),
-                'CANCELLED': (
-                    "إلغاء الطلب ❌", 
-                    f"نأسف، تم إلغاء طلبك رقم #{order.order_id}. يمكنك التواصل مع الدعم لمزيد من التفاصيل."
-                )
-            }
-
-            if new_status in customer_notifications:
-                title, msg = customer_notifications[new_status]
-                try:
-                    # الإشعار الداخلي للعميل
-                    send_notification(
-                        user=order.customer, 
-                        title=title, 
-                        message=msg, 
-                        link="/my-orders/" 
-                    )
-                    
-                    # 🔥 إشعار الموبايل (Push Notification) للعميل
-                    send_push_to_user(
-                        user=order.customer,
-                        title=title,
-                        body=msg
-                    )
-                except Exception as e:
-                    print(f"Customer Notification Error: {e}")
-
     return redirect('merchant_order_detail', order_id=order.order_id)
 
 
+# ==========================================
+# 7. إعدادات الشحن (Shipping)
+# ==========================================
 @login_required
 def shipping_settings(request):
-    """تحديث أسعار وإعدادات الشحن للتاجر بناءً على دولته"""
+    """إدارة وتحديث تسعيرة الشحن للمحافظات المرتبطة بدولة التاجر"""
     if not is_merchant(request.user):
         return redirect('home')
     
     merchant = request.user.merchant_profile
-    
-    # 🔥 [تعديل دولي هام]: نجلب المحافظات الخاصة بدولة التاجر فقط
     governorates = Governorate.objects.filter(country=merchant.user.country)
 
     if request.method == 'POST':
@@ -542,8 +463,6 @@ def shipping_settings(request):
         merchant.save()
         
         send_notification(request.user, "تحديث إعدادات الشحن 🚚", "تم حفظ أسعار وإعدادات الشحن بنجاح.", "/merchant/shipping/")
-        
-        # 🔥 إشعار الموبايل للتاجر
         send_push_to_user(request.user, "إعدادات الشحن 🚚", "تم تحديث أسعار وإعدادات الشحن لمتجرك بنجاح.")
 
         messages.success(request, "تم حفظ أسعار وإعدادات الشحن بنجاح ✅")
@@ -558,25 +477,26 @@ def shipping_settings(request):
     })
 
 
+# ==========================================
+# 8. المالية والمحافظ (Wallet & Deposits)
+# ==========================================
 @login_required
 def merchant_wallet(request):
-    """محفظة التاجر وتحرير الأرباح التلقائي"""
     if not is_merchant(request.user): return redirect('home')
     
-    wallet = request.user.merchant_profile.wallet
-    settings_obj = SiteSetting.objects.first()
+    merchant = request.user.merchant_profile
+    # 🔥 قراءة الإعدادات من دولة التاجر
+    settings_obj = SiteSetting.get_settings(request.user.country)
     release_hours = settings_obj.pending_balance_release_hours if settings_obj else 24
-    
     time_threshold = timezone.now() - timedelta(hours=release_hours)
     
-    pending_txs = WalletTransaction.objects.filter(
-        wallet=wallet, transaction_type='PENDING',
-        created_at__lte=time_threshold, is_released=False
-    )
-    
-    released_amount = Decimal('0.00')
-    if pending_txs.exists():
-        with transaction.atomic():
+    with transaction.atomic():
+        # 🔥 قفل المحفظة لضمان سلامة تحرير الأرباح
+        wallet = Wallet.objects.select_for_update().get(merchant=merchant)
+        pending_txs = WalletTransaction.objects.filter(wallet=wallet, transaction_type='PENDING', created_at__lte=time_threshold, is_released=False)
+        
+        released_amount = Decimal('0.00')
+        if pending_txs.exists():
             for tx in pending_txs:
                 released_amount += tx.amount
                 tx.is_released = True
@@ -587,29 +507,21 @@ def merchant_wallet(request):
             wallet.pending_balance -= released_amount
             wallet.balance += released_amount
             wallet.save()
-            
-            send_notification(request.user, "تم تحرير أرباحك 💰", f"تم تحويل مبلغ {released_amount} إلى رصيدك المتاح للسحب بنجاح.", "/merchant/wallet/")
-            
-            # 🔥 إشعار الموبايل للتاجر
-            send_push_to_user(request.user, "أرباح متاحة 💰", f"تم تحرير {released_amount} وإضافتها لرصيدك القابل للسحب.")
-
             messages.success(request, f"تم تحرير {released_amount} من الرصيد المعلق.")
 
     transactions = WalletTransaction.objects.filter(wallet=wallet).order_by('-created_at')
     return render(request, 'merchant/wallet.html', {'wallet': wallet, 'transactions': transactions})
 
-
 @login_required
 def request_withdrawal(request):
-    """طلب سحب رصيد متاح"""
     if not is_merchant(request.user): return redirect('home')
     
-    wallet = request.user.merchant_profile.wallet
-    settings_obj = SiteSetting.objects.first()
-    
+    # 🔥 قراءة الإعدادات من دولة التاجر
+    settings_obj = SiteSetting.get_settings(request.user.country)
     min_withdraw_amount = settings_obj.min_withdrawal_amount if settings_obj else Decimal('50.00')
     reserved_balance = settings_obj.min_wallet_balance if settings_obj else Decimal('200.00')
     
+    wallet = request.user.merchant_profile.wallet
     withdrawable_balance = max(Decimal('0.00'), wallet.balance - reserved_balance)
 
     if request.method == 'POST':
@@ -623,34 +535,30 @@ def request_withdrawal(request):
                 messages.error(request, f"أقل مبلغ يمكن سحبه هو {min_withdraw_amount}")
             else:
                 with transaction.atomic():
+                    # 🔥 قفل المحفظة
+                    locked_wallet = Wallet.objects.select_for_update().get(merchant=request.user.merchant_profile)
                     WithdrawalRequest.objects.create(merchant=request.user.merchant_profile, amount=amount, phone_number=phone)
-                    wallet.balance -= amount
-                    wallet.save()
+                    locked_wallet.balance -= amount
+                    locked_wallet.save()
                     WalletTransaction.objects.create(
-                        wallet=wallet, amount=-amount, transaction_type=WalletTransaction.TxType.WITHDRAWAL,
-                        description="طلب سحب (قيد المراجعة)", balance_after=wallet.balance, is_released=False 
+                        wallet=locked_wallet, amount=-amount, transaction_type=WalletTransaction.TxType.WITHDRAWAL,
+                        description="طلب سحب (قيد المراجعة)", balance_after=locked_wallet.balance, is_released=False 
                     )
-
-                send_notification(request.user, "طلب سحب أرباح 💸", f"تم استلام طلب سحب بمبلغ {amount} وجاري مراجعته من الإدارة.", "/merchant/wallet/")
-                
-                # 🔥 إشعار الموبايل للتاجر
-                send_push_to_user(request.user, "تم استلام طلب السحب 💸", f"طلب سحب بقيمة {amount} قيد المراجعة الآن.")
-
                 messages.success(request, "تم تقديم طلب السحب بنجاح. سيتم تحويل المبلغ قريباً.")
                 return redirect('merchant_wallet')
-
         except Exception as e:
-            messages.error(request, "حدث خطأ في البيانات. يرجى المحاولة مرة أخرى.")
+            messages.error(request, "حدث خطأ في البيانات.")
 
-    return render(request, 'merchant/withdraw.html', {
-        'wallet': wallet, 'withdrawable_balance': withdrawable_balance,
-        'min_withdraw': min_withdraw_amount, 'reserved_balance': reserved_balance
-    })
+    return render(request, 'merchant/withdraw.html', {'wallet': wallet, 'withdrawable_balance': withdrawable_balance, 'min_withdraw': min_withdraw_amount, 'reserved_balance': reserved_balance})
 
+import uuid
 
 @login_required
-def paymob_deposit(request):
-    """شحن المحفظة برصيد (مع إضافة رسوم Paymob)"""
+def charge_wallet_online(request):
+    """
+    شحن المحفظة إلكترونياً بناءً على بوابة الدفع المحددة في النظام.
+    (تم تجريد العملية لتدعم Paymob و Fawaterk).
+    """
     if not is_merchant(request.user): return redirect('home')
 
     settings_obj = SiteSetting.objects.first()
@@ -670,98 +578,107 @@ def paymob_deposit(request):
             total_to_pay = net_amount + total_fees
             amount_cents = int(total_to_pay * 100)
             
-            paymob = PaymobManager()
-            token = paymob.get_token()
-            pm_order_id = paymob.create_order(token, amount_cents)
+            # تحديد البوابة النشطة من الإعدادات
+            active_gateway = getattr(settings_obj, 'active_payment_gateway', 'PAYMOB') if settings_obj else 'PAYMOB'
             
-            PaymobTransaction.objects.create(
-                merchant=request.user.merchant_profile,
-                paymob_order_id=str(pm_order_id), amount_cents=amount_cents, is_paid=False
-            )
+            if active_gateway == 'PAYMOB':
+                paymob = PaymobManager()
+                token = paymob.get_token()
+                pm_order_id = paymob.create_order(token, amount_cents)
+                
+                # حفظ بيانات عملية الشحن في قاعدة البيانات للتحقق منها لاحقاً
+                WalletDepositTransaction.objects.create(
+                    merchant=request.user.merchant_profile,
+                    gateway_order_id=str(pm_order_id),
+                    gateway_name='PAYMOB',
+                    amount_cents=amount_cents,
+                    amount_actual=net_amount,
+                    is_paid=False
+                )
 
-            user = request.user
-            billing_data = {
-                "first_name": user.first_name or "Merchant", "last_name": user.last_name or "User",
-                "email": user.email or "merchant@bazarna.com", "phone_number": user.phone_primary,
-                "apartment": "NA", "floor": "NA", "street": "NA", "building": "NA", 
-                "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
-            }
+                user = request.user
+                billing_data = {
+                    "first_name": user.first_name or "Merchant", "last_name": user.last_name or "User",
+                    "email": user.email or "merchant@bazarna.com", "phone_number": user.phone_primary,
+                    "apartment": "NA", "floor": "NA", "street": "NA", "building": "NA", 
+                    "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", "country": "EG", "state": "NA"
+                }
 
-            if method == 'WALLET':
-                wallet_num = request.POST.get('wallet_number')
-                if not wallet_num:
-                    messages.error(request, "رقم المحفظة مطلوب.")
+                if method == 'WALLET':
+                    wallet_num = request.POST.get('wallet_number')
+                    if not wallet_num:
+                        messages.error(request, "رقم المحفظة مطلوب.")
+                        return redirect('paymob_deposit')
+                    billing_data['phone_number'] = wallet_num
+                    redirect_url = paymob.pay_with_wallet(token, amount_cents, pm_order_id, settings.PAYMOB_INTEGRATION_ID_WALLET, billing_data)
+                    return redirect(redirect_url)
+                else:
+                    payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
+                    iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
+                    return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
+
+            elif active_gateway == 'FAWATERK':
+                fawaterk = FawaterkManager()
+                user = request.user
+                
+                cust_info = {
+                    "first_name": user.first_name or "Merchant",
+                    "last_name": user.last_name or "User",
+                    "email": user.email or "merchant@domain.com",
+                    "phone": user.phone_primary,
+                    "address": "Wallet Deposit"
+                }
+                
+                items_summary = [{"name": "شحن رصيد المحفظة", "price": float(total_to_pay), "quantity": 1}]
+                
+                # إنشاء رقم مرجعي فريد لعملية الشحن 
+                temp_ref = f"DEP-{uuid.uuid4().hex[:8]}"
+                
+                success, data = fawaterk.create_invoice(
+                    cart_total=float(total_to_pay), 
+                    customer_data=cust_info, 
+                    cart_items=items_summary, 
+                    order_id=temp_ref, 
+                    is_wallet_deposit=True
+                )
+                
+                if success:
+                    # حفظ بيانات عملية الشحن في الداتابيز
+                    WalletDepositTransaction.objects.create(
+                        merchant=request.user.merchant_profile,
+                        gateway_order_id=str(data.get('invoice_id')),
+                        gateway_name='FAWATERK',
+                        amount_cents=amount_cents,
+                        amount_actual=net_amount,
+                        is_paid=False
+                    )
+                    # التوجيه لرابط فواتيرك 🚀
+                    return redirect(data.get('url'))
+                else:
+                    messages.error(request, _("حدث خطأ أثناء إصدار فاتورة الدفع: ") + str(data))
                     return redirect('paymob_deposit')
-                billing_data['phone_number'] = wallet_num
-                redirect_url = paymob.pay_with_wallet(token, amount_cents, pm_order_id, settings.PAYMOB_INTEGRATION_ID_WALLET, billing_data)
-                return redirect(redirect_url)
-            else:
-                payment_key = paymob.get_payment_key(token, pm_order_id, amount_cents, settings.PAYMOB_INTEGRATION_ID_CARD, billing_data)
-                iframe_url = f"https://accept.paymob.com/api/acceptance/iframes/{settings.PAYMOB_IFRAME_ID}?payment_token={payment_key}"
-                return render(request, 'store/paymob_iframe.html', {'iframe_url': iframe_url})
 
         except Exception as e:
-            messages.error(request, "حدث خطأ أثناء الاتصال ببوابة الدفع.")
+            messages.error(request, "حدث خطأ أثناء الاتصال ببوابة الدفع. يرجى المحاولة لاحقاً.")
             return redirect('merchant_wallet')
 
     return render(request, 'merchant/paymob_deposit.html', {'fee_fixed': fee_fixed, 'fee_percent': fee_percent})
 
-
-def paymob_callback(request):
-    """الرد الآلي من Paymob بعد الدفع"""
-    success = request.GET.get('success')
-    order_id = request.GET.get('order')
-    
-    if success == "true":
-        try:
-            tx = PaymobTransaction.objects.get(paymob_order_id=order_id, is_paid=False)
-            tx.is_paid = True
-            tx.save()
-            
-            wallet = tx.merchant.wallet
-            
-            # حساب الصافي بعد خصم الرسوم
-            settings_obj = SiteSetting.objects.first()
-            fixed_fee = Decimal(settings_obj.platform_fee_fixed) if settings_obj else Decimal('0.00')
-            percent_fee = Decimal(settings_obj.platform_fee_percentage) / Decimal('100.00') if settings_obj else Decimal('0.00')
-            
-            total_paid = Decimal(tx.amount_cents) / 100
-            net_amount = round((total_paid - fixed_fee) / (Decimal('1.00') + percent_fee), 2)
-            if net_amount < Decimal('0.00'): net_amount = Decimal('0.00')
-                
-            fees_deducted = total_paid - net_amount
-
-            WalletTransaction.objects.create(
-                wallet=wallet, amount=net_amount, transaction_type=WalletTransaction.TxType.COMPENSATION,
-                description=f"شحن رصيد (Paymob) #{tx.id} (خصم {fees_deducted} ج.م رسوم)", balance_after=wallet.balance + net_amount
-            )
-            
-            wallet.balance += net_amount
-            wallet.save()
-            
-            send_notification(tx.merchant.user, "تم شحن الرصيد بنجاح! 💰", f"تم شحن محفظتك بصافي {net_amount} بعد خصم رسوم البنك.", "/merchant/wallet/")
-            
-            # 🔥 إشعار الموبايل للتاجر بنجاح الشحن
-            send_push_to_user(tx.merchant.user, "شحن المحفظة 💳", f"تم إيداع مبلغ {net_amount} في محفظتك بنجاح.")
-
-            messages.success(request, f"تم شحن الرصيد بنجاح! 🎉 (صافي: {net_amount})")
-            return redirect('merchant_wallet')
-            
-        except PaymobTransaction.DoesNotExist:
-            return redirect('merchant_wallet')
-    else:
-        messages.error(request, "عملية الدفع فشلت أو تم إلغاؤها.")
-        return redirect('merchant_wallet')
+# ملاحظة: تم إزالة دالة paymob_callback من هذا الملف.
+# يجب أن يتم الاعتماد الآن على دالة payment_callback في الملف الرئيسي 
+# الخاص بـ store views لضمان مركزية الردود للطلبات والمحافظ معاً وتفادي التعارض.
 
 
+# ==========================================
+# 9. التقارير والملف الشخصي
+# ==========================================
 @login_required
 def merchant_reports(request):
-    """التقارير والإحصائيات للتاجر"""
+    """عرض الإحصائيات والمؤشرات المالية لتقييم الأداء"""
     if not hasattr(request.user, 'merchant_profile'): 
         return redirect('home')
     
     merchant = request.user.merchant_profile
-    wallet = merchant.wallet
 
     range_type = request.GET.get('range', 'month')
     custom_start = request.GET.get('start')
@@ -862,19 +779,16 @@ def merchant_reports(request):
     
     return render(request, 'merchant/reports.html', context)
 
-from django.db.models import Q
-from store.models import TermsAndCondition # تأكد من مسار الموديل الصحيح
 
 @login_required
 def merchant_profile(request):
-    """عرض صفحة حساب التاجر مع السياسات الديناميكية"""
+    """عرض صفحة الحساب وإدارة السياسات المخصصة لدولة التاجر"""
     if not hasattr(request.user, 'merchant_profile'):
         return redirect('home')
         
     merchant = request.user.merchant_profile
     current_country = request.user.country
     
-    # 🔥 جلب السياسات الخاصة بالتجار بناءً على الدولة (أو السياسات العامة التي لا ترتبط بدولة معينة)
     merchant_policies = TermsAndCondition.objects.filter(
         user_type='MERCHANT',
         is_active=True
@@ -882,7 +796,6 @@ def merchant_profile(request):
         Q(country=current_country) | Q(country__isnull=True)
     ).order_by('order')
     
-    # تقسيم السياسات حسب النوع
     terms_list = merchant_policies.filter(document_type='TERMS')
     privacy_list = merchant_policies.filter(document_type='PRIVACY')
     shipping_list = merchant_policies.filter(document_type='SHIPPING_RETURN')

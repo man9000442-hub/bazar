@@ -71,7 +71,7 @@ class MerchantSignupForm(forms.ModelForm):
     )
     
     # Merchant Data
-    national_id = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("الرقم القومي / الهوية"))
+    #national_id = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("الرقم القومي / الهوية"))
     tax_register_number = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("رقم السجل الضريبي (اختياري)"))
     
     # تفاصيل البضاعة
@@ -81,16 +81,16 @@ class MerchantSignupForm(forms.ModelForm):
     goods_sizes = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}), label=_("المقاسات المتاحة"))
 
     # الصور
-    id_card_front = forms.ImageField(label=_("صورة البطاقة / الهوية (أمام)"))
-    id_card_back = forms.ImageField(label=_("صورة البطاقة / الهوية (خلف)"))
+    #id_card_front = forms.ImageField(label=_("صورة البطاقة / الهوية (أمام)"))
+    #id_card_back = forms.ImageField(label=_("صورة البطاقة / الهوية (خلف)"))
     shop_image = forms.ImageField(label=_("صورة المحل / اللوجو"))
 
     class Meta:
         model = MerchantProfile
         fields = [
-            'national_id', 'tax_register_number', 
+            'tax_register_number', 
             'goods_quantity', 'goods_types', 'goods_average_price', 'goods_sizes',
-            'id_card_front', 'id_card_back', 'shop_image'
+            'shop_image'
         ]
 
     def save(self, commit=True):

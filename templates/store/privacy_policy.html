@@ -1,83 +1,185 @@
-{% load i18n %}
-<!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE|default:'ar' }}" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% trans "سياسة الخصوصية" %} | Elbazaar</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { font-family: 'Tajawal', sans-serif; }
-        .gradient-text {
-            background: linear-gradient(to left, #0D6EFD, #00C6FF);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-200">
+{% extends 'base.html' %}
+{% load i18n %} 
 
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-            <h1 class="text-2xl font-extrabold gradient-text tracking-tight">Elbazaar</h1>
-            <span class="text-sm font-semibold bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
-                {% trans "المركز القانوني" %}
-            </span>
-        </div>
-    </header>
+{% block page_title %}{% trans "سياسة الخصوصية" %}{% endblock %}
 
-    <main class="max-w-4xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
-        
-        <div class="text-center mb-12">
-            <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">{% trans "سياسة خصوصية العملاء" %}</h2>
-            <p class="text-slate-500 text-lg">{% trans "نحن نهتم بخصوصيتك ونلتزم بحماية بياناتك الشخصية." %}</p>
-        </div>
+{% block content %}
 
-        <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-            <div class="p-6 sm:p-10">
+<style>
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --text-body: #3F3F46; /* لون مريح جداً لقراءة النصوص الطويلة */
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --border-light: rgba(0, 0, 0, 0.05);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول (Staggered Fade-Up) --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- الكارت الفاخر المخصص للنصوص --- */
+  .neo-article-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 40px;
+    border: none;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.03);
+  }
+
+  /* --- هيدر الصفحة --- */
+  .shield-icon-wrapper {
+    width: 70px; height: 70px;
+    background: #F4F4F5;
+    color: var(--accent-dark);
+    border-radius: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    transform: rotate(-5deg);
+    transition: transform 0.4s;
+  }
+  .neo-article-card:hover .shield-icon-wrapper {
+    transform: rotate(0deg) scale(1.05);
+  }
+
+  /* --- تنسيق نصوص البنود --- */
+  .doc-section-title {
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+  }
+
+  .doc-number-badge {
+    background: var(--accent-dark);
+    color: #fff;
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    margin-left: 12px; /* مسافة للغة العربية RTL */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+
+  .doc-body-text {
+    color: var(--text-body);
+    line-height: 2.2;
+    font-size: 15px;
+    font-weight: 500;
+    padding-right: 40px; /* لعمل مسافة تحت الرقم للحفاظ على الهامش */
+  }
+
+  /* ريسبونسيف للموبايل */
+  @media (max-width: 768px) {
+    .neo-article-card { padding: 24px; }
+    .doc-body-text { padding-right: 12px; }
+  }
+</style>
+
+<div class="ultra-header p-3 d-flex align-items-center sticky-top" style="z-index: 1020;">
+    <a href="javascript:history.back()" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <h4 class="m-0 fw-bold" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "سياسة الخصوصية" %}</h4>
+</div>
+
+<div class="container py-4 mb-5" style="min-height: 80vh;">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            
+            <div class="neo-article-card animate-fade-up" style="animation-delay: 100ms;">
                 
-                {% if policies %}
-                    <div class="space-y-8">
+                <div class="text-center mb-5 border-bottom pb-4" style="border-color: var(--border-light) !important;">
+                    <div class="shield-icon-wrapper">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h2 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "سياسة خصوصية العملاء" %}</h2>
+                    <p style="color: var(--text-secondary); font-weight: 500; font-size: 15px;">
+                        {% trans "نحن نهتم بخصوصيتك ونلتزم بحماية بياناتك الشخصية في البازار." %}
+                    </p>
+                </div>
+                
+                <div class="legal-content">
+                    {% if policies %}
                         {% for policy in policies %}
-                            <section class="group">
-                                <h3 class="text-xl font-bold text-slate-800 mb-3 flex items-center gap-2 group-hover:text-blue-600 transition-colors duration-200">
-                                    <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm border border-blue-100">
-                                        {{ policy.order|default:forloop.counter }}
-                                    </span>
-                                    {{ policy.title }}
-                                </h3>
-                                <div class="text-slate-600 leading-relaxed text-sm sm:text-base pl-10 pr-2">
-                                    {{ policy.content|linebreaks }}
-                                </div>
-                            </section>
-                            {% if not forloop.last %}
-                                <hr class="border-slate-100">
-                            {% endif %}
+                        <div class="mb-4 animate-fade-up" style="animation-delay: {{ forloop.counter0|add:2 }}00ms;">
+                            
+                            <div class="d-flex align-items-start mb-2">
+                                <span class="doc-number-badge flex-shrink-0">{{ policy.order|default:forloop.counter }}</span>
+                                <h5 class="doc-section-title mt-1 mb-0">{{ policy.title }}</h5>
+                            </div>
+                            
+                            <div class="doc-body-text text-start">
+                                {{ policy.content|linebreaksbr }}
+                            </div>
+                            
+                        </div>
+                        
+                        {% if not forloop.last %}
+                            <hr style="border-color: var(--border-light); margin: 30px 0;">
+                        {% endif %}
+                        
                         {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <p class="text-slate-500 font-medium text-lg">{% trans "جاري تحديث سياسة الخصوصية. يرجى العودة لاحقاً." %}</p>
-                    </div>
-                {% endif %}
-
+                    {% else %}
+                        <div class="text-center py-5 animate-fade-up" style="animation-delay: 200ms;">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 90px; height: 90px; background: #F4F4F5;">
+                                <i class="fas fa-file-signature fa-2x" style="color: var(--text-secondary); opacity: 0.5;"></i>
+                            </div>
+                            <h5 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "جاري تحديث سياسة الخصوصية" %}</h5>
+                            <p class="small" style="color: var(--text-secondary); font-weight: 500;">{% trans "يرجى العودة لاحقاً لمراجعة التحديثات الجديدة." %}</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="text-center mt-5 pt-4 border-top" style="border-color: var(--border-light) !important;">
+                    <p class="small mb-0" style="color: var(--text-secondary); font-weight: 600;">
+                        <i class="fas fa-check-circle me-1" style="color: var(--accent-dark);"></i> 
+                        {% trans "استخدامك لتطبيق البازار يعني موافقتك على هذه الشروط والسياسات." %}
+                    </p>
+                </div>
+                
             </div>
             
-            <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 text-center sm:text-right">
-                <p class="text-xs text-slate-500 font-medium">
-                    {% trans "استخدامك لتطبيق البازار يعني موافقتك على هذه الشروط والسياسات." %}
-                </p>
-            </div>
         </div>
-    </main>
+    </div>
+</div>
 
-    <footer class="text-center py-8 text-slate-500 text-sm mt-10">
-        <p>&copy; {% now "Y" %} {% trans "تطبيق البازار (Elbazaar). جميع الحقوق محفوظة." %}</p>
-    </footer>
-
-</body>
-</html>
+{% endblock %}

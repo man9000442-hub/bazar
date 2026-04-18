@@ -1,144 +1,256 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
+
+{% block content %}
 
 <style>
-    .dark-header {
-        background-color: var(--dark-bg, #091024);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .dark-card {
-        background-color: var(--dark-surface, #121d3a);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
-    }
-    .gold-text {
-        color: var(--gold-accent, #ffc107) !important;
-    }
-    .text-muted-dark {
-        color: #8fa0c1 !important;
-    }
-    .btn-gold {
-        background: linear-gradient(135deg, #ffc107, #ff9800);
-        color: #000;
-        border: none;
-        transition: 0.3s;
-    }
-    .btn-gold:hover {
-        transform: scale(0.98);
-        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
-    }
-    
-    /* تنسيق خاص للخطوط الفاصلة */
-    .dark-divider {
-        border-color: rgba(255, 255, 255, 0.05) !important;
-    }
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.9);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- الكروت العصرية --- */
+  .neo-card {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 20px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    margin-bottom: 20px;
+  }
+
+  .card-title-neo {
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex; align-items: center;
+  }
+
+  /* --- خط فاصل ناعم --- */
+  .neo-divider {
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  /* --- حالة الطلب (Pill) --- */
+  .status-pill {
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid rgba(245, 166, 35, 0.2);
+    padding: 6px 12px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  /* --- صورة المنتج --- */
+  .img-showcase {
+    background: #F4F4F5;
+    border-radius: 16px;
+    width: 75px; height: 75px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 8px;
+    flex-shrink: 0;
+  }
+
+  /* --- الزر الأساسي (أسود نقي) --- */
+  .btn-neo-primary {
+    background: var(--accent-dark) !important;
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    transition: all 0.3s;
+    border-radius: 50px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  .btn-neo-primary:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
+
+  /* --- شريط الدفع المعلق --- */
+  .pending-pay-bar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    border-top: 1px solid var(--border-light);
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
+    /* تم الرفع لكي لا يغطي على القائمة السفلية */
+    bottom: 75px; 
+  }
 </style>
 
-<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-3 sticky-top" style="z-index: 1020;">
-    <a href="{% url 'my_orders' %}" class="text-white me-3 text-decoration-none"><i class="fas fa-arrow-right fs-5"></i></a>
-    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "تفاصيل الطلب" %} <span class="gold-text">#{{ order.order_id }}</span></h5>
+<div class="ultra-header p-3 d-flex align-items-center mb-3 sticky-top" style="z-index: 1020;">
+    <a href="{% url 'my_orders' %}" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <h5 class="m-0 fw-bold" style="color: var(--text-primary); letter-spacing: -0.5px;">
+        {% trans "تفاصيل الطلب" %} <span style="color: var(--text-secondary); font-size: 15px; margin-right: 4px;">#{{ order.order_id }}</span>
+    </h5>
 </div>
 
-<div class="container pb-5 mb-5" style="min-height: 80vh;">
+<div class="container pb-5" style="min-height: 80vh; padding-bottom: {% if order.status == 'WAITING_PAYMENT' %}180px{% else %}100px{% endif %} !important;">
     
-    <div class="card dark-card shadow-lg mb-4 p-3 border-0">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="text-muted-dark small"><i class="far fa-calendar-alt me-1"></i> {{ order.created_at|date:"Y-m-d | h:i A" }}</span>
-            <span class="badge" style="background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2); font-size: 11px;">
+    <div class="neo-card animate-fade-up" style="animation-delay: 100ms;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="small fw-bold" style="color: var(--text-secondary);">
+                <i class="far fa-calendar-alt me-1"></i> {{ order.created_at|date:"Y-m-d | h:i A" }}
+            </span>
+            <span class="status-pill">
                 {{ order.get_status_display }}
             </span>
         </div>
-        <div class="d-flex align-items-center mt-2">
-            <i class="fas fa-credit-card text-white-50 me-2"></i>
-            <span class="text-white small">{% trans "طريقة الدفع:" %} <strong class="gold-text">{{ order.get_payment_method_display }}</strong></span>
+        <div class="d-flex align-items-center pt-2 neo-divider border-top">
+            <div class="icon-btn me-3" style="width: 36px; height: 36px; background: #F4F4F5; box-shadow: none;">
+                <i class="fas fa-credit-card" style="color: var(--text-secondary);"></i>
+            </div>
+            <span class="small fw-bold" style="color: var(--text-secondary);">
+                {% trans "طريقة الدفع:" %} 
+                <strong style="color: var(--text-primary);">{{ order.get_payment_method_display }}</strong>
+            </span>
         </div>
     </div>
 
-    <div class="card dark-card shadow-lg mb-4 p-3 border-0">
-        <h6 class="fw-bold mb-3 d-flex align-items-center text-white">
-            <i class="fas fa-box-open me-2 gold-text"></i> {% trans "المنتجات المطلوبة" %}
+    <div class="neo-card animate-fade-up" style="animation-delay: 200ms;">
+        <h6 class="card-title-neo">
+            <i class="fas fa-box-open me-2" style="color: var(--accent-gold);"></i> {% trans "المنتجات المطلوبة" %}
         </h6>
         
         {% for item in order.items.all %}
-        <div class="d-flex mb-3 {% if not forloop.last %}pb-3 border-bottom dark-divider{% endif %}">
-            <div class="bg-white rounded-3 d-flex align-items-center justify-content-center shadow-sm p-1 me-3" style="width: 70px; height: 70px;">
+        <div class="d-flex mb-3 {% if not forloop.last %}pb-3 neo-divider{% endif %}">
+            
+            <div class="img-showcase me-3">
                 {% if item.product_size.product.image %}
-                    <img src="{{ item.product_size.product.image.url }}" class="img-fluid" style="max-height: 100%; object-fit: contain;">
+                    <img src="{{ item.product_size.product.image.url }}" class="img-fluid" style="max-height: 100%; object-fit: contain; mix-blend-mode: darken;">
                 {% else %}
-                    <i class="fas fa-image text-muted opacity-25 fa-2x"></i>
+                    <i class="fas fa-box text-muted opacity-25 fa-2x"></i>
                 {% endif %}
             </div>
             
-            <div class="flex-grow-1">
-                <h6 class="text-white mb-1" style="font-size: 13px; font-weight: bold;">{{ item.product_size.product.name }}</h6>
-                <p class="text-muted-dark small mb-1" style="font-size: 11px;">
-                    {% trans "المقاس:" %} {{ item.product_size.size_label }} | {% trans "اللون:" %} {{ item.product_size.color_label }}
+            <div class="flex-grow-1 d-flex flex-column justify-content-center">
+                <h6 class="mb-1 text-truncate" style="font-size: 14px; font-weight: 800; color: var(--text-primary);">
+                    {{ item.product_size.product.name }}
+                </h6>
+                <p class="small mb-2" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">
+                    {{ item.product_size.size_label }} <span class="mx-1">•</span> {{ item.product_size.color_label }}
                 </p>
-                <div class="d-flex justify-content-between align-items-center mt-1">
-                    <span class="gold-text fw-bold" style="font-size: 14px;">{{ item.price_at_purchase }} {% trans "ج.م" %}</span>
-                    <span class="text-white-50 small">{% trans "الكمية:" %} <strong class="text-white">{{ item.quantity }}</strong></span>
+                <div class="d-flex justify-content-between align-items-center mt-auto">
+                    <span class="fw-bold" style="font-size: 15px; color: var(--text-primary);">{{ item.price_at_purchase }} <small style="font-size: 11px;">{% trans "ج.م" %}</small></span>
+                    <span class="small fw-bold" style="background: #F4F4F5; padding: 2px 8px; border-radius: 8px; font-size: 11px; color: var(--text-secondary);">
+                        {% trans "الكمية:" %} <strong style="color: var(--text-primary);">{{ item.quantity }}</strong>
+                    </span>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <div class="card dark-card shadow-lg mb-4 p-3 border-0">
-        <h6 class="fw-bold mb-3 d-flex align-items-center text-white">
-            <i class="fas fa-map-marker-alt me-2 gold-text"></i> {% trans "عنوان التوصيل" %}
+    <div class="neo-card animate-fade-up" style="animation-delay: 300ms;">
+        <h6 class="card-title-neo">
+            <i class="fas fa-map-marker-alt me-2" style="color: var(--accent-gold);"></i> {% trans "عنوان التوصيل" %}
         </h6>
-        <div class="text-muted-dark small" style="line-height: 1.8;">
-            <p class="mb-1"><strong class="text-white">{% trans "المستلم:" %}</strong> {{ order.recipient_name|default:order.customer.get_full_name }}</p>
-            <p class="mb-1"><strong class="text-white">{% trans "رقم الهاتف:" %}</strong> <span dir="ltr">{{ order.shipping_phone }}</span></p>
-            <p class="mb-0"><strong class="text-white">{% trans "العنوان:" %}</strong> {{ order.shipping_address }} - {{ order.governorate.name }}</p>
+        <div class="small" style="line-height: 2; color: var(--text-secondary); font-weight: 500;">
+            <div class="d-flex mb-1">
+                <span style="width: 80px;">{% trans "المستلم:" %}</span>
+                <strong style="color: var(--text-primary);">{{ order.recipient_name|default:order.customer.get_full_name }}</strong>
+            </div>
+            <div class="d-flex mb-1">
+                <span style="width: 80px;">{% trans "الهاتف:" %}</span>
+                <strong style="color: var(--text-primary);" dir="ltr">{{ order.shipping_phone }}</strong>
+            </div>
+            <div class="d-flex mb-0">
+                <span style="width: 80px;">{% trans "العنوان:" %}</span>
+                <strong style="color: var(--text-primary);">{{ order.shipping_address }} - {{ order.governorate.name }}</strong>
+            </div>
         </div>
     </div>
 
-    <div class="card dark-card shadow-lg mb-4 p-3 border-0">
-        <h6 class="fw-bold mb-3 border-bottom dark-divider pb-2 text-white">{% trans "ملخص الدفع" %}</h6>
+    <div class="neo-card animate-fade-up" style="animation-delay: 400ms;">
+        <h6 class="card-title-neo border-bottom neo-divider pb-3">
+            <i class="fas fa-receipt me-2" style="color: var(--accent-gold);"></i> {% trans "ملخص الدفع" %}
+        </h6>
         
-        <div class="d-flex justify-content-between small mb-2 text-muted-dark">
-            <span>{% trans "مجموع المنتجات" %}</span>
-            <span class="text-white">{{ order.total_products_price }} {% trans "ج.م" %}</span>
-        </div>
-        
-        <div class="d-flex justify-content-between small mb-2 text-muted-dark">
-            <span>{% trans "رسوم الشحن" %}</span>
-            <span class="text-white">{{ order.shipping_cost }} {% trans "ج.م" %}</span>
-        </div>
-        
-        {% if expected_fees > 0 or order.platform_fees > 0 %}
-        <div class="d-flex justify-content-between small mb-2 fw-bold" style="color: #ff9800;">
-            <span>{% trans "رسوم الدفع الإلكتروني" %}</span>
-            <span>{{ expected_fees }} {% trans "ج.م" %}</span>
-        </div>
-        {% endif %}
-        
-        <hr class="my-2 dark-divider">
-        
-        <div class="d-flex justify-content-between fw-bold text-white align-items-center mt-2">
-            <span class="fs-6">{% trans "الإجمالي النهائي" %}</span>
-            <span class="fs-4 gold-text" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-                {{ order.final_total|add:expected_fees }} {% trans "ج.م" %}
-            </span>
+        <div class="mt-3">
+            <div class="d-flex justify-content-between small mb-2 fw-bold" style="color: var(--text-secondary);">
+                <span>{% trans "مجموع المنتجات" %}</span>
+                <span style="color: var(--text-primary);">{{ order.total_products_price }} {% trans "ج.م" %}</span>
+            </div>
+            
+            <div class="d-flex justify-content-between small mb-2 fw-bold" style="color: var(--text-secondary);">
+                <span>{% trans "رسوم الشحن" %}</span>
+                <span style="color: var(--text-primary);">{{ order.shipping_cost }} {% trans "ج.م" %}</span>
+            </div>
+            
+            {% if expected_fees > 0 or order.platform_fees > 0 %}
+            <div class="d-flex justify-content-between small mb-2 fw-bold" style="color: var(--accent-gold);">
+                <span>{% trans "رسوم الدفع الإلكتروني" %}</span>
+                <span>{{ expected_fees }} {% trans "ج.م" %}</span>
+            </div>
+            {% endif %}
+            
+            <hr style="border-color: var(--border-light); margin: 16px 0;">
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold fs-6" style="color: var(--text-primary);">{% trans "الإجمالي النهائي" %}</span>
+                <span class="fw-bold fs-4" style="color: var(--accent-dark); letter-spacing: -0.5px;">
+                    {{ order.final_total|add:expected_fees }} <small style="font-size: 14px;">{% trans "ج.م" %}</small>
+                </span>
+            </div>
         </div>
     </div>
 </div>
 
 {% if order.status == 'WAITING_PAYMENT' %}
-<div class="fixed-bottom dark-header p-3 shadow-lg rounded-top-4" style="bottom: 70px; z-index: 1050; border-top: 1px solid rgba(255,193,7,0.2);"> 
-    <div class="d-flex justify-content-between align-items-center mb-3 px-2">
-        <small class="text-muted-dark fw-bold">{% trans "المطلوب دفعه:" %}</small>
-        <span class="fw-bold gold-text fs-4" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{{ order.final_total|add:expected_fees }} {% trans "ج.م" %}</span>
+<div class="fixed-bottom p-4 pending-pay-bar" style="z-index: 1050;"> 
+    <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+        <span class="fw-bold" style="color: var(--text-secondary); font-size: 14px;">{% trans "المطلوب دفعه:" %}</span>
+        <span class="fw-bold fs-3" style="color: var(--text-primary); letter-spacing: -0.5px;">
+            {{ order.final_total|add:expected_fees }} <small style="font-size: 14px;">{% trans "ج.م" %}</small>
+        </span>
     </div>
     
-    <a href="{% url 'retry_payment' order.id %}" class="btn btn-gold w-100 py-3 fw-bold shadow-lg rounded-pill" style="font-size: 16px;">
+    <a href="{% url 'retry_payment' order.id %}" class="btn btn-neo-primary w-100 py-3 d-flex justify-content-center align-items-center" style="font-size: 16px;">
         {% trans "إكمال الدفع الآن" %} <i class="fas fa-lock ms-2"></i>
     </a>
 </div>
-<div style="height: 180px;"></div>
-{% else %}
-<div style="height: 100px;"></div>
 {% endif %}
 
 {% endblock %}

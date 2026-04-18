@@ -1,74 +1,196 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
+
+{% block content %}
 {% trans "ج.م" as default_currency %}
 
-<div class="container py-5" style="max-width: 700px;">
-    
-    <div class="d-flex align-items-center mb-4 gap-3">
-        <a href="javascript:history.back()" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
-            <i class="fas fa-arrow-right text-dark"></i>
-        </a>
-        <div>
-            <h5 class="fw-bold text-dark m-0"><i class="fas fa-headset text-primary me-2"></i> {% trans "إنشاء تذكرة دعم جديدة" %}</h5>
-            <small class="text-muted">{% trans "نحن هنا لمساعدتك! يرجى توضيح مشكلتك وسنقوم بالرد عليك في أقرب وقت." %}</small>
-        </div>
-    </div>
+<style>
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-blue: #3B82F6;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
 
-    <form method="POST" class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        {% csrf_token %}
-        
-        <div class="card-body p-4 p-md-5">
-            
-            <div class="mb-4">
-                <label class="form-label fw-bold small text-muted">{% trans "موضوع التذكرة" %} <span class="text-danger">*</span></label>
-                <div class="input-group shadow-sm rounded-3">
-                    <span class="input-group-text bg-light border-0 text-primary"><i class="fas fa-edit"></i></span>
-                    <input type="text" name="subject" class="form-control bg-light border-0 py-2 fw-bold text-dark" required placeholder="{% trans 'مثلاً: استفسار عن الطلب #123' %}">
-                </div>
-            </div>
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
-            <div class="mb-4">
-                <label class="form-label fw-bold small text-muted">{% trans "طلب متعلق (اختياري)" %}</label>
-                <div class="input-group shadow-sm rounded-3">
-                    <span class="input-group-text bg-light border-0 text-secondary"><i class="fas fa-shopping-bag"></i></span>
-                    <select name="order_id" class="form-select bg-light border-0 py-2 fw-bold text-dark">
-                        <option value="">-- {% trans "بدون طلب محدد / استفسار عام" %} --</option>
-                        {% for order in orders %}
-                        <option value="{{ order.id }}">
-                            {% trans "الطلب" %} #{{ order.order_id }} - {{ order.final_total }} {{ request.user.country.currency_symbol|default:default_currency }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
 
-            <div class="mb-4">
-                <label class="form-label fw-bold small text-muted">{% trans "تفاصيل المشكلة أو الاستفسار" %} <span class="text-danger">*</span></label>
-                <textarea name="message" class="form-control bg-light border-0 shadow-sm rounded-4 p-3 text-dark custom-textarea" rows="6" required placeholder="{% trans 'اشرح مشكلتك أو استفسارك بالتفصيل لمساعدتنا في الرد عليك بشكل أسرع وأدق...' %}"></textarea>
-            </div>
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+  }
 
-            <button type="submit" class="btn btn-primary w-100 fw-bold py-3 rounded-3 shadow-sm d-flex justify-content-center align-items-center gap-2 transition-hover">
-                <i class="fas fa-paper-plane"></i> {% trans "إرسال التذكرة" %}
-            </button>
-            
-        </div>
-    </form>
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- كارت الاستمارة --- */
+  .neo-ticket-form-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 40px 32px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.03);
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* --- أيقونة الدعم --- */
+  .support-icon-box {
+    width: 75px; height: 75px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-blue);
+    border-radius: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.05);
+    transform: rotate(-5deg);
+  }
+
+  /* --- حقول الإدخال العصرية --- */
+  .form-label-neo {
+    font-weight: 800;
+    color: var(--text-primary);
+    font-size: 13px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .neo-input {
+    background: #F4F4F5 !important;
+    border: 2px solid transparent !important;
+    border-radius: 16px;
+    padding: 16px 20px;
+    color: var(--text-primary) !important;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    box-shadow: none !important;
+    width: 100%;
+  }
+  .neo-input:focus {
+    background: var(--surface) !important;
+    border-color: var(--accent-dark) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05) !important;
+  }
+  .neo-input::placeholder { color: #A1A1AA !important; font-weight: 500; }
+  
+  /* تخصيص الـ Textarea */
+  textarea.neo-input {
+    resize: vertical;
+    line-height: 1.8;
+    min-height: 120px;
+  }
+
+  /* --- الزر الأساسي --- */
+  .btn-neo-primary {
+    background: var(--accent-dark);
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 50px;
+    padding: 18px;
+    font-size: 16px;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+  }
+  .btn-neo-primary:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
+
+</style>
+
+<div class="ultra-header p-3 d-flex align-items-center sticky-top" style="z-index: 1020;">
+    <a href="javascript:history.back()" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
+    </a>
+    <h5 class="m-0 fw-bold" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "تذكرة جديدة" %}</h5>
 </div>
 
-<style>
-    .transition-hover { transition: all 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-3px); filter: brightness(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+<div class="container d-flex flex-column justify-content-center py-5" style="min-height: 85vh;">
     
-    /* تحسين حقل النص ليكون مريح في الكتابة */
-    .custom-textarea { 
-        line-height: 1.8; 
-        font-size: 14px; 
-        resize: vertical; 
-        transition: all 0.3s ease;
-    }
-    .custom-textarea:focus { 
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important; 
-        background-color: #fff !important; 
-    }
-</style>
+    <div class="neo-ticket-form-card animate-fade-up">
+        
+        <div class="text-center mb-5 border-bottom pb-4" style="border-color: var(--border-light) !important;">
+            <div class="support-icon-box mx-auto">
+                <i class="fas fa-headset"></i>
+            </div>
+            <h3 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "كيف يمكننا مساعدتك؟" %}</h3>
+            <p style="color: var(--text-secondary); font-weight: 500; font-size: 14px; margin: 0;">
+                {% trans "نحن هنا من أجلك! يرجى توضيح مشكلتك وسنقوم بالرد عليك في أقرب وقت." %}
+            </p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="mb-4 animate-fade-up" style="animation-delay: 100ms;">
+                <label class="form-label-neo">
+                    {% trans "موضوع التذكرة" %} <span class="text-danger ms-1">*</span>
+                </label>
+                <input type="text" name="subject" class="form-control neo-input" required placeholder="{% trans 'مثال: استفسار عن الطلب #123 أو مشكلة في الدفع' %}">
+            </div>
+
+            <div class="mb-4 animate-fade-up" style="animation-delay: 200ms;">
+                <label class="form-label-neo">
+                    {% trans "طلب متعلق (اختياري)" %}
+                </label>
+                <select name="order_id" class="form-select neo-input">
+                    <option value="">-- {% trans "بدون طلب محدد / استفسار عام" %} --</option>
+                    {% for order in orders %}
+                    <option value="{{ order.id }}">
+                        {% trans "الطلب" %} #{{ order.order_id|default:order.id }} - {{ order.final_total }} {{ request.user.country.currency_symbol|default:default_currency }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text mt-2" style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">
+                    <i class="fas fa-info-circle me-1"></i> {% trans "إذا كانت مشكلتك تخص طلباً معيناً، يرجى اختياره لتسهيل المساعدة." %}
+                </div>
+            </div>
+
+            <div class="mb-5 animate-fade-up" style="animation-delay: 300ms;">
+                <label class="form-label-neo">
+                    {% trans "تفاصيل المشكلة أو الاستفسار" %} <span class="text-danger ms-1">*</span>
+                </label>
+                <textarea name="message" class="form-control neo-input" rows="5" required placeholder="{% trans 'اشرح مشكلتك أو استفسارك بالتفصيل لمساعدتنا في الرد عليك بشكل أسرع وأدق...' %}"></textarea>
+            </div>
+
+            <div class="animate-fade-up" style="animation-delay: 400ms;">
+                <button type="submit" class="btn btn-neo-primary w-100">
+                    {% trans "إرسال التذكرة" %} <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            
+        </form>
+    </div>
+</div>
+
 {% endblock %}

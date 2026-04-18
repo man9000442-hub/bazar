@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block title %}{{ product.name }} | Elbazaar{% endblock %} 
+{% load i18n %} 
+{% block title %}{{ product.name }} | Elbazaar{% endblock %} 
 {% block description %}
     {% blocktrans with name=product.name price=product.base_price %}اشترِ {{ name }} بسعر {{ price }} ج.م. أفضل جودة وتوصيل سريع.{% endblocktrans %}
 {% endblock %} 
@@ -10,99 +11,187 @@
 {% block content %}
 
 <style>
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --danger: #EF4444;
+    --danger-light: #FEE2E2;
+    --border-light: rgba(0, 0, 0, 0.05);
+  }
+
   body {
-      background-color: var(--dark-bg, #091024) !important;
-  }
-  .dark-header {
-      background-color: var(--dark-bg, #091024);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-  .dark-card {
-      background-color: var(--dark-surface, #121d3a);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-  .gold-text {
-      color: var(--gold-accent, #ffc107) !important;
-  }
-  .text-muted-dark {
-      color: #8fa0c1 !important;
-  }
-  
-  /* أزرار السلة والتحكم */
-  .btn-gold {
-      background: linear-gradient(135deg, #ffc107, #ff9800);
-      color: #000 !important;
-      border: none;
-      transition: 0.3s;
-  }
-  .btn-gold:hover { transform: scale(0.98); box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3); }
-  .btn-gold:disabled {
-      background: rgba(255, 255, 255, 0.1) !important;
-      color: rgba(255, 255, 255, 0.4) !important;
-      box-shadow: none !important;
+    background-color: var(--surface) !important; /* خلفية بيضاء لصفحة المنتج */
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 90px !important; /* مساحة للشريط السفلي */
   }
 
-  /* أزرار اختيار الألوان والمقاسات */
-  .variant-btn {
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.05);
-      transition: all 0.3s ease;
+  /* --- أزرار الهيدر الشفافة --- */
+  .glass-btn {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: var(--text-primary);
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
   }
-  .btn-check:checked + .variant-btn {
-      background: linear-gradient(135deg, #ffc107, #ff9800) !important;
-      color: #000 !important;
-      border-color: #ffc107 !important;
-      box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
-  }
-  .btn-check:checked + .variant-btn small {
-      color: #000 !important;
-      opacity: 0.7;
+  .glass-btn:active { transform: scale(0.92); }
+
+  /* --- ورقة التفاصيل السفلية (Bottom Sheet) --- */
+  .product-details-sheet {
+    background-color: var(--surface);
+    border-radius: 40px 40px 0 0;
+    margin-top: -40px;
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
+    padding: 30px 20px;
+    min-height: 60vh;
   }
 
-  .transition-all { transition: all 0.3s ease; }
-  .hover-shadow:hover { transform: translateY(-3px); }
+  .sheet-handle {
+    width: 40px; height: 5px;
+    background: #E4E4E7;
+    border-radius: 10px;
+    margin: 0 auto 20px auto;
+  }
+
+  /* --- أزرار اختيار الألوان والمقاسات (Neo Variants) --- */
+  .neo-variant-btn {
+    background: #F4F4F5;
+    color: var(--text-secondary);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 12px 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+  }
+  .btn-check:checked + .neo-variant-btn {
+    background: var(--accent-dark) !important;
+    color: #fff !important;
+    border-color: var(--accent-dark) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+  }
+  .disabled-variant { opacity: 0.5; pointer-events: none; }
+
+  /* --- كارت التاجر --- */
+  .merchant-mini-card {
+    background: #F4F4F5;
+    border-radius: 20px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: transform 0.3s;
+  }
+  .merchant-mini-card:active { transform: scale(0.98); }
+
+  /* --- كروت المنتجات المشابهة --- */
+  .similar-product-card {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    width: 140px;
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  /* --- شريط الإضافة للسلة السفلي --- */
+  .add-to-cart-bar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-light);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.03);
+    z-index: 1040;
+    /* مرفوع قليلاً للحماية من قوائم الهاتف */
+    bottom: 0; 
+  }
+
+  .btn-neo-primary {
+    background: var(--accent-dark);
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    transition: all 0.3s;
+  }
+  .btn-neo-primary:active { transform: scale(0.96); }
+  .btn-neo-primary:disabled {
+    background: #E4E4E7 !important;
+    color: #A1A1AA !important;
+  }
+
+  .qty-control-neo {
+    background: #F4F4F5;
+    border-radius: 50px;
+    display: flex; align-items: center;
+    padding: 4px;
+  }
+  .qty-control-neo .btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
-<div class="d-flex justify-content-between align-items-center p-3 position-absolute w-100" style="z-index: 1020; top: 0;">
-  <a href="javascript:history.back()" class="bg-dark bg-opacity-50 rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 40px; height: 40px; backdrop-filter: blur(5px);">
-    <i class="fas fa-arrow-right fs-6"></i>
+<div class="d-flex justify-content-between p-3 position-absolute w-100" style="z-index: 1020; top: 0;">
+  <a href="javascript:history.back()" class="glass-btn text-decoration-none">
+    <i class="fas fa-arrow-right fs-5"></i>
   </a>
   <div class="d-flex gap-2">
-    <button onclick="toggleFavDetail('{{ product.id }}')" class="btn bg-dark bg-opacity-50 rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm p-0" style="width: 40px; height: 40px; backdrop-filter: blur(5px);">
-      <i class="{% if is_fav %}fas text-danger{% else %}far text-white{% endif %} fa-heart fs-6 transition-transform" id="fav-icon"></i>
+    <button onclick="toggleFavDetail('{{ product.id }}')" class="glass-btn border-0">
+      <i class="{% if is_fav %}fas text-danger{% else %}far text-dark{% endif %} fa-heart fs-5 transition-transform" id="fav-icon"></i>
     </button>
-    <button onclick="shareProduct()" class="btn bg-dark bg-opacity-50 rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm p-0" style="width: 40px; height: 40px; backdrop-filter: blur(5px);">
-      <i class="fas fa-share-alt fs-6"></i>
+    <button onclick="shareProduct()" class="glass-btn border-0">
+      <i class="fas fa-share-alt fs-5 text-dark"></i>
     </button>
   </div>
 </div>
 
-<div id="productCarousel" class="carousel slide pb-5" style="background-color: #ffffff;" data-bs-ride="carousel">
-  <div class="carousel-inner pt-3">
+<div id="productCarousel" class="carousel slide" style="background-color: #F4F4F5;" data-bs-ride="carousel">
+  <div class="carousel-inner pt-4 pb-5">
     <div class="carousel-item active">
       {% if product.image %}
-      <img src="{{ product.image.url }}" class="d-block w-100" style="height: 420px; object-fit: contain; cursor: zoom-in; mix-blend-mode: multiply;" data-bs-toggle="modal" data-bs-target="#zoomModal" onclick="slideToIndex(0)" />
+      <img src="{{ product.image.url }}" class="d-block w-100" style="height: 400px; object-fit: contain; cursor: zoom-in; mix-blend-mode: multiply;" data-bs-toggle="modal" data-bs-target="#zoomModal" onclick="slideToIndex(0)" />
       {% else %}
-      <div class="d-flex align-items-center justify-content-center" style="height: 420px; background-color: #f8f9fa;">
+      <div class="d-flex align-items-center justify-content-center" style="height: 400px;">
         <i class="fas fa-camera fa-4x text-muted opacity-25"></i>
       </div>
       {% endif %}
     </div>
     {% for img in product.images.all %}
     <div class="carousel-item">
-      <img src="{{ img.image.url }}" class="d-block w-100" style="height: 420px; object-fit: contain; cursor: zoom-in; mix-blend-mode: multiply;" data-bs-toggle="modal" data-bs-target="#zoomModal" onclick="slideToIndex({{ forloop.counter }})" />
+      <img src="{{ img.image.url }}" class="d-block w-100" style="height: 400px; object-fit: contain; cursor: zoom-in; mix-blend-mode: multiply;" data-bs-toggle="modal" data-bs-target="#zoomModal" onclick="slideToIndex({{ forloop.counter }})" />
     </div>
     {% endfor %}
   </div>
 
   {% if product.images.exists %}
-  <div class="carousel-indicators" style="bottom: 20px;">
-    <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active" style="background-color: var(--dark-bg); width: 10px; height: 10px; border-radius: 50%; margin: 0 4px;"></button>
+  <div class="carousel-indicators" style="bottom: 50px;">
+    <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="0" class="active" style="background-color: var(--accent-dark); width: 8px; height: 8px; border-radius: 50%; margin: 0 4px;"></button>
     {% for img in product.images.all %}
-    <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter }}" style="background-color: var(--dark-bg); width: 10px; height: 10px; border-radius: 50%; margin: 0 4px;"></button>
+    <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter }}" style="background-color: var(--accent-dark); width: 8px; height: 8px; border-radius: 50%; margin: 0 4px;"></button>
     {% endfor %}
   </div>
   {% endif %}
@@ -138,21 +227,21 @@
   </div>
 </div>
 
-<div class="container p-4 position-relative shadow-lg" style="background-color: var(--dark-bg); margin-top: -40px; z-index: 10; border-radius: 30px 30px 0 0; min-height: 60vh;">
-  
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <span class="badge px-3 py-2 rounded-pill fw-bold" style="background: rgba(255, 193, 7, 0.1); color: var(--gold-accent); border: 1px solid rgba(255, 193, 7, 0.2);">
-      {{ product.category.name }}
-    </span>
+<div class="product-details-sheet">
+  <div class="sheet-handle"></div>
 
-    <div class="d-flex align-items-center px-3 py-1 rounded-pill shadow-sm" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-      <i class="fas fa-star gold-text me-1"></i>
-      <span class="text-white fw-bold">{{ product.average_rating|default:0|floatformat:1 }}</span>
-      <span class="text-muted-dark small ms-1">({{ product.reviews_count }})</span>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="fw-bold" style="color: var(--accent-gold); font-size: 13px; letter-spacing: 0.5px;">
+      {{ product.category.name|upper }}
+    </span>
+    <div class="d-flex align-items-center bg-light px-2 py-1 rounded-pill">
+      <i class="fas fa-star text-warning me-1" style="font-size: 12px;"></i>
+      <span class="fw-bold" style="font-size: 12px; color: var(--text-primary);">{{ product.average_rating|default:0|floatformat:1 }}</span>
+      <span class="text-muted ms-1" style="font-size: 11px;">({{ product.reviews_count }})</span>
     </div>
   </div>
 
-  <h4 class="fw-bold mb-3 text-white" style="line-height: 1.4;">{{ product.name }}</h4>
+  <h3 class="fw-bold mb-3" style="color: var(--text-primary); line-height: 1.4; letter-spacing: -0.5px;">{{ product.name }}</h3>
 
   <div class="mb-4">
     {% if product.active_offer and product.active_offer.is_active %}
@@ -165,28 +254,28 @@
         })();
     </script>
     
-    <div id="offer-price-block" class="d-flex align-items-center flex-wrap">
-      <h1 class="gold-text fw-bold mb-0 me-2" style="text-shadow: 0 2px 5px rgba(255,193,7,0.3);">{{ product.active_offer.discounted_price|floatformat:0 }}</h1>
-      <span class="gold-text fw-bold me-3 pt-2">{% trans "ج.م" %}</span>
-      <span class="text-muted-dark text-decoration-line-through me-2 pt-2">{{ product.base_price }} {% trans "ج.م" %}</span>
-      <span class="badge bg-danger rounded-pill px-2 py-1 shadow mt-1">-{{ product.active_offer.discount_percentage }}%</span>
+    <div id="offer-price-block" class="d-flex align-items-end flex-wrap mb-2">
+      <h1 class="fw-bold mb-0 me-2" style="color: var(--text-primary); letter-spacing: -1px;">{{ product.active_offer.discounted_price|floatformat:0 }}</h1>
+      <span class="fw-bold me-3 mb-1" style="color: var(--text-secondary);">{% trans "ج.م" %}</span>
+      <span class="text-decoration-line-through mb-2 me-2" style="color: #A1A1AA; font-size: 14px;">{{ product.base_price }} {% trans "ج.م" %}</span>
+      <span class="badge mb-2 px-2 py-1" style="background: var(--danger-light); color: var(--danger); font-size: 12px;">-{{ product.active_offer.discount_percentage }}%</span>
     </div>
 
-    <div id="base-price-block" class="d-none align-items-center flex-wrap">
-      <h1 class="gold-text fw-bold mb-0 me-2">{{ product.base_price }}</h1>
-      <span class="gold-text fw-bold pt-2">{% trans "ج.م" %}</span>
+    <div id="base-price-block" class="d-none align-items-end flex-wrap mb-2">
+      <h1 class="fw-bold mb-0 me-2" style="color: var(--text-primary);">{{ product.base_price }}</h1>
+      <span class="fw-bold mb-1" style="color: var(--text-secondary);">{% trans "ج.م" %}</span>
     </div>
 
-    <div id="offer-countdown-container" class="alert border-0 shadow-sm mt-3 mb-0 rounded-4" style="background: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3) !important;" data-end-date="{{ product.active_offer.end_date|date:'c' }}">
+    <div id="offer-countdown-container" class="p-3 mt-3 rounded-4" style="background: var(--danger-light); border: 1px solid rgba(239, 68, 68, 0.1);" data-end-date="{{ product.active_offer.end_date|date:'c' }}">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="fw-bold" style="color: #ff6b6b;">
-          <i class="fas fa-bolt text-warning me-2 fs-5"></i> {% trans "عرض محدود" %}
+        <div class="fw-bold" style="color: var(--danger);">
+          <i class="fas fa-bolt me-1"></i> {% trans "عرض محدود" %}
         </div>
-        <div id="countdown-timer" class="badge bg-danger fs-6 rounded-pill px-3 py-2 shadow" dir="ltr">--:--:--</div>
+        <div id="countdown-timer" class="fw-bold" style="color: var(--danger); font-variant-numeric: tabular-nums;" dir="ltr">--:--:--</div>
       </div>
       {% if product.active_offer.free_shipping %}
-      <div class="d-flex align-items-center small mt-2 p-2 rounded-3" style="background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.3); color: #4ade80;">
-        <i class="fas fa-truck fs-5 me-2 ms-1"></i>
+      <div class="d-flex align-items-center small mt-2 p-2 rounded-3" style="background: #ECFDF5; color: #10B981;">
+        <i class="fas fa-truck fs-6 me-2"></i>
         <span>
             <strong>{% trans "شحن مجاني" %}</strong> 
             {% blocktrans with threshold=product.active_offer.free_shipping_threshold %}عند شراء {{ threshold }} قطع أو أكثر{% endblocktrans %}
@@ -195,70 +284,66 @@
       {% endif %}
     </div>
     {% else %}
-    <div class="d-flex align-items-center flex-wrap">
-      <h1 class="gold-text fw-bold mb-0 me-2">{{ product.base_price }}</h1>
-      <span class="gold-text fw-bold pt-2">{% trans "ج.م" %}</span>
+    <div class="d-flex align-items-end flex-wrap mb-2">
+      <h1 class="fw-bold mb-0 me-2" style="color: var(--text-primary);">{{ product.base_price }}</h1>
+      <span class="fw-bold mb-1" style="color: var(--text-secondary);">{% trans "ج.م" %}</span>
     </div>
     {% endif %}
   </div>
 
-  <a href="{% url 'merchant_shop' product.merchant.pk %}" class="text-decoration-none">
-    <div class="d-flex align-items-center dark-card p-3 rounded-4 mb-4 shadow-lg hover-shadow transition-all">
-      <div class="me-3 position-relative">
-        {% if product.merchant.shop_image %}
-        <img src="{{ product.merchant.shop_image.url }}" class="rounded-circle" width="55" height="55" style="object-fit: cover; border: 2px solid var(--gold-accent);" />
-        {% else %}
-        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px; background: rgba(255,255,255,0.05); border: 2px solid var(--gold-accent);">
-          <i class="fas fa-store text-white fs-5"></i>
-        </div>
+  <a href="{% url 'merchant_shop' product.merchant.pk %}" class="merchant-mini-card mb-4">
+    <div class="me-3 position-relative">
+      {% if product.merchant.shop_image %}
+      <img src="{{ product.merchant.shop_image.url }}" class="rounded-circle" width="50" height="50" style="object-fit: cover;" />
+      {% else %}
+      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: #E4E4E7;">
+        <i class="fas fa-store text-muted fs-5"></i>
+      </div>
+      {% endif %}
+    </div>
+    <div class="flex-grow-1">
+      <div class="fw-bold mb-1" style="color: var(--text-primary);">
+        {{ product.merchant.user.first_name }} {{ product.merchant.user.last_name }}
+      </div>
+      <div class="small">
+        {% if product.merchant.verification_rank == 'GOLD' %}
+        <span style="color: #D97706; font-weight: 600;"><i class="fas fa-medal me-1"></i> {% trans "تاجر ذهبي" %}</span>
+        {% elif product.merchant.verification_rank == 'BLUE' %}
+        <span style="color: #2563EB; font-weight: 600;"><i class="fas fa-check-circle me-1"></i> {% trans "تاجر موثوق" %}</span>
+        {% elif product.merchant.verification_rank == 'SILVER' %}
+        <span style="color: #4B5563; font-weight: 600;"><i class="fas fa-award me-1"></i> {% trans "تاجر معتمد" %}</span>
         {% endif %}
       </div>
-      <div class="merchant-name flex-grow-1">
-        <div class="fw-bold text-white mb-1">
-          {{ product.merchant.user.first_name }} {{ product.merchant.user.last_name }}
-        </div>
-        <div class="small">
-          {% if product.merchant.verification_rank == 'GOLD' %}
-          <span class="badge" style="background: rgba(255,193,7,0.2); color: #ffc107; border: 1px solid #ffc107;"><i class="fas fa-medal me-1"></i> {% trans "تاجر ذهبي" %}</span>
-          {% elif product.merchant.verification_rank == 'BLUE' %}
-          <span class="badge" style="background: rgba(13,110,253,0.2); color: #6ea8fe; border: 1px solid #0d6efd;"><i class="fas fa-check-circle me-1"></i> {% trans "تاجر موثوق" %}</span>
-          {% elif product.merchant.verification_rank == 'SILVER' %}
-          <span class="badge" style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);"><i class="fas fa-award me-1"></i> {% trans "تاجر معتمد" %}</span>
-          {% endif %}
-        </div>
-      </div>
-      <i class="fas fa-chevron-left text-muted-dark p-2 rounded-circle" style="background: rgba(255,255,255,0.05);"></i>
     </div>
+    <i class="fas fa-chevron-left" style="color: var(--text-secondary);"></i>
   </a>
 
-  <h6 class="fw-bold mb-3 d-flex align-items-center text-white">
-    <i class="fas fa-info-circle gold-text me-2"></i> {% trans "وصف المنتج" %}
-  </h6>
-  <p class="text-muted-dark mb-4 p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); line-height: 1.8; font-size: 0.95rem">
+  <h6 class="fw-bold mb-3" style="color: var(--text-primary);">{% trans "الوصف" %}</h6>
+  <p class="mb-4" style="color: #3F3F46; line-height: 1.8; font-size: 15px;">
     {{ product.description|linebreaksbr }}
   </p>
 
-  <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;" />
+  <hr style="border-color: var(--border-light); margin: 30px 0;" />
 
   {% if product.merchant.wallet.balance < 10 %} 
-  <div class="alert rounded-4 border-0 shadow-sm d-flex align-items-center" style="background: rgba(255,193,7,0.1); color: #ffc107; border: 1px solid rgba(255,193,7,0.2) !important;">
-      <i class="fas fa-exclamation-circle fs-4 me-3"></i>
-      <div class="small fw-bold">{% trans "المنتج غير متوفر للشراء حالياً بسبب تحديثات في متجر التاجر." %}</div>
+  <div class="alert rounded-4 border-0 d-flex align-items-start p-3" style="background: #FFFBEB; color: #D97706;">
+      <i class="fas fa-exclamation-triangle fs-4 me-3 mt-1"></i>
+      <div class="small fw-bold lh-lg">{% trans "المنتج غير متوفر للشراء حالياً بسبب تحديثات في متجر التاجر. يرجى المحاولة لاحقاً." %}</div>
   </div>
   {% else %}
   
-  <form method="POST" action="{% url 'add_to_cart' product.pk %}" class="pb-4">
+  <form method="POST" action="{% url 'add_to_cart' product.pk %}">
     {% csrf_token %}
     
     {% if product.variations.count > 1 or product.variations.count == 1 and product.variations.first.color_label != 'افتراضي' and product.variations.first.color_label != 'موحد' and product.variations.first.color_label != 'Standard' %}
         <input type="hidden" name="size_id" id="selected_variant_id" required />
 
-        <h6 class="fw-bold mb-3 text-white">{% trans "1. اختر اللون" %}</h6>
+        <h6 class="fw-bold mb-3" style="color: var(--text-primary);">{% trans "1. اختر اللون" %}</h6>
         <div class="d-flex flex-wrap gap-2 mb-4">
           {% for color in available_colors %}
           <div>
             <input type="radio" class="btn-check" name="color_option" id="color_{{ forloop.counter }}" value="{{ color }}" onchange="selectColor('{{ color }}')" />
-            <label class="btn variant-btn rounded-pill px-4 py-2 shadow-sm" for="color_{{ forloop.counter }}">
+            <label class="neo-variant-btn" for="color_{{ forloop.counter }}">
               {{ color }}
             </label>
           </div>
@@ -266,20 +351,20 @@
         </div>
 
         <div id="sizes-section" style="display: none">
-          <h6 class="fw-bold mb-3 text-white">{% trans "2. اختر المقاس" %}</h6>
+          <h6 class="fw-bold mb-3" style="color: var(--text-primary);">{% trans "2. اختر المقاس" %}</h6>
           <div class="d-flex flex-wrap gap-2 mb-4" id="sizes-container"></div>
         </div>
         
     {% else %}
         {% for variant in product.variations.all %}
-            <div class="d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 border-0 shadow-sm" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05) !important;">
+            <div class="d-flex align-items-center justify-content-between p-3 rounded-4 mb-4" style="background: #F4F4F5;">
                 <div class="d-flex align-items-center">
-                    <div class="rounded-circle p-2 me-3 shadow-sm" style="background: rgba(255,193,7,0.1);">
-                        <i class="fas fa-box-open fs-5 gold-text"></i>
+                    <div class="rounded-circle p-2 me-3" style="background: var(--surface); box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <i class="fas fa-box-open fs-5" style="color: var(--text-secondary);"></i>
                     </div>
                     <div>
-                        <span class="d-block text-muted-dark small fw-bold">{% trans "الكمية المتاحة في المخزن" %}</span>
-                        <span class="fs-5 fw-bold" style="color: #4ade80;">
+                        <span class="d-block small fw-bold" style="color: var(--text-secondary);">{% trans "الكمية المتاحة" %}</span>
+                        <span class="fs-5 fw-bold" style="color: var(--success);">
                             {% blocktrans with qty=variant.stock_quantity %}{{ qty }} قطعة{% endblocktrans %}
                         </span>
                     </div>
@@ -291,28 +376,25 @@
         {% endfor %}
     {% endif %}
 
-    <div class="fixed-bottom p-3 d-flex align-items-center gap-3 shadow-lg" style="background-color: var(--dark-surface, #121d3a); border-top: 1px solid rgba(255,193,7,0.2); bottom: 70px; z-index: 1000;">
+    <div class="fixed-bottom p-3 d-flex align-items-center gap-3 add-to-cart-bar">
       
-      <div class="rounded-pill d-flex align-items-center px-1 py-1" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); width: 130px; justify-content: space-between">
-        <button type="button" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; background: rgba(255,255,255,0.1); color: #fff;" onclick="this.nextElementSibling.stepDown()">
-          <i class="fas fa-minus"></i>
+      <div class="qty-control-neo" style="width: 120px;">
+        <button type="button" class="btn border-0" onclick="this.nextElementSibling.stepDown()">
+          <i class="fas fa-minus fs-6"></i>
         </button>
-        
-        <input type="number" name="quantity" id="qty_input" class="form-control form-control-sm border-0 bg-transparent text-center p-0 fw-bold fs-5 text-white" value="1" min="1" 
-               max="{% if product.variations.count > 1 or product.variations.count == 1 and product.variations.first.color_label != 'افتراضي' and product.variations.first.color_label != 'موحد' and product.variations.first.color_label != 'Standard' %}1{% else %}{% for variant in product.variations.all %}{{ variant.stock_quantity }}{% endfor %}{% endif %}" 
-               style="width: 40px" />
-               
-        <button type="button" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; background: rgba(255,193,7,0.2); color: var(--gold-accent);" onclick="this.previousElementSibling.stepUp()">
-          <i class="fas fa-plus"></i>
+        <input type="number" name="quantity" id="qty_input" class="form-control border-0 bg-transparent text-center p-0 fw-bold fs-5 shadow-none" value="1" min="1" 
+               max="{% if product.variations.count > 1 or product.variations.count == 1 and product.variations.first.color_label != 'افتراضي' and product.variations.first.color_label != 'موحد' and product.variations.first.color_label != 'Standard' %}1{% else %}{% for variant in product.variations.all %}{{ variant.stock_quantity }}{% endfor %}{% endif %}" />
+        <button type="button" class="btn border-0" onclick="this.previousElementSibling.stepUp()">
+          <i class="fas fa-plus fs-6"></i>
         </button>
       </div>
 
       {% if product.variations.count > 1 or product.variations.count == 1 and product.variations.first.color_label != 'افتراضي' and product.variations.first.color_label != 'موحد' and product.variations.first.color_label != 'Standard' %}
-      <button type="submit" id="add-to-cart-btn" class="btn btn-gold w-100 py-3 fw-bold rounded-pill shadow-lg transition-all" disabled style="font-size: 16px;">
+      <button type="submit" id="add-to-cart-btn" class="btn btn-neo-primary flex-grow-1 py-3 rounded-pill" disabled style="font-size: 16px;">
         {% trans "اختر المقاس أولاً" %} <i class="fas fa-shopping-bag ms-2"></i>
       </button>
       {% else %}
-      <button type="submit" id="add-to-cart-btn" class="btn btn-gold w-100 py-3 fw-bold rounded-pill shadow-lg transition-all" style="font-size: 16px;">
+      <button type="submit" id="add-to-cart-btn" class="btn btn-neo-primary flex-grow-1 py-3 rounded-pill" style="font-size: 16px;">
         {% trans "إضافة للسلة" %} <i class="fas fa-shopping-bag ms-2"></i>
       </button>
       {% endif %}
@@ -321,38 +403,38 @@
   {% endif %}
 
   {% if similar_products %}
-  <hr style="border-color: rgba(255,255,255,0.1); margin: 10px 0 20px 0;" />
-  <h6 class="fw-bold mb-3 d-flex align-items-center text-white">
-    <i class="fas fa-tags gold-text me-2"></i> {% trans "قد يعجبك أيضاً" %}
-  </h6>
-  <div class="d-flex overflow-auto pb-3 hide-scrollbar" style="gap: 15px">
-    {% for sim in similar_products %}
-      {% if sim.merchant.wallet.balance >= 10 %}
-        <a href="{% url 'product_detail' sim.pk %}" class="text-decoration-none flex-shrink-0">
-          <div class="card dark-card shadow-lg rounded-4 h-100 hover-shadow transition-all" style="width: 140px">
-            <div style="height: 140px; overflow: hidden; border-radius: 16px 16px 0 0; background-color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 10px;">
+  <div class="mt-2 mb-4">
+    <h6 class="fw-bold mb-3" style="color: var(--text-primary);">{% trans "قد يعجبك أيضاً" %}</h6>
+    <div class="d-flex overflow-auto pb-3 hide-scrollbar" style="gap: 16px;">
+      {% for sim in similar_products %}
+        {% if sim.merchant.wallet.balance >= 10 %}
+          <a href="{% url 'product_detail' sim.pk %}" class="similar-product-card flex-shrink-0 d-flex flex-column">
+            <div style="height: 120px; background: #F4F4F5; padding: 10px;">
               {% if sim.image %}
-              <img src="{{ sim.image.url }}" class="w-100 h-100" style="object-fit: contain; mix-blend-mode: multiply;" />
+              <img src="{{ sim.image.url }}" class="w-100 h-100" style="object-fit: contain; mix-blend-mode: darken;" />
               {% else %}
-              <i class="fas fa-camera text-muted opacity-25 fa-2x"></i>
+              <div class="w-100 h-100 d-flex align-items-center justify-content-center">
+                  <i class="fas fa-camera text-muted opacity-25 fs-3"></i>
+              </div>
               {% endif %}
             </div>
-            <div class="card-body p-2 text-center">
-              <h6 class="text-truncate small fw-bold mb-1 text-white" title="{{ sim.name }}">{{ sim.name }}</h6>
-              <span class="gold-text small fw-bold">{{ sim.base_price }} {% trans "ج.م" %}</span>
+            <div class="p-2 d-flex flex-column justify-content-between flex-grow-1">
+              <h6 class="text-truncate fw-bold mb-1" style="font-size: 12px; color: var(--text-primary);">{{ sim.name }}</h6>
+              <span class="fw-bold" style="font-size: 13px; color: var(--text-primary);">{{ sim.base_price }} <small style="font-size: 10px; color: var(--text-secondary);">{% trans "ج.م" %}</small></span>
             </div>
-          </div>
-        </a>
-      {% endif %}
-    {% endfor %}
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
   </div>
   {% endif %}
+
 </div>
 
-<div style="height: 90px"></div>
+<div style="height: 20px;"></div>
 
 <script>
-  // تعريف النصوص المترجمة للجافاسكريبت
+  // تعريف النصوص المترجمة
   const msgSelectSizeFirst = '{% trans "اختر المقاس أولاً" %} <i class="fas fa-shopping-bag ms-2"></i>';
   const msgAddToCart = '{% trans "إضافة للسلة" %} <i class="fas fa-shopping-bag ms-2"></i>';
   const msgOutOfStock = '{% trans "نفذت الكمية" %}';
@@ -362,7 +444,6 @@
   const msgShareSuccess = '{% trans "تم نسخ رابط المنتج بنجاح!" %}';
   const msgDayAnd = '{% trans "يوم و" %} ';
 
-  // بيانات الألوان والمقاسات
   const variantsData = {
       {% for color in available_colors %}
           "{{ color }}": [
@@ -401,11 +482,12 @@
           sizes.forEach(variant => {
               const wrapper = document.createElement('div');
               const isDisabled = variant.qty <= 0;
+              // تحديث الكود المولد ليتطابق مع الـ Light UI 
               wrapper.innerHTML = `
                   <input type="radio" class="btn-check size-radio" name="size_option" id="var_${variant.id}" value="${variant.id}" ${isDisabled ? 'disabled' : ''} onchange="selectSize(this, '${variant.id}', ${variant.qty})">
-                  <label class="btn variant-btn rounded-4 px-3 py-2 d-flex flex-column align-items-center shadow-sm transition-all ${isDisabled ? 'opacity-50' : ''}" for="var_${variant.id}" style="min-width: 75px;">
+                  <label class="neo-variant-btn d-flex flex-column align-items-center ${isDisabled ? 'disabled-variant' : ''}" for="var_${variant.id}" style="min-width: 80px;">
                       <span class="fw-bold fs-6">${variant.size}</span>
-                      <small style="font-size: 10px;" class="${isDisabled ? 'text-danger fw-bold' : 'text-muted-dark'} mt-1">${isDisabled ? msgOutOfStock : msgAvailable + variant.qty}</small>
+                      <small style="font-size: 11px;" class="${isDisabled ? 'text-danger fw-bold' : ''} mt-1">${isDisabled ? msgOutOfStock : msgAvailable + variant.qty}</small>
                   </label>
               `;
               sizesContainer.appendChild(wrapper);
@@ -444,11 +526,11 @@
           .then(response => response.json())
           .then(data => {
               if (data.added) {
-                  icon.classList.remove('far', 'text-white');
+                  icon.classList.remove('far', 'text-dark');
                   icon.classList.add('fas', 'text-danger');
               } else {
                   icon.classList.remove('fas', 'text-danger');
-                  icon.classList.add('far', 'text-white');
+                  icon.classList.add('far', 'text-dark');
               }
           });
   }
@@ -516,4 +598,5 @@
       }
   });
 </script>
+
 {% endblock %}

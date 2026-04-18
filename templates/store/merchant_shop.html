@@ -1,136 +1,254 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
+
+{% block content %}
 
 <style>
-  .dark-card {
-    background-color: var(--dark-surface, #121d3a);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --danger: #EF4444;
+    --border-light: rgba(0, 0, 0, 0.04);
   }
-  .gold-text {
-    color: var(--gold-accent, #ffc107) !important;
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  .text-muted-dark {
-    color: #8fa0c1 !important;
+
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
-  .merchant-header {
-    border-radius: 0 0 30px 30px;
-    background: linear-gradient(135deg, #091024, #121d3a);
-    border-bottom: 2px solid rgba(255, 193, 7, 0.2);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
   }
-  .merchant-avatar-container {
-    background: rgba(255, 193, 7, 0.1);
-    border: 2px solid var(--gold-accent, #ffc107);
-    padding: 4px;
-    box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
   }
-  .stat-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(5px);
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
   }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- كارت بروفايل التاجر --- */
+  .merchant-profile-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 30px 20px;
+    border: none;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.04);
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .merchant-avatar-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+  
+  .merchant-avatar {
+    width: 100px; height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid var(--surface);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  }
+  
+  .verified-badge {
+    position: absolute;
+    bottom: 0; right: 0;
+    background: var(--surface);
+    color: var(--accent-gold);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+
+  /* --- إحصائيات التاجر --- */
+  .stat-pill {
+    background: #F4F4F5;
+    border-radius: 20px;
+    padding: 12px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.3s ease;
+  }
+  .stat-pill:active { transform: scale(0.96); }
+
+  /* --- كروت المنتجات العصرية (نفس ستايل الرئيسية) --- */
+  .neo-product-card {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .neo-product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  }
+  
+  .img-showcase {
+    background: #F4F4F5;
+    border-radius: 20px;
+    height: 160px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    padding: 15px;
+  }
+  
+  .discount-tag {
+    background: var(--danger);
+    color: #fff;
+    font-weight: 800;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    position: absolute;
+    top: 10px; right: 10px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  .add-to-cart-neo {
+    background: var(--accent-dark);
+    color: #fff;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    position: absolute;
+    bottom: 12px; left: 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+  }
+  .add-to-cart-neo:active { transform: scale(0.85); }
 </style>
 
-<div class="merchant-header pt-5 pb-4 text-center position-relative mb-4">
-  
-  <div class="position-absolute top-0 start-0 p-3 mt-1">
-    <a href="javascript:history.back()" class="text-white text-decoration-none">
-      <i class="fas fa-arrow-right fs-4"></i>
+<div class="ultra-header p-3 d-flex align-items-center sticky-top" style="z-index: 1020;">
+    <a href="javascript:history.back()" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
     </a>
-  </div>
-
-  <div class="merchant-avatar-container rounded-circle d-inline-block mb-3">
-    {% if merchant.shop_image %}
-      <img src="{{ merchant.shop_image.url }}" class="rounded-circle bg-white" width="90" height="90" style="object-fit: cover;" />
-    {% else %}
-      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 90px; height: 90px; background-color: var(--dark-surface);">
-        <i class="fas fa-store fa-3x text-muted-dark opacity-50"></i>
-      </div>
-    {% endif %}
-  </div>
-
-  <h4 class="fw-bold mb-1 text-white" style="letter-spacing: 0.5px;">
-    {{ merchant.user.first_name }} 
-    {% if merchant.is_verified %}
-      <i class="fas fa-check-circle gold-text ms-1" style="font-size: 18px; text-shadow: 0 0 10px rgba(255,193,7,0.5);"></i>
-    {% endif %}
-  </h4>
-  <p class="small text-muted-dark mb-3">{% trans "شريك معتمد في البازار" %}</p>
-
-  <div class="d-flex justify-content-center gap-3 mt-2 px-4">
-    <div class="stat-card rounded-4 px-4 py-2 text-center flex-fill">
-      <span class="fw-bold gold-text fs-5 d-block">{{ products.count }}</span>
-      <span class="small text-muted-dark">{% trans "منتج" %}</span>
-    </div>
-    <div class="stat-card rounded-4 px-4 py-2 text-center flex-fill">
-      <span class="fw-bold text-white fs-5 d-block">4.8 <i class="fas fa-star gold-text ms-1" style="font-size: 14px;"></i></span>
-      <span class="small text-muted-dark">{% trans "التقييم" %}</span>
-    </div>
-  </div>
+    <h5 class="m-0 fw-bold" style="letter-spacing: -0.5px;">{% trans "متجر التاجر" %}</h5>
 </div>
 
-<div class="container py-2 mb-5" style="min-height: 50vh;">
-  
-  <div class="d-flex align-items-center mb-4 ps-2" style="border-right: 4px solid var(--gold-accent, #ffc107);">
-      <h6 class="fw-bold m-0 text-white pe-2">{% trans "منتجات المتجر" %}</h6>
-  </div>
-
-  <div class="row g-3">
-    {% for product in products %}
-    <div class="col-6 col-md-4">
-      <div class="card dark-card h-100 position-relative shadow-lg" style="border-radius: 18px;">
+<div class="container pb-5 mb-5" style="min-height: 80vh;">
+    
+    <div class="merchant-profile-card animate-fade-up" style="animation-delay: 100ms;">
         
-        {% if product.active_offer and product.active_offer.is_currently_active and product.active_offer.discount_percentage > 0 %}
-        <span class="badge bg-danger position-absolute shadow" style="top: 10px; right: 10px; z-index: 5; font-size: 11px; border: 1px solid rgba(255,255,255,0.2);">
-          -{{ product.active_offer.discount_percentage|floatformat:0 }}%
-        </span>
-        {% endif %}
-
-        <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none d-block">
-          <div style="height: 160px; overflow: hidden; border-radius: 18px 18px 0 0; background-color: #ffffff; padding: 10px; display: flex; align-items: center; justify-content: center;">
-            {% if product.image %}
-            <img src="{{ product.image.url }}" class="w-100 h-100" style="object-fit: contain; mix-blend-mode: multiply;" />
+        <div class="merchant-avatar-wrapper">
+            {% if merchant.shop_image %}
+                <img src="{{ merchant.shop_image.url }}" class="merchant-avatar" alt="Shop Image" />
             {% else %}
-            <div class="d-flex align-items-center justify-content-center w-100 h-100">
-              <i class="fas fa-camera text-muted fa-2x opacity-25"></i>
-            </div>
+                <div class="merchant-avatar d-flex align-items-center justify-content-center" style="background-color: #E4E4E7;">
+                    <i class="fas fa-store fa-3x" style="color: var(--text-secondary); opacity: 0.5;"></i>
+                </div>
             {% endif %}
-          </div>
-        </a>
-
-        <div class="card-body p-2 mt-2">
-          <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none">
-            <span class="d-block mb-1" style="font-size: 10px; color: var(--text-muted-dark);">{{ product.category.name }}</span>
-
-            <h6 class="card-title text-truncate fw-bold mb-2 text-white" style="font-size: 13px">
-              {{ product.name }}
-            </h6>
-
-            <div class="d-flex align-items-center flex-wrap">
-              {% if product.active_offer and product.active_offer.is_currently_active %}
-                <span class="fw-bold gold-text" style="font-size: 15px;">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
-                <span class="small ms-1 gold-text" style="font-size: 10px;">{% trans "ج.م" %}</span>
-                <span class="ms-2 text-decoration-line-through text-muted-dark" style="font-size: 11px;">{{ product.base_price }}</span>
-              {% else %}
-                <span class="fw-bold gold-text" style="font-size: 15px;">{{ product.base_price }}</span>
-                <span class="small ms-1 gold-text" style="font-size: 10px;">{% trans "ج.م" %}</span>
-              {% endif %}
-            </div>
-          </a>
+            
+            {% if merchant.is_verified %}
+                <div class="verified-badge">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            {% endif %}
         </div>
         
-      </div>
+        <h3 class="fw-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.5px;">{{ merchant.user.first_name }}</h3>
+        <p class="small mb-4" style="color: var(--text-secondary); font-weight: 500;">{% trans "شريك معتمد في البازار" %}</p>
+        
+        <div class="d-flex justify-content-center gap-3">
+            <div class="stat-pill">
+                <span class="fw-bold fs-3" style="color: var(--text-primary); line-height: 1;">{{ products.count }}</span>
+                <span class="small mt-1" style="color: var(--text-secondary); font-weight: 600;">{% trans "منتج" %}</span>
+            </div>
+            <div class="stat-pill">
+                <span class="fw-bold fs-3 d-flex justify-content-center align-items-center gap-1" style="color: var(--text-primary); line-height: 1;">
+                    4.8 <i class="fas fa-star" style="color: var(--accent-gold); font-size: 16px;"></i>
+                </span>
+                <span class="small mt-1" style="color: var(--text-secondary); font-weight: 600;">{% trans "التقييم" %}</span>
+            </div>
+        </div>
     </div>
-    {% empty %}
-    <div class="col-12 text-center py-5 mt-4">
-      <div class="dark-card rounded-circle d-inline-flex p-4 shadow-lg mb-3">
-        <i class="fas fa-box-open fa-3x text-muted-dark opacity-50"></i>
-      </div>
-      <h6 class="text-white fw-bold">{% trans "لا توجد منتجات حالياً!" %}</h6>
-      <p class="text-muted-dark small">{% trans "هذا التاجر لم يقم بإضافة أي منتجات حتى الآن." %}</p>
+
+    <div class="d-flex align-items-center mb-3 mt-5 ps-2 animate-fade-up" style="animation-delay: 200ms;">
+        <h4 class="fw-bold m-0" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "جميع المنتجات" %}</h4>
     </div>
-    {% endfor %}
-  </div>
+
+    <div class="row g-3">
+        {% for product in products %}
+        <div class="col-6 col-md-4 animate-fade-up" style="animation-delay: {{ forloop.counter0|add:3 }}00ms;">
+            <div class="neo-product-card d-flex flex-column h-100 position-relative">
+                
+                <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none d-block flex-grow-1">
+                    <div class="img-showcase mb-3">
+                        {% if product.active_offer and product.active_offer.is_currently_active and product.active_offer.discount_percentage > 0 %}
+                            <span class="discount-tag">-{{ product.active_offer.discount_percentage|floatformat:0 }}%</span>
+                        {% endif %}
+
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="w-100 h-100" style="object-fit: contain; mix-blend-mode: darken;"/>
+                        {% else %}
+                            <i class="fas fa-box text-muted fa-2x opacity-25"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="px-1 pb-4">
+                        <span class="d-block mb-1 text-uppercase" style="font-size: 10px; font-weight: 800; color: #A1A1AA; letter-spacing: 0.5px;">{{ product.category.name }}</span>
+                        <h6 class="text-truncate fw-bold mb-2" style="font-size: 14px; color: var(--text-primary);">{{ product.name }}</h6>
+                        
+                        <div class="d-flex align-items-center flex-wrap">
+                            {% if product.active_offer and product.active_offer.is_currently_active %}
+                                <span class="fw-bold" style="font-size: 16px; color: var(--text-primary);">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
+                                <span class="ms-1 fw-bold" style="font-size: 10px; color: var(--text-secondary);">{% trans "ج.م" %}</span>
+                                <span class="ms-2 text-decoration-line-through" style="font-size: 11px; color: #A1A1AA;">{{ product.base_price }}</span>
+                            {% else %}
+                                <span class="fw-bold" style="font-size: 16px; color: var(--text-primary);">{{ product.base_price }}</span>
+                                <span class="ms-1 fw-bold" style="font-size: 10px; color: var(--text-secondary);">{% trans "ج.م" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="{% url 'product_detail' product.pk %}" class="add-to-cart-neo text-decoration-none">
+                    <i class="fas fa-plus"></i>
+                </a>
+
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 mt-4 animate-fade-up" style="animation-delay: 300ms;">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 100px; height: 100px; background: var(--surface); box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                <i class="fas fa-box-open fa-2x" style="color: var(--text-secondary); opacity: 0.5;"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-2" style="letter-spacing: -0.5px;">{% trans "لا توجد منتجات حالياً" %}</h5>
+            <p style="color: var(--text-secondary); font-weight: 500;">{% trans "هذا التاجر لم يقم بإضافة أي منتجات حتى الآن." %}</p>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 
 {% endblock %}

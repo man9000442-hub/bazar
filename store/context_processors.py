@@ -1,13 +1,29 @@
 from .models import SiteSetting # تأكد من النقطة
+from accounts.models import Country
+from support.models import SupportTicket
+from .models import ReturnRequest
+from django.utils import timezone
+from .models import PromoPopup
+
 
 def site_settings(request):
-    # استخدم first() لتجنب الأخطاء لو الجدول فارغ
     settings = SiteSetting.objects.first()
     return {'site_settings': settings}
 
+ 
 
-from support.models import SupportTicket
-from .models import ReturnRequest # تأكد من إضافة ReturnRequest
+def global_country_context(request):
+    has_country = False
+    
+    if request.user.is_authenticated and request.user.country:
+        has_country = True
+    elif request.session.get('user_country_id'):
+        has_country = True
+
+    return {
+        'user_has_country': has_country,
+        'available_countries': Country.objects.filter(is_active=True)
+    }
 
 def admin_notifications_processor(request):
     context = {'open_tickets_count': 0, 'pending_returns_count': 0}
@@ -22,20 +38,8 @@ def admin_notifications_processor(request):
     return context
 
 
-from django.utils import timezone
-from .models import PromoPopup
-
-from django.utils import timezone
-from .models import PromoPopup
-
-from .models import PromoPopup
-
-from django.utils import timezone
-from .models import PromoPopup
-
 def active_promo_popup(request):
     now = timezone.now()
-    # السيستم هيجيب الإعلان المفعل + اللي وقت بدايته جه + ووقت نهايته لسه مجاش
     promo = PromoPopup.objects.filter(
         is_active=True, 
         start_time__lte=now,  
@@ -43,4 +47,6 @@ def active_promo_popup(request):
     ).first()
     
     return {'active_promo': promo}
+
+
 

@@ -1,126 +1,232 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
+
+{% block content %}
 
 <style>
-    .dark-header {
-        background-color: var(--dark-bg, #091024);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .dark-card {
-        background-color: var(--dark-surface, #121d3a);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 18px;
-        transition: transform 0.3s ease, opacity 0.3s ease;
-    }
-    .dark-card:hover {
-        transform: translateY(-3px);
-    }
-    .gold-text {
-        color: var(--gold-accent, #ffc107) !important;
-    }
-    .text-muted-dark {
-        color: #8fa0c1 !important;
-    }
-    
-    .btn-gold {
-        background: linear-gradient(135deg, #ffc107, #ff9800);
-        color: #000;
-        border: none;
-        transition: 0.3s;
-    }
-    .btn-gold:hover {
-        transform: scale(0.98);
-        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
-    }
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --danger-light: #FEE2E2;
+    --danger: #EF4444;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
 
-    /* زرار الإزالة من المفضلة */
-    .btn-remove-fav {
-        background: rgba(220, 53, 69, 0.1);
-        color: #ff6b6b;
-        border: 1px solid rgba(220, 53, 69, 0.2);
-        backdrop-filter: blur(4px);
-        transition: all 0.3s ease;
-    }
-    .btn-remove-fav:hover {
-        background: rgba(220, 53, 69, 0.8);
-        color: #fff;
-        transform: scale(1.1);
-    }
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- كروت المنتجات في المفضلة --- */
+  .neo-fav-card {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    height: 100%;
+  }
+  .neo-fav-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.06);
+  }
+
+  /* --- حاوية الصورة --- */
+  .img-showcase {
+    background: #F4F4F5;
+    border-radius: 20px;
+    height: 150px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 15px;
+    position: relative;
+    overflow: hidden;
+  }
+  .img-showcase img {
+    max-height: 100%;
+    object-fit: contain;
+    mix-blend-mode: darken;
+    transition: transform 0.5s;
+  }
+  .neo-fav-card:hover .img-showcase img {
+    transform: scale(1.1);
+  }
+
+  /* --- زر الحذف (Trash) --- */
+  .btn-remove-neo {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 36px; height: 36px;
+    background: var(--surface);
+    color: var(--danger);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 10;
+    transition: all 0.3s;
+  }
+  .btn-remove-neo:hover {
+    background: var(--danger);
+    color: #fff;
+    transform: rotate(15deg) scale(1.1);
+  }
+
+  .fav-cat-name {
+    font-size: 10px;
+    font-weight: 800;
+    color: #A1A1AA;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .fav-prod-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .fav-price {
+    font-weight: 900;
+    font-size: 16px;
+    color: var(--text-primary);
+  }
+
+  .btn-neo-primary {
+    background: var(--accent-dark);
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 50px;
+    transition: all 0.3s;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
 </style>
 
-<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-4 sticky-top" style="z-index: 1020;">
-    <a href="{% url 'profile' %}" class="text-white me-3 text-decoration-none">
-        <i class="fas fa-arrow-right fs-5"></i>
+<div class="ultra-header p-3 d-flex align-items-center sticky-top" style="z-index: 1020;">
+    <a href="{% url 'profile' %}" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
     </a>
-    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "المفضلة" %} <span class="gold-text"><i class="fas fa-heart ms-1"></i></span></h5>
+    <h4 class="m-0 fw-bold d-flex align-items-center" style="letter-spacing: -0.5px; color: var(--text-primary);">
+        {% trans "المفضلة" %}
+        <i class="fas fa-heart ms-2" style="font-size: 18px; color: var(--danger);"></i>
+    </h4>
 </div>
 
-<div class="container pb-5 mb-5" style="min-height: 80vh;">
+<div class="container pb-5 mb-5 mt-3" style="min-height: 80vh;">
     <div class="row g-3">
         {% for item in favorites %}
-        <div class="col-6 col-md-4" id="fav-card-{{ item.product.id }}">
-            <div class="card dark-card h-100 shadow-lg position-relative overflow-hidden">
+        <div class="col-6 col-md-4 animate-fade-up" id="fav-card-{{ item.product.id }}" style="animation-delay: {{ forloop.counter0 }}00ms;">
+            <div class="neo-fav-card">
                 
-                <button onclick="toggleFav('{{ item.product.id }}')" class="btn btn-remove-fav rounded-circle position-absolute shadow-sm d-flex justify-content-center align-items-center" style="width: 32px; height: 32px; padding: 0; top: 10px; right: 10px; z-index: 10;">
-                    <i class="fas fa-trash-alt" style="font-size: 13px;"></i>
+                <button onclick="toggleFav('{{ item.product.id }}')" class="btn-remove-neo shadow-sm">
+                    <i class="far fa-trash-alt"></i>
                 </button>
 
-                <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none d-block">
-                    <div style="height: 150px; overflow: hidden; border-radius: 18px 18px 0 0; background-color: #ffffff; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none d-block h-100">
+                    <div class="img-showcase mb-3">
                         {% if item.product.image %}
-                            <img src="{{ item.product.image.url }}" class="w-100 h-100" style="object-fit: contain; mix-blend-mode: multiply;">
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
                         {% else %}
-                            <i class="fas fa-camera text-muted fa-2x opacity-25"></i>
+                            <i class="fas fa-camera text-muted opacity-25 fa-2x"></i>
                         {% endif %}
                     </div>
                     
-                    <div class="card-body p-2 mt-2">
-                        <span class="d-block mb-1 text-muted-dark" style="font-size: 10px;">{{ item.product.category.name }}</span>
-                        <h6 class="text-truncate fw-bold mb-2 text-white" style="font-size: 13px;">{{ item.product.name }}</h6>
+                    <div class="px-1">
+                        <span class="fav-cat-name">{{ item.product.category.name }}</span>
+                        <h6 class="fav-prod-title text-truncate">{{ item.product.name }}</h6>
                         
                         <div class="d-flex align-items-center">
-                            <span class="gold-text fw-bold fs-6">{{ item.product.base_price }}</span>
-                            <span class="gold-text small ms-1" style="font-size: 10px;">{% trans "ج.م" %}</span>
+                            <span class="fav-price">{{ item.product.base_price }}</span>
+                            <span class="ms-1 fw-bold" style="font-size: 11px; color: var(--text-secondary);">{% trans "ج.م" %}</span>
                         </div>
                     </div>
                 </a>
             </div>
         </div>
         {% empty %}
-        <div class="col-12 text-center py-5 mt-5">
-            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4 shadow-lg" style="width: 100px; height: 100px; background: rgba(255, 255, 255, 0.05);">
-                <i class="far fa-heart fa-3x text-muted-dark opacity-50"></i>
+        
+        <div class="col-12 text-center py-5 mt-5 animate-fade-up">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px; background: var(--surface); box-shadow: 0 15px 35px rgba(0,0,0,0.05);">
+                <i class="far fa-heart fa-3x" style="color: var(--text-secondary); opacity: 0.5;"></i>
             </div>
-            <h5 class="fw-bold text-white mb-2">{% trans "قائمة المفضلة فارغة!" %}</h5>
-            <p class="text-muted-dark mb-4 small">{% trans "لم تقم بإضافة أي منتجات للمفضلة بعد، اكتشف المنتجات المميزة الآن." %}</p>
-            <a href="{% url 'home' %}" class="btn btn-gold px-5 py-3 rounded-pill fw-bold shadow-lg">
-                {% trans "تصفح المنتجات" %} <i class="fas fa-store ms-1"></i>
+            <h3 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "قائمة المفضلة فارغة!" %}</h3>
+            <p class="mb-4 px-4" style="color: var(--text-secondary); font-weight: 500;">{% trans "لم تقم بإضافة أي منتجات للمفضلة بعد، اكتشف المنتجات المميزة الآن." %}</p>
+            <a href="{% url 'home' %}" class="btn btn-neo-primary px-5 py-3 shadow-sm">
+                {% trans "تصفح المنتجات" %} <i class="fas fa-store ms-2"></i>
             </a>
         </div>
+        
         {% endfor %}
     </div>
 </div>
 
 <script>
 function toggleFav(productId) {
+    const card = document.getElementById(`fav-card-${productId}`);
+    
+    // إرسال الطلب للسيرفر
     fetch(`/wishlist/toggle/${productId}/`)
         .then(response => response.json())
         .then(data => {
             if (!data.added) {
-                const card = document.getElementById(`fav-card-${productId}`);
-                // إضافة تأثير اختفاء ناعم قبل المسح
+                // إضافة تأثير اختفاء ناعم ومودرن قبل المسح الفيزيائي
+                card.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 1, 1)';
                 card.style.opacity = '0';
-                card.style.transform = 'scale(0.8)';
+                card.style.transform = 'scale(0.8) translateY(20px)';
+                
                 setTimeout(() => {
                     card.remove();
-                    // تحديث الصفحة لو مسح كل حاجة عشان الـ Empty State يظهر
+                    // فحص إذا كانت الصفحة أصبحت فارغة لإظهار الـ Empty State
                     const remainingCards = document.querySelectorAll('[id^="fav-card-"]');
                     if (remainingCards.length === 0) {
-                        location.reload();
+                        location.reload(); // إعادة التحميل لإظهار تصميم الـ Empty State
                     }
-                }, 300);
+                }, 400);
             }
         });
 }
 </script>
+
 {% endblock %}

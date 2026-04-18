@@ -1,91 +1,144 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
+
+{% block content %}
 
 <style>
-    .dark-header {
-        background-color: var(--dark-bg, #091024);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .dark-card {
-        background-color: var(--dark-surface, #121d3a);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
-    }
-    .gold-text {
-        color: var(--gold-accent, #ffc107) !important;
-    }
-    .text-muted-dark {
-        color: #8fa0c1 !important;
-    }
-    
-    /* تصميم مخصص للخانات (Inputs) */
-    .dark-input {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: #fff !important;
-        transition: all 0.3s ease;
-    }
-    .dark-input:focus {
-        background-color: rgba(255, 255, 255, 0.08) !important;
-        border-color: var(--gold-accent, #ffc107) !important;
-        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.15) !important;
-    }
-    .dark-input::placeholder {
-        color: #6c7c9c !important;
-    }
-    .dark-input-group-text {
-        background-color: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: #8fa0c1 !important;
-    }
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --success-light: #ECFDF5;
+    --success: #10B981;
+    --border-light: rgba(0, 0, 0, 0.05);
+  }
 
-    /* تصميم أزرار اختيار الدفع */
-    .payment-label {
-        background-color: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #8fa0c1;
-        transition: all 0.3s ease;
-        border-radius: 12px;
-    }
-    .payment-label i {
-        color: #6c7c9c;
-        transition: all 0.3s ease;
-    }
-    .btn-check:checked + .payment-label {
-        background-color: rgba(255, 193, 7, 0.1);
-        border-color: #ffc107;
-        color: #ffc107;
-        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.15);
-    }
-    .btn-check:checked + .payment-label i {
-        color: #ffc107;
-    }
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+  }
 
-    /* زر الدفع الرئيسي */
-    .btn-gold {
-        background: linear-gradient(135deg, #ffc107, #ff9800);
-        color: #000;
-        border: none;
-        transition: 0.3s;
-    }
-    .btn-gold:active {
-        transform: scale(0.98);
-    }
-    .btn-gold:disabled {
-        background: rgba(255, 255, 255, 0.1) !important;
-        color: rgba(255, 255, 255, 0.4) !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    }
+  /* --- الهيدر الفاتح --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.9);
+    backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--border-light);
+  }
 
-    .last-no-border:last-child { border-bottom: none !important; }
+  /* --- الكروت العصرية --- */
+  .neo-card {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 20px;
+    border: none;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.03);
+    margin-bottom: 20px;
+  }
+
+  .card-title-neo {
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex; align-items: center;
+  }
+
+  /* --- تصميم طرق الدفع (Amazon Style) --- */
+  .payment-method-wrapper { margin-bottom: 12px; }
+  .payment-radio { display: none; }
+  .payment-card-box {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border: 2px solid #E4E4E7;
+    border-radius: 20px;
+    background: #F8F8F9;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .payment-radio:checked + .payment-card-box {
+    border-color: var(--accent-dark);
+    background: var(--surface);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  }
+  .payment-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-left: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+  }
+  .payment-text h6 { margin: 0 0 4px 0; font-weight: 800; font-size: 15px; color: var(--text-primary); }
+  .payment-text small { color: var(--text-secondary); font-size: 12px; font-weight: 600; display: block; }
+  
+  .gateway-badges { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .g-badge { 
+    background: #fff; border: 1px solid #E4E4E7; padding: 4px 10px; 
+    border-radius: 8px; font-size: 11px; font-weight: 700; color: #52525B;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* --- خانات الإدخال --- */
+  .neo-input {
+    background-color: #F4F4F5 !important;
+    border: 1px solid transparent !important;
+    border-radius: 14px;
+    color: var(--text-primary) !important;
+    font-weight: 500;
+  }
+
+  /* --- شريط التأكيد السفلي --- */
+  .checkout-bar-ultra {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    border-top: 1px solid var(--border-light);
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+    bottom: 75px; 
+  }
+
+  .btn-neo-primary {
+    background: var(--accent-dark) !important;
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 50px;
+  }
+
+  /* --- تصميم الجدول المختصر --- */
+  .mini-summary-table td {
+    padding: 8px 4px;
+    vertical-align: middle;
+  }
+  .mini-summary-table .store-name {
+    font-size: 13px;
+    color: var(--accent-dark);
+    background: #F8F8F9;
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+    display: inline-block;
+  }
 </style>
 
-<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-3 sticky-top" style="z-index: 1020;">
-    <a href="{% url 'cart_view' %}" class="text-white me-3 text-decoration-none"><i class="fas fa-arrow-right fs-5"></i></a>
-    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "تأكيد الطلب والدفع" %}</h5>
+<div class="ultra-header p-3 shadow-sm d-flex align-items-center mb-3 sticky-top" style="z-index: 1020;">
+    <a href="{% url 'cart_view' %}" class="text-decoration-none me-3" style="color: var(--text-primary);" id="header-back-btn">
+        <i class="fas fa-arrow-right fs-5"></i>
+    </a>
+    <h5 class="m-0 fw-bold">{% trans "تأكيد الطلب" %}</h5>
 </div>
 
-<div class="container pb-5 mb-5">
+<div class="container pb-5" style="min-height: 100vh; padding-bottom: 160px !important;">
     <form method="POST" id="checkout-form">
         {% csrf_token %}
         
@@ -93,300 +146,270 @@
             <input type="hidden" name="selected_items" value="{{ item_id }}">
         {% endfor %}
 
-        <div class="card dark-card shadow-lg mb-4 p-3 border-0">
-            <h6 class="fw-bold mb-3 d-flex align-items-center gold-text">
-                <i class="fas fa-map-marker-alt me-2"></i> {% trans "بيانات الشحن" %}
-            </h6>
-            
-            <div class="mb-3">
-                <label class="form-label text-muted-dark small">{% trans "المحافظة" %}</label>
-                <select name="city" id="city-select" class="form-select dark-input" onchange="updateShipping()" required>
-                    <option value="" class="text-dark">{% trans "اختر المحافظة..." %}</option>
-                    {% for gov in governorates %}
-                    <option value="{{ gov.id }}" class="text-dark">{{ gov.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="mb-3">
-                <label class="form-label text-muted-dark small">{% trans "العنوان بالتفصيل" %}</label>
-                <textarea name="address" class="form-control dark-input" rows="2" placeholder="{% trans 'اسم الشارع، رقم العمارة...' %}" required></textarea>
+        <div id="step-1-content" class="fade-step">
+            <div class="neo-card">
+                <h6 class="card-title-neo">
+                    <i class="fas fa-map-marker-alt me-2" style="color: var(--accent-gold);"></i> {% trans "بيانات الشحن" %}
+                </h6>
+                
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">{% trans "المحافظة" %}</label>
+                    <select name="city" id="city-select" class="form-select neo-input" onchange="updateShipping()" required>
+                        <option value="">{% trans "اختر المحافظة..." %}</option>
+                        {% for gov in governorates %}
+                        <option value="{{ gov.id }}">{{ gov.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold">{% trans "العنوان بالتفصيل" %}</label>
+                    <textarea name="address" class="form-control neo-input" rows="2" placeholder="{% trans 'اسم الشارع، رقم العمارة...' %}" required></textarea>
+                </div>
+
+                <div class="mb-3 text-start">
+                    <label class="form-label text-muted small fw-bold">{% trans "اسم المستلم" %} <span class="text-danger">*</span></label>
+                    <input type="text" name="recipient_name" class="form-control neo-input" 
+                        value="{{ request.user.first_name }} {{ request.user.last_name }}" required>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label text-muted small fw-bold">{% trans "رقم الهاتف" %}</label>
+                    <input type="tel" name="phone" class="form-control neo-input" value="{{ request.user.phone_primary }}" required dir="ltr">
+                </div>
             </div>
 
-            <div class="mb-3 text-start">
-                <label class="form-label fw-bold text-white small">{% trans "اسم المستلم" %} <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <span class="input-group-text dark-input-group-text border-end-0"><i class="fas fa-user"></i></span>
-                    <input type="text" name="recipient_name" class="form-control dark-input border-start-0" 
-                        value="{{ request.user.first_name }} {{ request.user.last_name }}" required placeholder="{% trans 'اسم الشخص الذي سيستلم الطلب' %}">
-                </div>
-                <div class="form-text text-muted-dark" style="font-size: 11px;">{% trans "يمكنك تغييره إذا كنت ترسل الطلب لشخص آخر." %}</div>
-            </div>
-
-            <div class="mb-0">
-                <label class="form-label text-muted-dark small">{% trans "رقم الهاتف" %}</label>
-                <input type="tel" name="phone" class="form-control dark-input" value="{{ request.user.phone_primary }}" required>
-            </div>
-        </div>
-
-        <div class="card dark-card shadow-lg mb-4 p-3 border-0">
-            <h6 class="fw-bold mb-3 gold-text"><i class="fas fa-box-open me-2"></i> {% trans "تفاصيل الطلب" %}</h6>
-            
-            {% for group in cart_structure %}
-            <div class="mb-3 pb-3 border-bottom border-secondary border-opacity-25 last-no-border">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="fas fa-store text-white-50 me-2"></i>
-                    <h6 class="fw-bold text-white mb-0">{{ group.merchant.user.first_name }}</h6>
-                </div>
+            <div class="neo-card">
+                <h6 class="card-title-neo"><i class="fas fa-box-open me-2" style="color: var(--accent-gold);"></i> {% trans "تفاصيل الطلب" %}</h6>
                 
-                <div class="ps-4 border-start border-2 ms-1" style="border-color: rgba(255,255,255,0.1) !important;">
-                    {% for item in group.items %}
-                    <div class="d-flex justify-content-between small text-muted-dark mb-1">
-                        <span>{{ item.product_size.product.name }} (x{{ item.quantity }})</span>
-                        <span class="text-white">{{ item.price_at_purchase }} {% trans "ج.م" %}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                <div class="d-flex justify-content-between align-items-center mt-2 ps-4 small p-2 rounded" style="background: rgba(255,255,255,0.03);">
-                    <span class="text-muted-dark">{% trans "تكلفة الشحن:" %}</span>
-                    <span class="fw-bold gold-text shipping-val" id="shipping-merch-{{ group.merchant.id }}">--</span>
-                </div>
-            </div>
-            {% endfor %}
-
-            <div class="mt-3">
-                <div class="d-flex justify-content-between mb-1 small text-muted-dark">
-                    <span>{% trans "إجمالي المنتجات" %}</span>
-                    <span class="text-white">{{ cart_total }} {% trans "ج.م" %}</span>
-                </div>
-                <div class="d-flex justify-content-between mb-1 small text-muted-dark">
-                    <span>{% trans "إجمالي الشحن" %}</span>
-                    <span id="total-shipping-display" class="text-white">--</span>
-                </div>
-                
-                <div class="d-flex justify-content-between mb-1 small fw-bold" id="online-fees-row" style="display: none; color: #ff9800;">
-                    <span>{% trans "رسوم الدفع الإلكتروني" %}</span>
-                    <span id="online-fees-display">0.00 {% trans "ج.م" %}</span>
-                </div>
-                
-                <hr style="border-color: rgba(255,255,255,0.1);">
-                
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="fw-bold fs-5 text-white">{% trans "الإجمالي للدفع" %}</span>
-                    <span id="grand-total-display" class="fw-bold gold-text fs-4" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">-- {% trans "ج.م" %}</span>
+                <div class="table-responsive">
+                    <table class="table table-borderless mini-summary-table mb-0 small">
+                        <tbody>
+                            {% for group in cart_structure %}
+                            <tr>
+                                <td colspan="2" class="p-0 border-bottom pb-2 pt-2">
+                                    <div class="store-name fw-bold m-0"><i class="fas fa-store me-1"></i> {{ group.merchant.user.first_name }}</div>
+                                </td>
+                            </tr>
+                            {% for item in group.items %}
+                            <tr>
+                                <td class="text-muted ps-3 w-75">{{ item.product_size.product.name }} <span class="badge bg-light text-dark border">x{{ item.quantity }}</span></td>
+                                <td class="text-end fw-bold text-dark">{{ item.price_at_purchase }} {% trans "ج.م" %}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-3 small"><i class="fas fa-truck me-1"></i> {% trans "الشحن:" %}</td>
+                                <td class="text-end fw-bold" style="color: var(--accent-gold);" id="shipping-merch-{{ group.merchant.id }}">--</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <div class="card dark-card shadow-lg mb-5 p-3 border-0">
-            
-            {% if personal_vouchers %}
-            <div class="alert border-0 shadow-sm mb-4 rounded-3 position-relative overflow-hidden" style="background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.3) !important;">
-                <div class="position-absolute top-0 start-0 h-100 bg-success" style="width: 4px;"></div>
+        <div id="step-2-content" style="display: none;" class="fade-step">
+
+            <div class="neo-card mb-4">
+                <h6 class="card-title-neo"><i class="fas fa-credit-card me-2" style="color: var(--accent-gold);"></i> {% trans "اختر طريقة الدفع" %}</h6>
                 
-                <div class="d-flex align-items-center mb-2">
-                    <i class="fas fa-gift text-success fs-4 me-2 animate__animated animate__tada animate__infinite animate__slower"></i>
-                    <h6 class="fw-bold mb-0 text-white">{{ personal_vouchers.first.title }}</h6>
-                </div>
-                <p class="small mb-1 text-muted-dark">
-                    {% blocktrans with pct=personal_vouchers.first.discount_percentage max_amt=personal_vouchers.first.max_discount_amount|floatformat:0 count=personal_vouchers.first.remaining_items %}
-                    تم تفعيل خصم <strong class="text-success">{{ pct }}%</strong> 
-                    (بحد أقصى {{ max_amt }} ج.م) 
-                    متاح على <strong class="text-white">{{ count }}</strong> منتجات.
-                    {% endblocktrans %}
-                    
-                    {% if personal_vouchers.first.free_shipping %}
-                        <br><strong class="gold-text"><i class="fas fa-truck mt-1"></i> {% trans "يتضمن شحن مجاني للطلب!" %}</strong>
-                    {% endif %}
-                </p>
-                <div class="form-text text-success small fw-bold" style="font-size: 10px;">
-                    {% trans "* سيتم خصم قيمة الهدية من الإجمالي النهائي بعد تأكيد الطلب." %}
-                </div>
-                <input type="hidden" name="admin_voucher_code" value="{{ personal_vouchers.first.code }}">
-            </div>
-            {% endif %}
-            
-            {% if applicable_discount > 0 %}
-            <div class="p-3 rounded mb-4" style="background: rgba(255, 193, 7, 0.05); border: 1px solid rgba(255, 193, 7, 0.2);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="fw-bold gold-text mb-1"><i class="fas fa-wallet me-2"></i> {% trans "رصيد خصم الإحالة" %}</h6>
-                        <small class="text-muted-dark">
-                            {% blocktrans with discount=applicable_discount %}متاح لك خصم {{ discount }} ج.م{% endblocktrans %}
-                        </small>
+                {% if active_gateway == 'PAYMOB' %}
+                <label class="payment-method-wrapper w-100 d-block">
+                    <input type="radio" class="payment-radio" name="payment_method" id="pay_cod" value="COD" checked onchange="recalculateTotal()">
+                    <div class="payment-card-box">
+                        <div class="payment-icon"><i class="fas fa-money-bill-wave" style="color: #10B981;"></i></div>
+                        <div class="payment-text">
+                            <h6>{% trans "الدفع عند الاستلام" %}</h6>
+                            <small>{% trans "ادفع نقداً عند باب البيت" %}</small>
+                        </div>
                     </div>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="use_wallet" id="useWallet" onchange="recalculateTotal()" style="cursor: pointer;">
+                </label>
+
+                <label class="payment-method-wrapper w-100 d-block">
+                    <input type="radio" class="payment-radio" name="payment_method" id="pay_online" value="ONLINE" onchange="recalculateTotal()">
+                    <div class="payment-card-box">
+                        <div class="payment-icon">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" style="width: 32px;">
+                        </div>
+                        <div class="payment-text">
+                            <h6>{% trans "بطاقة بنكية" %}</h6>
+                            <small>{% trans "فيزا، ماستركارد، ميزة" %}</small>
+                            <div class="gateway-badges mt-1">
+                                <span class="g-badge p-1 px-2"><img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" style="height: 12px;"></span>
+                                <span class="g-badge p-1 px-2"><img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" style="height: 14px;"></span>
+                                <span class="g-badge p-1 px-2"><img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Meeza_Logo.svg" alt="Meeza" style="height: 12px;"></span>
+                            </div>
+                        </div>
                     </div>
+                </label>
+
+                <label class="payment-method-wrapper w-100 d-block">
+                    <input type="radio" class="payment-radio" name="payment_method" id="pay_wallet" value="WALLET" onchange="recalculateTotal()">
+                    <div class="payment-card-box">
+                        <div class="payment-icon"><i class="fas fa-mobile-alt" style="color: #F59E0B;"></i></div>
+                        <div class="payment-text">
+                            <h6>{% trans "محفظة إلكترونية" %}</h6>
+                            <small>{% trans "فودافون كاش، اتصالات، أورانج" %}</small>
+                        </div>
+                    </div>
+                </label>
+
+                <div id="wallet-input-container" style="display: none;" class="p-3 rounded-4 mt-2 bg-light">
+                    <label class="form-label small fw-bold text-muted">{% trans "رقم المحفظة" %}</label>
+                    <input type="tel" name="wallet_number" class="form-control neo-input" placeholder="010xxxxxxxx">
+                </div>
+
+                {% else %}
+                <label class="payment-method-wrapper w-100 d-block">
+                    <input type="radio" class="payment-radio" name="payment_method" id="pay_cod" value="COD" checked onchange="recalculateTotal()">
+                    <div class="payment-card-box">
+                        <div class="payment-icon"><i class="fas fa-money-bill-wave" style="color: #10B981;"></i></div>
+                        <div class="payment-text">
+                            <h6>{% trans "الدفع عند الاستلام" %}</h6>
+                            <small>{% trans "ادفع نقداً عند استلام طلبك" %}</small>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="payment-method-wrapper w-100 d-block">
+                    <input type="radio" class="payment-radio" name="payment_method" id="pay_online" value="ONLINE" onchange="recalculateTotal()">
+                    <div class="payment-card-box">
+                        <div class="payment-icon"><i class="fas fa-shield-alt" style="color: #6366F1;"></i></div>
+                        <div class="payment-text">
+                            <h6>{% trans "دفع إلكتروني شامل" %}</h6>
+                            <small>{% trans "بوابة آمنة تدعم جميع الوسائل" %}</small>
+                            <div class="gateway-badges mt-2">
+                                <span class="g-badge" style="padding: 4px 8px;">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" style="height: 12px;">
+                                </span>
+                                <span class="g-badge" style="padding: 4px 8px;">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" style="height: 14px;">
+                                </span>
+                                <span class="g-badge" style="padding: 4px 8px;">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Meeza_Logo.svg" alt="Meeza" style="height: 12px;">
+                                </span>
+                                <span class="g-badge" style="padding: 4px 8px; background-color: #FCD34D; border-color: #FBBF24; color: #1E3A8A;">
+                                    <i class="fas fa-store"></i> فوري
+                                </span>
+                                <span class="g-badge" style="padding: 4px 8px; background-color: #E0E7FF; border-color: #C7D2FE; color: #4338CA;">
+                                    <i class="fas fa-mobile-alt"></i> محافظ
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+                {% endif %}
+            </div>
+
+            <div class="neo-card mb-3 p-4" style="background: var(--surface); border: 2px solid var(--accent-dark);">
+                <h6 class="fw-bold mb-3 border-bottom pb-2">{% trans "ملخص الحساب النهائي" %}</h6>
+                
+                <div class="d-flex justify-content-between small mb-2">
+                    <span class="text-muted">{% trans "إجمالي المنتجات والشحن:" %}</span>
+                    <span class="fw-bold text-dark" id="base-total-display">-- {% trans "ج.م" %}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between small mb-2" id="online-fees-row" style="display: none !important;">
+                    <span class="text-muted">{% trans "رسوم بوابات الدفع:" %}</span>
+                    <span class="fw-bold" style="color: var(--accent-gold);" id="online-fees-display">0.00 {% trans "ج.م" %}</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                    <span class="fw-bold text-muted">{% trans "الإجمالي المطلوب دفعه:" %}</span>
+                    <h4 class="fw-bold m-0" id="grand-total-display" style="color: var(--accent-dark); letter-spacing: -0.5px;">-- {% trans "ج.م" %}</h4>
                 </div>
             </div>
-            {% endif %}
 
-            <h6 class="fw-bold mb-3 gold-text"><i class="fas fa-credit-card me-2"></i> {% trans "طريقة الدفع" %}</h6>
-            
-            <div class="d-flex gap-2 w-100 mb-3" role="group">
-                <input type="radio" class="btn-check" name="payment_method" id="pay_cod" value="COD" checked onchange="recalculateTotal()">
-                <label class="btn payment-label flex-fill py-3 m-0" for="pay_cod">
-                    <i class="fas fa-money-bill-wave d-block mb-1 fs-4"></i>{% trans "كاش" %}
-                </label>
-
-                <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE" onchange="recalculateTotal()">
-                <label class="btn payment-label flex-fill py-3 m-0" for="pay_online">
-                    <i class="fas fa-credit-card d-block mb-1 fs-4"></i>{% trans "فيزا" %}
-                </label>
-
-                <input type="radio" class="btn-check" name="payment_method" id="pay_wallet" value="WALLET" onchange="recalculateTotal()">
-                <label class="btn payment-label flex-fill py-3 m-0" for="pay_wallet">
-                    <i class="fas fa-wallet d-block mb-1 fs-4"></i>{% trans "محفظة" %}
-                </label>
-            </div>
-
-            <div id="wallet-input-container" style="display: none;" class="p-3 rounded mt-2" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
-                <label class="form-label small fw-bold text-white">{% trans "رقم المحفظة الإلكترونية المحول منها" %}</label>
-                <div class="input-group">
-                    <span class="input-group-text dark-input-group-text border-end-0"><i class="fas fa-mobile-alt"></i></span>
-                    <input type="tel" name="wallet_number" id="wallet_number" class="form-control dark-input border-start-0" placeholder="010xxxxxxxx">
-                </div>
-                <div class="form-text text-muted-dark small mt-1">{% trans "فودافون كاش، اتصالات، أورانج، وي." %}</div>
-            </div>
         </div>
 
-        <div class="fixed-bottom p-3 shadow-lg rounded-top-4 dark-header" style="bottom: 70px; z-index: 990; border-top: 1px solid rgba(255,193,7,0.2);">
-            <button type="submit" class="btn btn-gold w-100 py-3 fw-bold shadow-sm rounded-pill" id="confirm-btn" disabled style="font-size: 16px;">
-                <span id="btn-text">{% trans "تأكيد الطلب (دفع عند الاستلام)" %}</span>
+        <div class="fixed-bottom p-3 checkout-bar-ultra" style="z-index: 1050;">
+            <button type="button" class="btn btn-neo-primary w-100 py-3 fw-bold shadow-sm" id="continue-btn" onclick="goToStep2()" disabled>
+                {% trans "متابعة لاختيار الدفع" %} <i class="fas fa-arrow-left ms-2"></i>
             </button>
-            <div id="select-city-msg" class="text-center small text-danger mt-2 fw-bold">{% trans "يرجى اختيار المحافظة أولاً لحساب الشحن" %}</div>
+            <div id="select-city-msg" class="text-center small text-danger mt-2 fw-bold">{% trans "يرجى اختيار المحافظة أولاً" %}</div>
+
+            <div id="step-2-buttons-wrapper" style="display: none;">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light border px-4 shadow-sm" style="border-radius: 50px;" onclick="goToStep1()">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button type="submit" class="btn btn-neo-primary flex-grow-1 py-3 fw-bold shadow-sm" id="confirm-btn">
+                        <span id="btn-text">{% trans "تأكيد الطلب" %}</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </form>
 </div>
 
 <script>
-    // 1. استقبال المتغيرات
     const feeFixed = parseFloat("{{ fee_fixed|default:0 }}") || 0;
     const feePercent = parseFloat("{{ fee_percent|default:0 }}") || 0;
-    const discountValue = parseFloat("{{ applicable_discount|default:0 }}") || 0;
-    
     let rawGrandTotal = 0;
     
-    // تعريف كلمات الترجمة للجافاسكريبت
-    const currencyStr = " {% trans 'ج.م' %}";
-    const msgFree = '<span class="text-success">{% trans "مجاني" %}</span>';
-    const msgLoading = '<i class="fas fa-spinner fa-spin"></i> {% trans "جاري الحساب..." %}';
-    const msgError = "{% trans 'حدث خطأ في الاتصال' %}";
-    const btnVisa = "{% trans 'الانتقال للدفع (فيزا) 💳' %}";
-    const btnWallet = "{% trans 'تأكيد الدفع (محفظة) 📱' %}";
-    const btnCod = "{% trans 'تأكيد الطلب (دفع عند الاستلام) 📦' %}";
+    function goToStep2() {
+        if (document.getElementById('checkout-form').reportValidity()) {
+            document.getElementById('step-1-content').style.display = 'none';
+            document.getElementById('step-2-content').style.display = 'block';
+            document.getElementById('continue-btn').style.display = 'none';
+            document.getElementById('select-city-msg').style.display = 'none';
+            document.getElementById('step-2-buttons-wrapper').style.display = 'block';
+        }
+    }
 
-    // 2. دالة جلب الشحن
+    function goToStep1() {
+        document.getElementById('step-2-content').style.display = 'none';
+        document.getElementById('step-1-content').style.display = 'block';
+        document.getElementById('step-2-buttons-wrapper').style.display = 'none';
+        document.getElementById('continue-btn').style.display = 'block';
+    }
+
     function updateShipping() {
         const govId = document.getElementById('city-select').value;
-        const confirmBtn = document.getElementById('confirm-btn');
-        const msgEl = document.getElementById('select-city-msg');
-        const totalShippingEl = document.getElementById('total-shipping-display');
+        const continueBtn = document.getElementById('continue-btn');
+        if (!govId) { continueBtn.disabled = true; return; }
 
-        if (!govId) {
-            confirmBtn.disabled = true;
-            msgEl.style.display = 'block';
-            return;
-        }
-
-        // Loading
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = msgLoading;
-
-        const checkboxes = document.querySelectorAll('input[name="selected_items"]');
-        let selectedIds = [];
-        if (checkboxes.length > 0) {
-            selectedIds = Array.from(checkboxes).map(i => i.value);
-        } else {
-            const hiddenInputs = document.querySelectorAll('input[type="hidden"][name="selected_items"]');
-            selectedIds = Array.from(hiddenInputs).map(i => i.value);
-        }
+        continueBtn.disabled = true;
+        const selectedIds = Array.from(document.querySelectorAll('input[name="selected_items"]')).map(i => i.value);
         
-        const idsParam = selectedIds.join(',');
-
-        fetch(`/api/calc-shipping/?gov_id=${govId}&items=${idsParam}`)
-            .then(response => response.json())
+        fetch(`/api/calc-shipping/?gov_id=${govId}&items=${selectedIds.join(',')}`)
+            .then(res => res.json())
             .then(data => {
-                if (data.shipping_details) {
-                    data.shipping_details.forEach(detail => {
-                        const el = document.getElementById(`shipping-merch-${detail.merchant_id}`);
-                        if (el) el.innerHTML = detail.cost == 0 ? msgFree : detail.cost + currencyStr;
-                    });
-                }
-
-                if (totalShippingEl) totalShippingEl.innerText = data.total_shipping + currencyStr;
-                
-                rawGrandTotal = parseFloat(data.grand_total) || 0;
-                
+                data.shipping_details.forEach(d => {
+                    const merchEl = document.getElementById(`shipping-merch-${d.merchant_id}`);
+                    if(merchEl) merchEl.innerText = d.cost + " ج.م";
+                });
+                rawGrandTotal = data.grand_total;
                 recalculateTotal();
-
-                confirmBtn.disabled = false;
-                msgEl.style.display = 'none';
-            })
-            .catch(err => {
-                console.error(err);
-                confirmBtn.innerText = msgError;
+                continueBtn.disabled = false;
+                document.getElementById('select-city-msg').style.display = 'none';
             });
     }
 
-    // 3. دالة الحساب المحلي
     function recalculateTotal() {
-        if (rawGrandTotal === 0) return;
-
         let finalTotal = rawGrandTotal;
-        const grandTotalEl = document.getElementById('grand-total-display');
+        const payOnline = document.getElementById('pay_online')?.checked;
+        const payWallet = document.getElementById('pay_wallet')?.checked;
         const btnText = document.getElementById('btn-text');
-        const confirmBtn = document.getElementById('confirm-btn');
-        
-        const useWallet = document.getElementById('useWallet');
-        if (useWallet && useWallet.checked) {
-            finalTotal -= discountValue;
-        }
 
-        const payOnline = document.getElementById('pay_online').checked;
-        const payWallet = document.getElementById('pay_wallet').checked;
-        const walletInput = document.getElementById('wallet-input-container');
-        const feesRow = document.getElementById('online-fees-row');
-        const feesValue = document.getElementById('online-fees-display');
-
-        if (walletInput) walletInput.style.display = 'none';
-
-        confirmBtn.className = 'btn btn-gold w-100 py-3 fw-bold shadow-sm rounded-pill';
+        // تحديث الحقل الأساسي
+        document.getElementById('base-total-display').innerText = rawGrandTotal.toFixed(2) + " ج.م";
 
         if (payOnline || payWallet) {
             let fees = feeFixed + (finalTotal * feePercent / 100);
             finalTotal += fees;
-
-            if (feesRow) feesRow.style.display = 'flex';
-            if (feesValue) feesValue.innerText = fees.toFixed(2) + currencyStr;
+            document.getElementById('online-fees-row').style.setProperty('display', 'flex', 'important');
+            document.getElementById('online-fees-display').innerText = fees.toFixed(2) + " ج.م";
             
-            if (payOnline) {
-                if (btnText) btnText.innerText = btnVisa;
-                else confirmBtn.innerText = btnVisa;
-            } else {
-                if (walletInput) walletInput.style.display = 'block';
-                if (btnText) btnText.innerText = btnWallet;
-                else confirmBtn.innerText = btnWallet;
-            }
-
+            btnText.innerText = payOnline ? "{% trans 'الانتقال للدفع الآمن' %}" : "{% trans 'تأكيد دفع المحفظة' %}";
+            if(document.getElementById('wallet-input-container')) 
+                document.getElementById('wallet-input-container').style.display = payWallet ? 'block' : 'none';
         } else {
-            if (feesRow) feesRow.style.display = 'none';
-            if (btnText) btnText.innerText = btnCod;
-            else confirmBtn.innerText = btnCod;
+            document.getElementById('online-fees-row').style.setProperty('display', 'none', 'important');
+            btnText.innerText = "{% trans 'تأكيد الطلب (الدفع عند الاستلام)' %}";
         }
-
-        if (finalTotal < 0) finalTotal = 0;
-        if (grandTotalEl) grandTotalEl.innerText = finalTotal.toFixed(2) + currencyStr;
+        
+        document.getElementById('grand-total-display').innerText = finalTotal.toFixed(2) + " ج.م";
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const citySelect = document.getElementById('city-select');
-        if (citySelect && citySelect.value) {
-            updateShipping();
-        }
-    });
 </script>
-
 {% endblock %}

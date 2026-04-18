@@ -137,13 +137,13 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <div class="brand-header">
-                <div><i class="fas fa-chart-pie text-primary me-2"></i> Elbazaar<span class="text-primary">.</span></div>
+                <div><i class="fas fa-chart-pie text-primary me-2"></i> {{ site_settings.site_name|default:"Elbazaar" }}<span class="text-primary">.</span></div>
                 <button class="btn-close-sidebar d-lg-none" id="closeSidebarBtn"><i class="fas fa-times"></i></button>
             </div>
             <div class="mt-2 py-1 px-2 rounded-2" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2);">
                 <span style="font-size: 12px; color: #60a5fa; font-weight: 700;">
-                    {% if request.user.role == 'OWNER' %}
-                        <i class="fas fa-globe me-1"></i> {% trans "الإدارة العليا (عام)" %}
+                    {% if request.user.role == 'OWNER' or request.user.is_superuser %}
+                        <i class="fas fa-crown text-warning me-1"></i> {% trans "الإدارة العليا (المالك)" %}
                     {% elif request.user.country %}
                         <i class="fas fa-flag me-1"></i> {% trans "فرع" %} {{ request.user.country.name }}
                     {% else %}
@@ -154,147 +154,154 @@
         </div>
         
         <div class="sidebar-menu">
-            <a href="{% url 'supervisor_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'supervisor_dashboard' %}active{% endif %}">
-                <i class="fas fa-home"></i> {% trans "الرئيسية" %}
-            </a>
-            <a class="nav-link {% if request.resolver_match.url_name == 'admin_notifications' %}active{% endif %}" href="{% url 'admin_notifications' %}">
-                <i class="fas fa-bell"></i> {% trans "إشعارات النظام" %}
-            </a>
-
-            {% if request.user|has_perm:'orders' or request.user|has_perm:'products' %}
-            <div class="nav-title">{% trans "إدارة المتجر" %}</div>
-            {% endif %}
-
-            {% if request.user|has_perm:'orders' %}
-            <a href="{% url 'super_all_orders' %}" class="nav-link {% if 'orders' in request.path and not 'analytics' in request.path %}active{% endif %}">
-                <i class="fas fa-shopping-cart"></i> {% trans "الطلبات" %}
-            </a>
-            <a href="{% url 'admin_complaints_list' %}" class="nav-link {% if 'complaints' in request.path %}active{% endif %}">
-                <i class="fas fa-undo text-danger"></i> {% trans "شكاوى ومرتجعات" %}
-            </a>
-            {% endif %}
-
-            {% if request.user|has_perm:'products' %}
-            <a href="{% url 'super_pending_products' %}" class="nav-link {% if 'pending-products' in request.path %}active{% endif %}">
-                <i class="fas fa-box-open"></i> {% trans "مراجعة المنتجات" %}
-            </a>
-            <a href="{% url 'super_all_products' %}" class="nav-link {% if 'all-products' in request.path %}active{% endif %}">
-                <i class="fas fa-boxes"></i> {% trans "كل المنتجات" %}
-            </a>
-            <a href="{% url 'super_reviews_list' %}" class="nav-link {% if 'reviews' in request.path %}active{% endif %}">
-                <i class="fas fa-star text-warning"></i> {% trans "تقييمات العملاء" %}
-            </a>
-            {% endif %}
-
-            {% if request.user|has_perm:'offers' %}
-            <a href="{% url 'super_manage_offers' %}" class="nav-link {% if 'manage_offers' in request.path %}active{% endif %}">
-                <i class="fas fa-tags"></i> {% trans "عروض المنصة" %}
-            </a>
-            <a href="{% url 'super_manage_vouchers' %}" class="nav-link {% if 'vouchers' in request.path %}active{% endif %}">
-                <i class="fas fa-ticket-alt"></i> {% trans "كوبونات الخصم" %}
-            </a>
-            {% endif %}
-
-            {% if request.user|has_perm:'categories' %}
-            <a href="{% url 'super_categories' %}" class="nav-link {% if 'categories' in request.path %}active{% endif %}">
-                <i class="fas fa-th-large"></i> {% trans "الأقسام" %}
-            </a>
-            {% endif %}
             
-            {% if request.user|has_perm:'banners' %}
-            <a href="{% url 'super_manage_banners' %}" class="nav-link {% if 'banners' in request.path %}active{% endif %}">
-                <i class="fas fa-images"></i> {% trans "البانرات" %}
-            </a>
-            <a href="{% url 'super_manage_popups' %}" class="nav-link {% if 'popups' in request.path %}active{% endif %}">
-                <i class="fas fa-external-link-square-alt"></i> {% trans "الإعلانات المنبثقة" %}
-            </a>
-            {% endif %}
+            {% if request.user.role == 'OWNER' or request.user.is_superuser %}
+                <div class="nav-title text-warning">{% trans "التحكم المركزي" %}</div>
+                
+                <a href="{% url 'owner_dashboard' %}" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}">
+                    <i class="fas fa-home"></i> {% trans "الرئيسية" %}
+                </a>
+                
+                <a href="{% url 'super_send_broadcast' %}" class="nav-link {% if 'broadcast' in request.path %}active{% endif %}">
+                    <i class="fas fa-bullhorn"></i> {% trans "إرسال إشعارات" %}
+                </a>
+                
+                <a href="{% url 'super_team' %}" class="nav-link {% if 'team' in request.path or 'roles' in request.path %}active{% endif %}">
+                    <i class="fas fa-user-shield text-info"></i> {% trans "فريق العمل والمشرفين" %}
+                </a>
+                
+                <a href="{% url 'super_manage_countries' %}" class="nav-link text-warning {% if 'countries' in request.path %}active{% endif %}">
+                    <i class="fas fa-globe text-warning"></i> {% trans "إدارة الدول والأسواق" %}
+                </a>
 
-            {% if request.user|has_perm:'users' or request.user|has_perm:'merchants' %}
-            <div class="nav-title">{% trans "المستخدمين والتجار" %}</div>
-            {% endif %}
+            {% else %}
+                <a href="{% url 'supervisor_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'supervisor_dashboard' %}active{% endif %}">
+                    <i class="fas fa-home"></i> {% trans "الرئيسية" %}
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'admin_notifications' %}active{% endif %}" href="{% url 'admin_notifications' %}">
+                    <i class="fas fa-bell"></i> {% trans "إشعارات النظام" %}
+                </a>
 
-            {% if request.user|has_perm:'users' %}
-            <a href="{% url 'super_customers_analytics' %}" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
-                <i class="fas fa-chart-user"></i> {% trans "تحليلات العملاء" %}
-            </a>
-            <a href="{% url 'super_users_list' %}" class="nav-link {% if 'users' in request.path %}active{% endif %}">
-                <i class="fas fa-users"></i> {% trans "كل الأعضاء" %}
-            </a>
-            {% endif %}
+                {% if request.user|has_perm:'orders' or request.user|has_perm:'products' %}
+                <div class="nav-title">{% trans "إدارة المتجر" %}</div>
+                {% endif %}
 
-            {% if request.user|has_perm:'merchants' %}
-            <a href="{% url 'super_pending_merchants' %}" class="nav-link {% if 'pending-merchants' in request.path %}active{% endif %}">
-                <i class="fas fa-store-slash"></i> {% trans "طلبات التجار" %}
-            </a>
-            <a href="{% url 'super_merchants_list' %}" class="nav-link {% if 'merchants-list' in request.path %}active{% endif %}">
-                <i class="fas fa-store"></i> {% trans "قائمة التجار" %}
-            </a>
-            {% endif %}
+                {% if request.user|has_perm:'orders' %}
+                <a href="{% url 'super_all_orders' %}" class="nav-link {% if 'orders' in request.path and not 'analytics' in request.path %}active{% endif %}">
+                    <i class="fas fa-shopping-cart"></i> {% trans "الطلبات" %}
+                </a>
+                <a href="{% url 'admin_complaints_list' %}" class="nav-link {% if 'complaints' in request.path %}active{% endif %}">
+                    <i class="fas fa-undo text-danger"></i> {% trans "شكاوى ومرتجعات" %}
+                </a>
+                {% endif %}
 
-            {% if request.user|has_perm:'finance' or request.user|has_perm:'settings' or request.user|has_perm:'team' %}
-            <div class="nav-title">{% trans "الإدارة والمالية" %}</div>
-            {% endif %}
+                {% if request.user|has_perm:'products' %}
+                <a href="{% url 'super_pending_products' %}" class="nav-link {% if 'pending-products' in request.path %}active{% endif %}">
+                    <i class="fas fa-box-open"></i> {% trans "مراجعة المنتجات" %}
+                </a>
+                <a href="{% url 'super_all_products' %}" class="nav-link {% if 'all-products' in request.path %}active{% endif %}">
+                    <i class="fas fa-boxes"></i> {% trans "كل المنتجات" %}
+                </a>
+                <a href="{% url 'super_reviews_list' %}" class="nav-link {% if 'reviews' in request.path %}active{% endif %}">
+                    <i class="fas fa-star text-warning"></i> {% trans "تقييمات العملاء" %}
+                </a>
+                {% endif %}
 
-            {% if request.user|has_perm:'finance' %}
-            <a class="nav-link collapsed" data-bs-toggle="collapse" href="#financeMenu" role="button" aria-expanded="false">
-                <i class="fas fa-wallet text-success"></i> {% trans "الحسابات المالية" %}
-                <i class="fas fa-chevron-down"></i>
-            </a>
-            <div class="collapse {% if 'finance' in request.path or 'wallet' in request.path or 'deposit' in request.path or 'withdrawal' in request.path %}show{% endif %}" id="financeMenu">
-                <div class="bg-black py-2 mt-1">
-                    <a href="{% url 'super_finance_overview' %}" class="nav-link"><i class="fas fa-chart-pie"></i> {% trans "نظرة عامة" %}</a>
-                    <a href="{% url 'super_wallets_list' %}" class="nav-link"><i class="fas fa-users-cog"></i> {% trans "محافظ التجار" %}</a>
-                    <a href="{% url 'super_pending_deposits' %}" class="nav-link"><i class="fas fa-arrow-down"></i> {% trans "الإيداعات" %}</a>
-                    <a href="{% url 'super_pending_withdrawals' %}" class="nav-link"><i class="fas fa-arrow-up"></i> {% trans "السحوبات" %}</a>
-                    <a href="{% url 'super_finance_logs' %}" class="nav-link"><i class="fas fa-list"></i> {% trans "سجل العمليات" %}</a>
+                {% if request.user|has_perm:'offers' %}
+                <a href="{% url 'super_manage_offers' %}" class="nav-link {% if 'manage_offers' in request.path %}active{% endif %}">
+                    <i class="fas fa-tags"></i> {% trans "عروض المنصة" %}
+                </a>
+                <a href="{% url 'super_manage_vouchers' %}" class="nav-link {% if 'vouchers' in request.path %}active{% endif %}">
+                    <i class="fas fa-ticket-alt"></i> {% trans "كوبونات الخصم" %}
+                </a>
+                {% endif %}
+
+                {% if request.user|has_perm:'categories' %}
+                <a href="{% url 'super_categories' %}" class="nav-link {% if 'categories' in request.path %}active{% endif %}">
+                    <i class="fas fa-th-large"></i> {% trans "الأقسام" %}
+                </a>
+                {% endif %}
+                
+                {% if request.user|has_perm:'banners' %}
+                <a href="{% url 'super_manage_banners' %}" class="nav-link {% if 'banners' in request.path %}active{% endif %}">
+                    <i class="fas fa-images"></i> {% trans "البانرات" %}
+                </a>
+                <a href="{% url 'super_manage_popups' %}" class="nav-link {% if 'popups' in request.path %}active{% endif %}">
+                    <i class="fas fa-external-link-square-alt"></i> {% trans "الإعلانات المنبثقة" %}
+                </a>
+                {% endif %}
+
+                {% if request.user|has_perm:'users' or request.user|has_perm:'merchants' %}
+                <div class="nav-title">{% trans "المستخدمين والتجار" %}</div>
+                {% endif %}
+
+                {% if request.user|has_perm:'users' %}
+                <a href="{% url 'super_customers_analytics' %}" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
+                    <i class="fas fa-chart-user"></i> {% trans "تحليلات العملاء" %}
+                </a>
+                <a href="{% url 'super_users_list' %}" class="nav-link {% if 'users' in request.path %}active{% endif %}">
+                    <i class="fas fa-users"></i> {% trans "كل الأعضاء" %}
+                </a>
+                {% endif %}
+
+                {% if request.user|has_perm:'merchants' %}
+                <a href="{% url 'super_pending_merchants' %}" class="nav-link {% if 'pending-merchants' in request.path %}active{% endif %}">
+                    <i class="fas fa-store-slash"></i> {% trans "طلبات التجار" %}
+                </a>
+                <a href="{% url 'super_merchants_list' %}" class="nav-link {% if 'merchants-list' in request.path %}active{% endif %}">
+                    <i class="fas fa-store"></i> {% trans "قائمة التجار" %}
+                </a>
+                {% endif %}
+
+                {% if request.user|has_perm:'finance' or request.user|has_perm:'settings' or request.user|has_perm:'team' %}
+                <div class="nav-title">{% trans "الإدارة والمالية" %}</div>
+                {% endif %}
+
+                {% if request.user|has_perm:'finance' %}
+                <a class="nav-link collapsed" data-bs-toggle="collapse" href="#financeMenu" role="button" aria-expanded="false">
+                    <i class="fas fa-wallet text-success"></i> {% trans "الحسابات المالية" %}
+                    <i class="fas fa-chevron-down"></i>
+                </a>
+                <div class="collapse {% if 'finance' in request.path or 'wallet' in request.path or 'deposit' in request.path or 'withdrawal' in request.path %}show{% endif %}" id="financeMenu">
+                    <div class="bg-black py-2 mt-1">
+                        <a href="{% url 'super_finance_overview' %}" class="nav-link"><i class="fas fa-chart-pie"></i> {% trans "نظرة عامة" %}</a>
+                        <a href="{% url 'super_wallets_list' %}" class="nav-link"><i class="fas fa-users-cog"></i> {% trans "محافظ التجار" %}</a>
+                        <a href="{% url 'super_pending_deposits' %}" class="nav-link"><i class="fas fa-arrow-down"></i> {% trans "الإيداعات" %}</a>
+                        <a href="{% url 'super_pending_withdrawals' %}" class="nav-link"><i class="fas fa-arrow-up"></i> {% trans "السحوبات" %}</a>
+                        <a href="{% url 'super_finance_logs' %}" class="nav-link"><i class="fas fa-list"></i> {% trans "سجل العمليات" %}</a>
+                    </div>
                 </div>
+                {% endif %}
+
+                {% if request.user|has_perm:'notifications' %}
+                <a href="{% url 'super_send_broadcast' %}" class="nav-link {% if 'broadcast' in request.path %}active{% endif %}">
+                    <i class="fas fa-bullhorn"></i> {% trans "إرسال إشعارات" %}
+                </a>
+                {% endif %}
+
+                {% if request.user|has_perm:'support' %}
+                <a href="{% url 'super_support_tickets' %}" class="nav-link {% if 'tickets' in request.path %}active{% endif %}">
+                    <i class="fas fa-headset"></i> {% trans "الدعم الفني" %}
+                </a>
+                {% endif %}
+
+                {% if request.user|has_perm:'team' %}
+                <a href="{% url 'super_team' %}" class="nav-link {% if 'team' in request.path or 'roles' in request.path %}active{% endif %}">
+                    <i class="fas fa-user-shield text-info"></i> {% trans "فريق العمل والمشرفين" %}
+                </a>
+                {% endif %}
+
+                {% if request.user|has_perm:'settings' %}
+                <a href="{% url 'super_site_settings' %}" class="nav-link {% if 'settings' in request.path %}active{% endif %}">
+                    <i class="fas fa-cogs"></i> {% trans "إعدادات المنصة" %}
+                </a>
+                <a href="{% url 'super_system_translations' %}" class="nav-link {% if 'translations' in request.path %}active{% endif %}">
+                    <i class="fas fa-language"></i> {% trans "المترجمات" %}
+                </a>
+                {% endif %}
+                
+            {% endif %}
             </div>
-            {% endif %}
-
-            {% if request.user|has_perm:'notifications' %}
-            <a href="{% url 'super_send_broadcast' %}" class="nav-link {% if 'broadcast' in request.path %}active{% endif %}">
-                <i class="fas fa-bullhorn"></i> {% trans "إرسال إشعارات" %}
-            </a>
-            {% endif %}
-
-            {% if request.user|has_perm:'support' %}
-            <a href="{% url 'super_support_tickets' %}" class="nav-link {% if 'tickets' in request.path %}active{% endif %}">
-                <i class="fas fa-headset"></i> {% trans "الدعم الفني" %}
-            </a>
-            {% endif %}
-
-            {% if request.user|has_perm:'team' %}
-            <a href="{% url 'super_team' %}" class="nav-link {% if 'team' in request.path or 'roles' in request.path %}active{% endif %}">
-                <i class="fas fa-user-shield text-info"></i> {% trans "فريق العمل والمشرفين" %}
-            </a>
-            {% endif %}
-
-            {% if request.user|has_perm:'settings' %}
-            <a href="{% url 'super_site_settings' %}" class="nav-link {% if 'settings' in request.path %}active{% endif %}">
-                <i class="fas fa-cogs"></i> {% trans "إعدادات المنصة" %}
-            </a>
-            {% endif %}
-
-            {% if request.user|has_perm:'settings' %}
-            <a href="{% url 'super_system_translations' %}" class="nav-link {% if 'translations' in request.path %}active{% endif %}">
-                <i class="fas fa-language"></i> {% trans "المترجمات" %}
-            </a>
-            {% endif %}
-
-            {% if request.user.role == 'OWNER' %}
-            <div class="nav-title text-warning">{% trans "المالك (الإدارة العليا)" %}</div>
-            <a href="{% url 'super_manage_countries' %}" class="nav-link text-warning {% if 'countries' in request.path %}active{% endif %}">
-                <i class="fas fa-globe text-warning"></i> {% trans "إدارة الدول والأسواق" %}
-            </a>
-            <a href="{% url 'super_manage_terms' %}" class="nav-link {% if 'terms' in request.path %}active{% endif %}">
-                <i class="fas fa-file-contract"></i> {% trans "الشروط والأحكام" %}
-            </a>
-            <a href="{% url 'super_edit_about_us' %}" class="nav-link {% if 'about' in request.path %}active{% endif %}">
-                <i class="fas fa-info-circle"></i> {% trans "صفحة من نحن" %}
-            </a>
-            {% endif %}
-        </div>
         
         <div class="p-3 border-top border-secondary border-opacity-25 mt-auto">
             <a href="{% url 'home' %}" class="btn btn-outline-light w-100 fw-bold rounded-3 py-2 shadow-sm" target="_blank">

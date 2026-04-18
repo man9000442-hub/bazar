@@ -1,107 +1,200 @@
 {% extends 'base.html' %}
-{% load i18n %} {% block content %}
+{% load i18n %} 
+
+{% block content %}
 
 <style>
-    .dark-header {
-        background-color: var(--dark-bg, #091024);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .dark-card {
-        background-color: var(--dark-surface, #121d3a);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .gold-text {
-        color: var(--gold-accent, #ffc107) !important;
-    }
-    .text-muted-dark {
-        color: #8fa0c1 !important;
-    }
-    .btn-gold {
-        background: linear-gradient(135deg, #ffc107, #ff9800);
-        color: #000;
-        border: none;
-        transition: 0.3s;
-    }
-    .btn-gold:hover {
-        transform: scale(0.98);
-        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
-    }
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --success: #10B981;
+    --border-light: rgba(0, 0, 0, 0.05);
+  }
 
-    /* تصميم صندوق الكود */
-    .code-box {
-        background: rgba(255, 255, 255, 0.03);
-        border: 2px dashed rgba(255, 193, 7, 0.4);
-        border-radius: 16px;
-        transition: 0.3s;
-    }
-    .code-box:hover {
-        background: rgba(255, 193, 7, 0.05);
-        border-color: rgba(255, 193, 7, 0.8);
-    }
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
-    /* حقل الإدخال الداكن */
-    .dark-input {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: #fff !important;
-    }
-    .dark-input:focus {
-        border-color: var(--gold-accent, #ffc107) !important;
-        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.15) !important;
-    }
-    .dark-input::placeholder { color: #6c7c9c !important; }
+  /* --- أنيميشن الدخول (Staggered Fade-Up) --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- الهيدر الزجاجي --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* --- الكروت العصرية --- */
+  .neo-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 32px 24px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* تأثير خلفي لكارت الرصيد */
+  .balance-glow {
+    position: absolute;
+    top: -50px; right: -50px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(245, 166, 35, 0.15) 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  /* --- صندوق الكود (Code Box) --- */
+  .code-box-neo {
+    background: #F4F4F5;
+    border: 2px dashed rgba(0,0,0,0.1);
+    border-radius: 24px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s;
+  }
+  .code-box-neo:hover {
+    border-color: var(--accent-gold);
+    background: rgba(245, 166, 35, 0.05);
+  }
+
+  .copy-btn-neo {
+    width: 48px; height: 48px;
+    background: var(--surface);
+    color: var(--text-primary);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .copy-btn-neo:active { transform: scale(0.9); }
+
+  /* --- خانات الإدخال والأزرار --- */
+  .neo-input {
+    background: var(--surface) !important;
+    border: 2px solid transparent !important;
+    border-radius: 50px;
+    padding: 14px 20px;
+    color: var(--text-primary) !important;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02) !important;
+  }
+  .neo-input:focus {
+    border-color: var(--accent-dark) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05) !important;
+  }
+  .neo-input::placeholder { color: #A1A1AA !important; letter-spacing: normal; font-weight: 500; }
+
+  .btn-neo-primary {
+    background: var(--accent-dark);
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 50px;
+    padding: 14px 30px;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  .btn-neo-primary:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
+
 </style>
 
-<div class="dark-header p-3 shadow-sm d-flex align-items-center mb-4 sticky-top" style="z-index: 1020;">
-    <a href="javascript:history.back()" class="text-white me-3 text-decoration-none">
-        <i class="fas fa-arrow-right fs-5"></i>
+<div class="ultra-header p-3 d-flex align-items-center sticky-top" style="z-index: 1020;">
+    <a href="javascript:history.back()" class="icon-btn text-decoration-none me-3">
+        <i class="fas fa-arrow-right"></i>
     </a>
-    <h5 class="m-0 fw-bold text-white" style="letter-spacing: 0.5px;">{% trans "برنامج الإحالة" %} <span class="gold-text"><i class="fas fa-gift ms-1"></i></span></h5>
+    <h4 class="m-0 fw-bold d-flex align-items-center" style="letter-spacing: -0.5px; color: var(--text-primary);">
+        {% trans "برنامج الإحالة" %}
+        <i class="fas fa-gift ms-2" style="font-size: 18px; color: var(--accent-gold);"></i>
+    </h4>
 </div>
 
-<div class="container pb-5 mb-5" style="min-height: 80vh;">
+<div class="container pb-5 mb-5 mt-4" style="min-height: 80vh;">
 
-    <div class="card dark-card shadow-lg border-0 p-4 text-center mb-4 rounded-4 position-relative overflow-hidden">
-        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: radial-gradient(circle at top right, rgba(255,193,7,0.15), transparent 60%); pointer-events: none;"></div>
-
-        <i class="fas fa-wallet fa-3x gold-text mb-3 position-relative z-1" style="filter: drop-shadow(0 0 10px rgba(255,193,7,0.4));"></i>
-        <h6 class="text-white mb-2 position-relative z-1">{% trans "رصيد الإحالة المتاح" %}</h6>
-        <h1 class="fw-bold gold-text mb-0 position-relative z-1" style="text-shadow: 0 2px 5px rgba(0,0,0,0.5);">
-            {{ request.user.referral_balance }} <span class="fs-5">{% trans "ج.م" %}</span>
+    <div class="neo-card text-center animate-fade-up" style="animation-delay: 100ms;">
+        <div class="balance-glow"></div>
+        
+        <div class="mb-3 d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 70px; height: 70px; background: #F4F4F5;">
+            <i class="fas fa-wallet fs-2" style="color: var(--accent-gold);"></i>
+        </div>
+        
+        <h6 class="fw-bold mb-1" style="color: var(--text-secondary); font-size: 15px;">{% trans "رصيد الإحالة المتاح" %}</h6>
+        <h1 class="fw-bold mb-3" style="color: var(--text-primary); font-size: 3.5rem; letter-spacing: -2px;">
+            {{ request.user.referral_balance }} <span style="font-size: 1.2rem; letter-spacing: 0; color: var(--text-secondary);">{% trans "ج.م" %}</span>
         </h1>
-        <p class="small text-muted-dark mt-2 mb-0 position-relative z-1">{% trans "يمكنك استخدامه كخصم إضافي عند إتمام طلبك القادم." %}</p>
+        
+        <p class="small m-0 px-3" style="color: var(--text-secondary); font-weight: 500; line-height: 1.6;">
+            {% trans "هذا الرصيد حقيقي! يمكنك استخدامه كخصم إضافي عند إتمام طلبك القادم." %}
+        </p>
     </div>
 
-    <div class="card dark-card shadow-lg border-0 p-4 text-center mb-4 rounded-4">
-        <h5 class="fw-bold text-white mb-2">{% trans "كود الدعوة الخاص بك" %}</h5>
-        <p class="text-muted-dark small mb-4">{% trans "شارك الكود مع أصدقائك، وسيحصل كل منكم على رصيد مجاني عند تسجيلهم وإتمام أول طلب!" %}</p>
+    <div class="neo-card text-center animate-fade-up" style="animation-delay: 200ms;">
+        <h5 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "كود الدعوة الخاص بك" %}</h5>
+        <p class="small mb-4" style="color: var(--text-secondary); font-weight: 500; line-height: 1.6;">
+            {% trans "شارك الكود مع أصدقائك، وسيحصل كل منكم على رصيد مجاني عند تسجيلهم وإتمام أول طلب!" %}
+        </p>
 
-        <div class="code-box p-3 d-flex justify-content-between align-items-center mb-2">
-            <h2 class="m-0 fw-bold gold-text ps-2" id="myCode" style="letter-spacing: 4px;">{{ request.user.referral_code }}</h2>
-            <button id="copyBtn" class="btn bg-white rounded-circle shadow-sm d-flex justify-content-center align-items-center transition-all" style="width: 45px; height: 45px; color: var(--dark-surface);" onclick="copyCode()">
+        <div class="code-box-neo">
+            <h2 class="m-0 fw-bold ps-3" id="myCode" style="color: var(--text-primary); letter-spacing: 4px;">{{ request.user.referral_code }}</h2>
+            <button id="copyBtn" class="copy-btn-neo" onclick="copyCode()">
                 <i class="fas fa-copy fs-5"></i>
             </button>
         </div>
     </div>
 
     {% if is_eligible %}
-    <div class="card dark-card shadow-lg border-0 p-4 rounded-4 mb-4" style="background: rgba(255,193,7,0.03); border: 1px solid rgba(255,193,7,0.2) !important;">
-        <div class="d-flex align-items-center mb-3">
-            <div class="rounded-circle p-2 me-3" style="background: rgba(255,193,7,0.1);">
-                <i class="fas fa-user-friends fs-4 gold-text"></i>
+    <div class="neo-card animate-fade-up" style="animation-delay: 300ms; background: rgba(245, 166, 35, 0.05); border: 1px solid rgba(245, 166, 35, 0.1);">
+        <div class="d-flex align-items-center mb-4">
+            <div class="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 50px; height: 50px; background: var(--surface); box-shadow: 0 4px 10px rgba(245, 166, 35, 0.15);">
+                <i class="fas fa-user-friends fs-5" style="color: var(--accent-gold);"></i>
             </div>
             <div>
-                <h6 class="fw-bold text-white mb-1">{% trans "لديك كود دعوة من صديق؟" %}</h6>
-                <p class="small text-muted-dark mb-0">
+                <h6 class="fw-bold mb-1" style="color: var(--text-primary);">{% trans "لديك كود دعوة من صديق؟" %}</h6>
+                <p class="small mb-0" style="color: #B45309; font-weight: 600;">
                     {% blocktrans with hours=grace_hours %}أدخله الآن للحصول على رصيدك (مهلة {{ hours }} ساعة){% endblocktrans %}
                 </p>
             </div>
         </div>
 
-        <form method="POST" class="d-flex gap-2 mt-2">
+        <form method="POST" class="d-flex flex-column flex-sm-row gap-3">
             {% csrf_token %}
-            <input type="text" name="code" class="form-control dark-input rounded-pill px-4 text-center" placeholder="{% trans 'أدخل الكود هنا' %}" required style="letter-spacing: 2px; font-weight: bold;">
-            <button type="submit" class="btn btn-gold rounded-pill px-4 fw-bold shadow-sm">{% trans "تفعيل" %}</button>
+            <input type="text" name="code" class="form-control neo-input flex-grow-1" placeholder="{% trans 'أدخل الكود هنا' %}" required>
+            <button type="submit" class="btn btn-neo-primary">{% trans "تفعيل الكود" %}</button>
         </form>
     </div>
     {% endif %}
@@ -117,13 +210,15 @@ function copyCode() {
     const btn = document.getElementById('copyBtn');
     const originalHTML = btn.innerHTML;
     
-    btn.innerHTML = '<i class="fas fa-check fs-5" style="color: #4ade80;"></i>';
+    btn.innerHTML = '<i class="fas fa-check fs-5" style="color: var(--success);"></i>';
     btn.style.transform = 'scale(1.1)';
+    btn.style.boxShadow = '0 8px 20px rgba(16, 185, 129, 0.2)';
     
     // إرجاع الزر لشكله الأصلي بعد ثانيتين
     setTimeout(() => {
         btn.innerHTML = originalHTML;
         btn.style.transform = 'scale(1)';
+        btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
     }, 2000);
 }
 </script>

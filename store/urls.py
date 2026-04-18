@@ -13,7 +13,9 @@ sitemaps = {
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('offers/', views.all_offers_page, name='all_offers'),
     path('product/<int:pk>/', views.product_detail, name='product_detail'),
+    path('set-country/', views.set_user_country, name='set_user_country'),
     path('add-to-cart/<int:pk>/', views.add_to_cart, name='add_to_cart'),
     path('cart/', views.cart_view, name='cart_view'),
     path('cart/remove/<int:item_id>/', views.remove_from_cart, name='remove_from_cart'),
@@ -27,7 +29,10 @@ urlpatterns = [
     path('wishlist/toggle/<int:product_id>/', views.toggle_favorite, name='toggle_favorite'),
     path('notifications/', views.notifications_view, name='notifications'),
     path('confirm-delivery/<int:order_id>/', views.confirm_delivery_view, name='confirm_delivery_view'),
+    
+    #  هذا هو الرابط  (Webhook) الذي يستقبل ردود بوابات الدفع (Paymob أو Fawaterk)
     path('payment/callback/', views.payment_callback, name='payment_callback'),
+    
     path('payment/retry/<int:order_id>/', views.retry_payment, name='retry_payment'),
     path('my-orders/<int:order_id>/', views.customer_order_detail, name='customer_order_detail'),
     path('shop/<int:merchant_id>/', views.merchant_shop, name='merchant_shop'),
@@ -40,9 +45,7 @@ urlpatterns = [
     path('privacy-policy/', views.customer_privacy_policy, name='privacy-policy'),
     path('set-country/', views.set_user_country, name='set_country'),
 
-    
-
-  #path('api/products/', api_views.ProductListAPI.as_view()),    
+    # ================= API Routes =================
     path('api/terms/customer/', api_views.api_customer_terms, name='api_customer_terms'),
     path('api/customer/home/', api_views.home_api, name='api_customer_home'),
     path('api/customer/product/<int:product_id>/', api_views.product_detail_api, name='api_customer_product_detail'),
@@ -52,5 +55,4 @@ urlpatterns = [
     path('api/customer/orders/', api_views.my_orders_api, name='api_customer_my_orders'),
     path('api/customer/orders/<int:order_id>/action/', api_views.confirm_delivery_action_api, name='api_customer_order_action'),
     path('api/customer/referral/', api_views.referral_center_api, name='api_customer_referral'),
-
 ]

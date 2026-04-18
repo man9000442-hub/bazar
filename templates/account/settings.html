@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<style>
+    :root {
+        --apple-blue: #0071e3;
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.4);
+        --text-dark: #1d1d1f;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%) !important;
+        color: var(--text-dark);
+    }
+
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05);
+        margin-bottom: 20px;
+        padding: 25px;
+    }
+
+    .section-title {
+        font-weight: 700;
+        font-size: 14px;
+        color: #86868b;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 15px;
+        margin-left: 10px;
+    }
+
+    .form-control-glass {
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 12px;
+        color: var(--text-dark);
+        font-weight: 500;
+    }
+
+    .btn-apple {
+        background: var(--apple-blue);
+        color: white;
+        border-radius: 12px;
+        padding: 12px;
+        font-weight: 600;
+        border: none;
+        width: 100%;
+        transition: 0.3s;
+    }
+
+    /* خيارات اللغة */
+    .lang-option {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-radius: 15px;
+        background: rgba(255,255,255,0.4);
+        margin-bottom: 10px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: 0.3s;
+    }
+
+    .lang-option:hover {
+        background: rgba(255,255,255,0.8);
+    }
+
+    .lang-option.active {
+        border-color: var(--apple-blue);
+        background: white;
+    }
+
+    .icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+    }
+</style>
+
+<div class="container py-4" style="max-width: 600px;">
+    
+    <h3 class="fw-bold mb-4 px-2">{% trans "الإعدادات" %}</h3>
+
+    <div class="section-title">{% trans "البيانات الشخصية" %}</div>
+    <div class="glass-card">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_info">
+            
+            <div class="row g-3">
+                <div class="col-6">
+                    <label class="small text-muted mb-1">{% trans "الاسم الأول" %}</label>
+                    <input type="text" name="first_name" class="form-control form-control-glass" value="{{ request.user.first_name }}">
+                </div>
+                <div class="col-6">
+                    <label class="small text-muted mb-1">{% trans "الاسم الأخير" %}</label>
+                    <input type="text" name="last_name" class="form-control form-control-glass" value="{{ request.user.last_name }}">
+                </div>
+                <div class="col-12">
+                    <label class="small text-muted mb-1">{% trans "رقم الهاتف (اسم المستخدم)" %}</label>
+                    <input type="text" name="phone" class="form-control form-control-glass" value="{{ request.user.phone_primary }}">
+                </div>
+                <div class="col-12">
+                    <label class="small text-muted mb-1">{% trans "البريد الإلكتروني" %}</label>
+                    <input type="email" name="email" class="form-control form-control-glass" value="{{ request.user.email }}">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-apple mt-4">{% trans "حفظ التغييرات" %}</button>
+        </form>
+    </div>
+
+    <div class="section-title">{% trans "الأمان" %}</div>
+    <div class="glass-card">
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="change_password">
+            <div class="mb-3">
+                <input type="password" name="old_password" class="form-control form-control-glass" placeholder="{% trans 'كلمة المرور الحالية' %}">
+            </div>
+            <div class="mb-3">
+                <input type="password" name="new_password1" class="form-control form-control-glass" placeholder="{% trans 'كلمة المرور الجديدة' %}">
+            </div>
+            <div class="mb-3">
+                <input type="password" name="new_password2" class="form-control form-control-glass" placeholder="{% trans 'تأكيد كلمة المرور الجديدة' %}">
+            </div>
+            <button type="submit" class="btn btn-apple" style="background: #1d1d1f;">{% trans "تحديث كلمة المرور" %}</button>
+        </form>
+    </div>
+
+    <div class="section-title">{% trans "لغة التطبيق" %}</div>
+    <div class="glass-card">
+        <p class="small text-muted mb-3">{% trans "اختر اللغة المفضلة لاستخدام المنصة" %}</p>
+        
+        {% get_current_language as CURRENT_LANG %}
+        {% for lang_code, lang_name in languages %}
+            <form action="{% url 'set_language' %}" method="post" id="lang-form-{{ lang_code }}">
+                {% csrf_token %}
+                <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                <input name="language" type="hidden" value="{{ lang_code }}">
+                
+                <div class="lang-option {% if CURRENT_LANG == lang_code %}active{% endif %}" onclick="document.getElementById('lang-form-{{ lang_code }}').submit();">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-box {% if CURRENT_LANG == lang_code %}bg-primary text-white{% else %}bg-light{% endif %}">
+                            <i class="fas fa-language"></i>
+                        </div>
+                        <span class="fw-bold">{{ lang_name }}</span>
+                    </div>
+                    {% if CURRENT_LANG == lang_code %}
+                        <i class="fas fa-check-circle text-primary"></i>
+                    {% endif %}
+                </div>
+            </form>
+        {% endfor %}
+    </div>
+
+    <div class="text-center mt-5 mb-4">
+        <p class="text-muted small">{{ site_settings.site_name|default:"Elbazaar" }} <i class="fas fa-shield-alt mx-1"></i> Privacy & Settings</p>
+    </div>
+</div>
+{% endblock %}

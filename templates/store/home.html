@@ -1,114 +1,190 @@
 {% extends 'base.html' %} 
-{% load i18n %} {% block content %}
+{% load i18n %} 
 
+{% block content %}
 <style>
-  /* ألوان الثيم الجديدة */
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+
   :root {
-    --main-blue: #0038b8;    /* الأزرق الفاقع المستوحى من اللوجو */
-    --body-bg: #f5f7fb;      /* خلفية بيضاء/رمادي فاتح جداً للمنتجات */
-    --card-bg: #ffffff;      /* كروت المنتجات أبيض ناصع */
-    --gold-accent: #ffc107;  /* الذهبي اللامع */
-    --text-dark: #1a233a;    /* لون داكن للنصوص الأساسية */
-    --text-muted: #6c757d;   /* رمادي للنصوص الفرعية */
+    --bg-main: #F4F5F8;        /* خلفية التطبيق رمادي نقي فاتح جداً */
+    --surface: #FFFFFF;        /* الكروت بيضاء تماماً */
+    --text-primary: #0A0A0A;   /* أسود حاد للنصوص الأساسية */
+    --text-secondary: #71717A; /* رمادي عصري للتفاصيل */
+    --accent-dark: #000000;    /* أسود نقي للتباين (الأزرار واللمسات الداكنة) */
+    --accent-gold: #F5A623;    /* أصفر/ذهبي للخصومات ولفت الانتباه */
+    --danger: #FF3B30;         /* أحمر حيوي للإشعارات والخصومات القوية */
   }
 
   body {
-    background-color: var(--body-bg) !important;
-    color: var(--text-dark);
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* تصميم الهيدر الأزرق */
-  .main-header {
-    background-color: var(--main-blue);
-    border-bottom: none;
+  /* --- الهيدر العصري (Compact) --- */
+  .ultra-header {
+    background: rgba(244, 245, 248, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   }
 
-  /* تصميم كروت المنتجات البيضاء */
-  .product-card {
-    background-color: var(--card-bg);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03) !important;
-    border-radius: 18px;
+  .logo-text {
+    font-weight: 900;
+    font-size: 22px; /* تصغير اللوجو */
+    letter-spacing: -0.5px;
+    color: var(--accent-dark);
   }
 
-  /* مربع البحث جوا الهيدر الأزرق */
-  .search-input {
-    background-color: rgba(255, 255, 255, 0.15) !important;
-    color: white !important;
+  .icon-btn {
+    width: 38px; height: 38px; /* تصغير الأزرار العلوية */
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    transition: transform 0.2s;
+    font-size: 16px;
   }
-  .search-input::placeholder {
-    color: rgba(255, 255, 255, 0.7) !important;
-  }
+  .icon-btn:active { transform: scale(0.92); }
 
-  /* شريط الأقسام (أبيض) */
-  .cat-bar {
-    background-color: var(--card-bg);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  /* --- شريط البحث (Compact) --- */
+  .search-wrapper {
+    background: var(--surface);
+    border-radius: 100px;
+    padding: 4px 4px 4px 16px; /* تقليل الحواف الداخلية */
+    display: flex; align-items: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.02);
   }
-  .cat-link {
-    color: var(--text-muted);
-    transition: 0.3s;
-  }
-  .cat-link.active {
-    color: var(--main-blue);
-    border-bottom: 3px solid var(--gold-accent);
-  }
-
-  /* زر الإضافة للسلة */
-  .btn-gold {
-    background: linear-gradient(135deg, #ffc107, #ff9800);
-    color: #000;
+  .search-input-ultra {
     border: none;
+    background: transparent;
+    box-shadow: none !important;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-primary);
+    padding: 4px 0;
   }
-  .btn-gold:active {
-    transform: scale(0.95);
+  .search-input-ultra::placeholder { color: #A1A1AA; }
+  .search-action-btn {
+    background: var(--accent-dark);
+    color: #fff;
+    border-radius: 50px;
+    width: 34px; height: 34px; /* تصغير زر البحث */
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.3s;
+    font-size: 14px;
   }
+
+  /* --- الأقسام (Compact) --- */
+  .category-pill {
+    background: var(--surface);
+    color: var(--text-secondary);
+    padding: 8px 20px; /* تصغير الحواف */
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 13px; /* تصغير الخط */
+    white-space: nowrap;
+    border: 1px solid rgba(0,0,0,0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .category-pill.active {
+    background: var(--accent-dark);
+    color: #fff;
+    border-color: var(--accent-dark);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+
+  /* --- البانرات (Compact) --- */
+  .banner-container {
+    border-radius: 24px; /* دوران أقل */
+    overflow: hidden;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.05);
+  }
+
+  /* --- كروت المنتجات العادية (Compact) --- */
+  .neo-product-card {
+    background: var(--surface);
+    border-radius: 20px; /* دوران أقل */
+    padding: 10px; /* حواف داخلية أصغر */
+    border: none;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .neo-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+  }
+  .img-showcase {
+    background: #F4F4F5;
+    border-radius: 16px;
+    height: 130px; /* تقليل طول الصورة */
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    padding: 10px;
+  }
+
+  .discount-tag {
+    background: var(--danger);
+    color: #fff;
+    font-weight: 800;
+    font-size: 10px; /* تصغير الخط */
+    padding: 4px 8px;
+    border-radius: 8px;
+    position: absolute;
+    top: 8px; right: 8px;
+    box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
+  }
+
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
-<div class="main-header pb-3 pt-3 px-3 shadow-sm sticky-top" style="z-index: 900">
+<div class="ultra-header px-3 pt-3 pb-2 sticky-top" style="z-index: 900">
   <div class="d-flex justify-content-between align-items-center mb-3">
     
-    <div style="flex: 1; text-align: right;">
-      <a href="{% url 'cart_view' %}" class="text-decoration-none position-relative text-white">
-        <i class="fas fa-shopping-cart fs-5"></i>
-      </a>
+    <a href="{% url 'cart_view' %}" class="icon-btn text-decoration-none position-relative">
+      <i class="fas fa-shopping-bag"></i>
+      {% if order.items.count > 0 %}
+      <span class="position-absolute bg-danger rounded-circle" style="width: 8px; height: 8px; top: 8px; right: 8px;"></span>
+      {% endif %}
+    </a>
+
+    <div class="text-center flex-grow-1">
+      <h1 class="m-0 logo-text">{{ site_settings.site_name|default:"Elbazaar" }}<span style="color: var(--accent-gold);">.</span></h1>
     </div>
 
-    <div class="text-center" style="flex: 1;">
-      <h5 class="m-0 fw-bold" style="color: #ffffff; font-family: 'Tajawal', sans-serif; font-weight: 800; letter-spacing: 0.5px;">
-        Elbazaar <span style="color: var(--gold-accent);">.</span>
-      </h5>
-    </div>
-
-    <div style="flex: 1; text-align: left;">
-      <a href="{% url 'notifications' %}" class="text-decoration-none position-relative text-white">
-        <i class="far fa-bell fs-5"></i>
-        {% if unread_notifications_count > 0 %}
-        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 10px; height: 10px">
-          <span class="visually-hidden">New alerts</span>
-        </span>
-        {% endif %}
-      </a>
-    </div>
+    <a href="{% url 'notifications' %}" class="icon-btn text-decoration-none position-relative">
+      <i class="far fa-bell"></i>
+      {% if unread_notifications_count > 0 %}
+      <span class="position-absolute bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 16px; height: 16px; top: -2px; right: -2px; font-size: 9px; font-weight: bold; border: 2px solid #fff;">
+        {{ unread_notifications_count }}
+      </span>
+      {% endif %}
+    </a>
 
   </div>
 
-  <form action="{% url 'home' %}" method="GET" class="position-relative">
-    <input type="text" name="q" value="{{ search_query|default:'' }}" class="form-control search-input rounded-pill border-0 py-2 ps-5 shadow-none" placeholder="{% trans 'ابحث في البازار' %}" style="font-size: 14px"/>
-    <button type="submit" class="btn position-absolute top-50 start-0 translate-middle-y ms-1 border-0">
-      <i class="fas fa-search text-white"></i>
-    </button>
+  <form action="{% url 'home' %}" method="GET">
+    <div class="search-wrapper">
+      <input type="text" name="q" value="{{ search_query|default:'' }}" class="form-control search-input-ultra flex-grow-1" placeholder="{% trans 'ما الذي تبحث عنه؟' %}"/>
+      <button type="submit" class="btn search-action-btn border-0">
+        <i class="fas fa-search"></i>
+      </button>
+    </div>
   </form>
 </div>
 
 {% if banners %}
-<div class="container-fluid px-3 mt-3 mb-4">
-  <div id="mainBanner" class="carousel slide carousel-fade shadow-sm rounded-4 overflow-hidden" data-bs-ride="carousel">
+<div class="container-fluid px-3 mt-3 mb-3">
+  <div id="mainBanner" class="carousel slide carousel-fade banner-container" data-bs-ride="carousel">
     <div class="carousel-inner">
       {% for banner in banners %}
       <div class="carousel-item {% if forloop.first %}active{% endif %}" data-bs-interval="4000">
         <a href="{{ banner.link|default:'#' }}">
-          <img src="{{ banner.image.url }}" class="d-block w-100" style="height: 180px; object-fit: cover;" />
+          <img src="{{ banner.image.url }}" class="d-block w-100" style="height: 150px; object-fit: cover;" />
         </a>
       </div>
       {% endfor %}
@@ -116,214 +192,82 @@
 
     <div class="carousel-indicators mb-2">
       {% for banner in banners %}
-      <button type="button" data-bs-target="#mainBanner" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %} bg-white" style="width: 15px; height: 4px; border-radius: 10px; margin: 0 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.5);"></button>
+      <button type="button" data-bs-target="#mainBanner" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}" style="width: 16px; height: 4px; border-radius: 10px; background-color: #fff; border: none; opacity: 0.5;"></button>
       {% endfor %}
     </div>
   </div>
 </div>
 {% endif %}
 
-<div class="cat-bar mb-3 pb-1 shadow-sm">
-  <div class="d-flex overflow-auto px-3 py-2" style="gap: 20px; white-space: nowrap">
-    <a href="{% url 'home' %}" class="text-decoration-none cat-link {% if not selected_category %}active{% endif %} pb-2 fw-bold" style="font-size: 14px">
+<div class="px-2 mb-3">
+  <div class="d-flex overflow-auto hide-scrollbar py-2" style="gap: 8px; padding-left: 8px; padding-right: 8px;">
+    <a href="{% url 'home' %}" class="text-decoration-none category-pill {% if not selected_category %}active{% endif %}">
       {% trans "الكل" %}
     </a>
-
     {% for category in categories %}
-    <a href="{% url 'home' %}?category={{ category.id }}" class="text-decoration-none cat-link {% if selected_category == category.id %}active{% endif %} pb-2 fw-bold" style="font-size: 14px">
+    <a href="{% url 'home' %}?category={{ category.id }}" class="text-decoration-none category-pill {% if selected_category == category.id %}active{% endif %}">
       {{ category.name }}
     </a>
     {% endfor %}
   </div>
 </div>
 
-<div class="container-fluid px-3">
-  
-  {% if offers %}
-  <div id="special-offers-section">
-      <h6 class="fw-bold mb-3" style="color: var(--main-blue);">{% trans "عروض مميزة" %} <i class="fas fa-fire text-warning ms-1"></i></h6>
-      <div id="special-offers-container" class="d-flex overflow-auto mb-4" style="gap: 12px; padding-bottom: 5px">
-        {% for product in offers %}
-          {% if product.is_active and product.is_approved %}
-            {% if product.active_offer and product.active_offer.is_currently_active %}
-            <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none offer-item">
-              <div class="card text-white flex-shrink-0 position-relative overflow-hidden shadow-sm" style="width: 145px; height: 210px; border-radius: 16px; border: none;">
-                <div style="height: 100%; width: 100%; position: absolute; z-index: 0; background-color: #000;">
-                  {% if product.image %}
-                  <img src="{{ product.image.url }}" class="w-100 h-100" style="object-fit: cover; filter: brightness(0.5);" />
-                  {% endif %}
-                </div>
+<div class="container-fluid px-2 pb-5 mb-5">
+  <div class="px-2 mt-2">
+    <div class="d-flex justify-content-between align-items-end mb-3">
+      <h3 class="fw-bold m-0" style="font-size: 18px; letter-spacing: -0.5px; color: var(--text-primary);">{% trans "وصل حديثاً" %}</h3>
+      <a href="#" class="text-decoration-none fw-bold" style="color: var(--text-secondary); font-size: 13px;">{% trans "عرض الكل" %}</a>
+    </div>
 
-                <div class="card-body p-2 d-flex flex-column position-relative z-1 h-100">
-                  <div class="d-flex flex-column gap-1 align-items-start mb-auto">
-                      {% if product.active_offer.discount_percentage > 0 %}
-                      <span class="badge bg-danger shadow-sm" style="font-size: 11px;">-{{ product.active_offer.discount_percentage }}%</span>
-                      {% endif %}
-                      
-                      {% if product.active_offer.free_shipping %}
-                      <span class="badge bg-success shadow-sm" style="font-size: 10px;"><i class="fas fa-truck"></i> {% trans "مجاني" %}</span>
-                      {% endif %}
-                  </div>
+    <div class="row g-2"> 
+      {% for product in products %}
+        {% if product.is_active and product.is_approved %}
+        <div class="col-6">
+          <div class="neo-product-card d-flex flex-column h-100">
+            
+            <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none d-block flex-grow-1">
+              <div class="img-showcase mb-2">
+                {% if product.active_offer and product.active_offer.is_currently_active and product.active_offer.discount_percentage > 0 %}
+                  <span class="discount-tag">-{{ product.active_offer.discount_percentage|floatformat:0 }}%</span>
+                {% endif %}
 
-                  <h6 class="fw-bold mb-1 text-white text-truncate" style="font-size: 13px; text-shadow: 0 2px 4px rgba(0,0,0,0.9);">
-                    {{ product.name }}
-                  </h6>
-                  
-                  <div class="d-flex align-items-center mt-1 mb-2" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-                    {% if product.active_offer.discount_percentage > 0 %}
-                        <span class="fw-bold me-2" style="color: var(--gold-accent); font-size: 14px;">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
-                        <span class="text-white-50 text-decoration-line-through small" style="font-size: 10px;">{{ product.base_price }}</span>
-                    {% else %}
-                        <span class="fw-bold me-2" style="color: var(--gold-accent); font-size: 14px;">{{ product.base_price }}</span>
-                    {% endif %}
-                  </div>
-
-                  <div class="offer-countdown-mini d-flex justify-content-center align-items-center rounded-pill py-1 mt-1 shadow" 
-                        data-end-date="{{ product.active_offer.end_date|date:'c' }}" 
-                        style="background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,193,7,0.3); backdrop-filter: blur(4px);">
-                    <i class="fas fa-stopwatch fa-spin me-1" style="color: var(--gold-accent); font-size: 10px;"></i>
-                    <span class="timer-text fw-bold text-white" style="font-size: 11px; letter-spacing: 0.5px;" dir="ltr">--:--:--</span>
-                  </div>
-                </div>
-              </div>
-            </a>
-            {% endif %}
-          {% endif %}
-        {% endfor %}
-      </div>
-  </div>
-  {% endif %}
-
-  <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
-    <h6 class="fw-bold m-0" style="color: var(--main-blue);">{% trans "وصل حديثاً ✨" %}</h6>
-    <a href="#" class="text-decoration-none small" style="color: var(--main-blue); font-weight: bold;">{% trans "عرض الكل" %}</a>
-  </div>
-
-  <div class="row g-3 mb-5">
-    {% for product in products %}
-      {% if product.is_active and product.is_approved %}
-      <div class="col-6 col-md-4">
-        <div class="card product-card h-100 position-relative">
-          
-          {% if product.active_offer and product.active_offer.is_currently_active and product.active_offer.discount_percentage > 0 %}
-          <span class="badge bg-danger position-absolute shadow-sm" style="top: 10px; right: 10px; z-index: 5; font-size: 11px;">
-            -{{ product.active_offer.discount_percentage|floatformat:0 }}%
-          </span>
-          {% endif %}
-
-          <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none d-block">
-            <div style="height: 160px; overflow: hidden; border-radius: 18px 18px 0 0; background-color: #ffffff; padding: 10px; display: flex; align-items: center; justify-content: center;">
-              {% if product.image %}
-              <img src="{{ product.image.url }}" class="w-100 h-100" style="object-fit: contain; mix-blend-mode: multiply;" />
-              {% else %}
-              <div class="d-flex align-items-center justify-content-center w-100 h-100">
-                <i class="fas fa-camera text-muted fa-2x opacity-25"></i>
-              </div>
-              {% endif %}
-            </div>
-          </a>
-
-          <a href="{% url 'product_detail' product.pk %}" class="btn btn-gold rounded-circle position-absolute d-flex align-items-center justify-content-center shadow" style="width: 32px; height: 32px; bottom: 85px; left: 12px; padding: 0; z-index: 10;">
-            <i class="fas fa-plus small text-dark"></i>
-          </a>
-
-          <div class="card-body p-2 mt-2">
-            <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none">
-              <span class="d-block mb-1" style="font-size: 10px; color: var(--text-muted);">{{ product.category.name }}</span>
-
-              <h6 class="card-title text-truncate fw-bold mb-2 text-dark" style="font-size: 13px">
-                {{ product.name }}
-              </h6>
-
-              <div class="d-flex align-items-center flex-wrap">
-                {% if product.active_offer and product.active_offer.is_currently_active %}
-                  <span class="fw-bold" style="font-size: 15px; color: var(--main-blue);">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
-                  <span class="small ms-1 fw-bold" style="font-size: 10px; color: var(--main-blue);">{% trans "ج.م" %}</span>
-                  <span class="ms-2 text-decoration-line-through" style="font-size: 11px; color: var(--text-muted);">{{ product.base_price }}</span>
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="w-100 h-100" style="object-fit: contain; mix-blend-mode: darken;"/>
                 {% else %}
-                  <span class="fw-bold" style="font-size: 15px; color: var(--main-blue);">{{ product.base_price }}</span>
-                  <span class="small ms-1 fw-bold" style="font-size: 10px; color: var(--main-blue);">{% trans "ج.م" %}</span>
+                <i class="fas fa-box text-muted fa-2x opacity-25"></i>
                 {% endif %}
               </div>
+              
+              <div class="px-1 pb-2"> 
+                <span class="d-block mb-1 text-uppercase" style="font-size: 9px; font-weight: 800; color: #A1A1AA; letter-spacing: 0.5px;">{{ product.category.name }}</span>
+                <h6 class="text-truncate fw-bold mb-1" style="font-size: 13px; color: var(--text-primary);">{{ product.name }}</h6>
+                
+                <div class="d-flex align-items-center">
+                  {% if product.active_offer and product.active_offer.is_currently_active %}
+                    <span class="fw-bold" style="font-size: 15px; color: var(--text-primary);">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
+                    <span class="ms-1 fw-bold" style="font-size: 9px; color: var(--text-secondary);">{{ product.merchant.user.country.currency_symbol|default:"ج.م" }}</span>
+                  {% else %}
+                    <span class="fw-bold" style="font-size: 15px; color: var(--text-primary);">{{ product.base_price }}</span>
+                    <span class="ms-1 fw-bold" style="font-size: 9px; color: var(--text-secondary);">{{ product.merchant.user.country.currency_symbol|default:"ج.م" }}</span>
+                  {% endif %}
+                </div>
+              </div>
             </a>
+
           </div>
-          
         </div>
+        {% endif %}
+      {% empty %}
+      <div class="col-12 text-center py-5">
+        <div class="rounded-circle d-inline-flex p-4 mb-3" style="background: var(--surface); box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+          <i class="fas fa-box-open fa-2x" style="color: var(--text-secondary);"></i>
+        </div>
+        <h6 class="fw-bold text-dark mb-1">{% trans "لا توجد منتجات حالياً" %}</h6>
+        <p class="text-muted small">{% trans "نعمل على توفير أفضل المنتجات قريباً." %}</p>
       </div>
-      {% endif %}
-    {% empty %}
-    <div class="col-12 text-center py-5">
-      <div class="bg-white rounded-circle d-inline-flex p-4 shadow-sm mb-3">
-        <i class="fas fa-box-open fa-2x" style="color: var(--text-muted);"></i>
-      </div>
-      <p class="text-muted small">{% trans "لا توجد منتجات حالياً." %}</p>
-      <a href="{% url 'home' %}" class="btn btn-sm btn-gold rounded-pill px-4 fw-bold mt-2">{% trans "عرض الكل" %}</a>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // إخفاء قسم العروض لو فاضي
-    function checkEmptyOffers() {
-        const offersContainer = document.getElementById('special-offers-container');
-        const offersSection = document.getElementById('special-offers-section');
-        if (offersContainer && offersSection) {
-            const activeOffersCount = offersContainer.querySelectorAll('.offer-item').length;
-            if (activeOffersCount === 0) {
-                offersSection.style.display = 'none'; 
-            }
-        }
-    }
-    
-    checkEmptyOffers();
-
-    // عداد العروض التنازلي
-    const miniCountdowns = document.querySelectorAll('.offer-countdown-mini');
-
-    miniCountdowns.forEach(container => {
-        const endDateString = container.getAttribute('data-end-date');
-        if (!endDateString) return;
-
-        const countDownDate = new Date(endDateString).getTime();
-        const timerElement = container.querySelector('.timer-text');
-        timerElement.removeAttribute('dir'); 
-
-        const x = setInterval(function() {
-            const now = new Date().getTime();
-            const distance = countDownDate - now;
-
-            if (distance < 0) {
-                clearInterval(x);
-                const productLink = container.closest('.offer-item');
-                if (productLink) {
-                    productLink.remove(); 
-                    checkEmptyOffers();
-                }
-            } else {
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                const formattedHours = hours.toString().padStart(2, '0');
-                const formattedMinutes = minutes.toString().padStart(2, '0');
-                const formattedSeconds = seconds.toString().padStart(2, '0');
-
-                let timeHTML = "";
-                if (days > 0) {
-                    // 👈 تم وضع {% trans "يوم و" %} هنا لترجمة الكلمة في الجافاسكريبت
-                    timeHTML += `<span dir="rtl" class="me-1" style="color:#fff;">${days} {% trans "يوم و" %} </span>`;
-                }
-                
-                timeHTML += `<span dir="ltr" style="display:inline-block; color:var(--gold-accent);">${formattedHours}:${formattedMinutes}:${formattedSeconds}</span>`;
-                
-                timerElement.innerHTML = timeHTML;
-            }
-        }, 1000);
-    });
-});
-</script>
 
 {% endblock %}

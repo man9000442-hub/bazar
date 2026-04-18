@@ -1,26 +1,257 @@
-<!DOCTYPE html>
+<!doctype html>
 {% load i18n %}
 <html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>{% trans "طلب حذف الحساب | تطبيق البازار" %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { font-family: 'Cairo', sans-serif; }</style>
-</head>
-<body class="bg-slate-50 text-slate-800 antialiased p-4 flex items-center justify-center min-h-screen">
-    <div class="max-w-xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-red-100 text-center">
-        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🗑️</div>
-        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">{% trans "طلب حذف الحساب والبيانات" %}</h2>
-        <p class="text-slate-500 text-sm mb-6">{% trans "لإزالة بياناتك بشكل نهائي من منصة البازار، يرجى إرسال طلب من بريدك الإلكتروني المسجل أو من خلال تذاكر الدعم الفني داخل التطبيق." %}</p>
-        
-        <div class="bg-slate-50 rounded-xl p-4 text-right border border-slate-200 mb-6">
-            <ul class="list-disc pr-5 space-y-2 text-sm text-slate-700">
-                <li>{% trans "عبر البريد: أرسل لـ support@elbazaare.com" %}</li>
-                <li>{% trans "عبر التطبيق: افتح تذكرة دعم بعنوان 'حذف حساب'." %}</li>
-            </ul>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* --- متغيرات النظام (Ultra-Modern UI) --- */
+      :root {
+        --bg-main: #f4f5f8;
+        --surface: #ffffff;
+        --text-primary: #0a0a0a;
+        --text-secondary: #71717a;
+        --danger: #ef4444;
+        --danger-light: #fee2e2;
+      }
+
+      body {
+        background-color: var(--bg-main);
+        font-family: "Tajawal", sans-serif;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* --- أنيميشن الدخول --- */
+      @keyframes fadeUpIn {
+        0% {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes scaleUp {
+        0% {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .animate-fade-up {
+        animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+        opacity: 0;
+      }
+      .animate-scale-up {
+        animation: scaleUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+        opacity: 0;
+      }
+
+      /* --- الكارت الرئيسي --- */
+      .neo-delete-card {
+        background: var(--surface);
+        border-radius: 40px;
+        padding: 48px 32px;
+        border: none;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.04);
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+      }
+
+      /* --- أيقونة الحذف --- */
+      .delete-icon-wrapper {
+        width: 90px;
+        height: 90px;
+        background: var(--danger-light);
+        color: var(--danger);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        margin: 0 auto 24px auto;
+        box-shadow: 0 10px 25px rgba(239, 68, 68, 0.15);
+      }
+
+      /* --- صندوق التعليمات --- */
+      .instructions-box {
+        background: #f4f4f5;
+        border-radius: 24px;
+        padding: 24px;
+        margin-bottom: 30px;
+        text-align: right;
+      }
+
+      .instruction-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .instruction-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .icon-sm {
+        width: 40px;
+        height: 40px;
+        background: var(--surface);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-left: 16px;
+        color: var(--text-primary);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        flex-shrink: 0;
+        font-size: 16px;
+      }
+
+      /* --- زر الإرسال --- */
+      .btn-neo-danger {
+        background: var(--danger) !important;
+        color: #fff !important;
+        border: none;
+        font-weight: 800;
+        border-radius: 50px;
+        padding: 16px;
+        font-size: 16px;
+        transition: all 0.3s;
+        box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        width: 100%;
+      }
+      .btn-neo-danger:active {
+        transform: scale(0.96);
+        box-shadow: 0 5px 10px rgba(239, 68, 68, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="neo-delete-card animate-fade-up">
+      <div
+        class="delete-icon-wrapper animate-scale-up"
+        style="animation-delay: 150ms"
+      >
+        <i class="far fa-trash-alt"></i>
+      </div>
+
+      <h2
+        class="fw-bold mb-3 animate-fade-up"
+        style="letter-spacing: -0.5px; animation-delay: 250ms"
+      >
+        {% trans "طلب حذف الحساب والبيانات" %}
+      </h2>
+
+      <p
+        class="mb-4 animate-fade-up"
+        style="
+          color: var(--text-secondary);
+          font-size: 14px;
+          font-weight: 500;
+          line-height: 1.8;
+          animation-delay: 350ms;
+        "
+      >
+        {% trans "لإزالة بياناتك بشكل نهائي من منصة البازار، يرجى إرسال طلب من
+        بريدك الإلكتروني المسجل أو من خلال تذاكر الدعم الفني داخل التطبيق." %}
+      </p>
+
+      <div
+        class="instructions-box animate-fade-up"
+        style="animation-delay: 450ms"
+      >
+        <div class="instruction-item">
+          <div class="icon-sm">
+            <i class="fas fa-envelope" style="color: #3b82f6"></i>
+          </div>
+          <div
+            style="
+              font-size: 14px;
+              color: var(--text-primary);
+              font-weight: 600;
+            "
+          >
+            <span
+              style="
+                color: var(--text-secondary);
+                font-size: 12px;
+                display: block;
+                font-weight: 500;
+              "
+              >{% trans "عبر البريد الإلكتروني:" %}</span
+            >
+            <span dir="ltr"
+              >support@{{ site_settings.site_name|default:"Elbazaar"
+              }}e.com</span
+            >
+          </div>
         </div>
-        <a href="mailto:support@elbazaare.com" class="block w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-full transition-colors">{% trans "إرسال طلب الآن" %}</a>
+
+        <div class="instruction-item">
+          <div class="icon-sm">
+            <i class="fas fa-headset" style="color: var(--accent-gold)"></i>
+          </div>
+          <div
+            style="
+              font-size: 14px;
+              color: var(--text-primary);
+              font-weight: 600;
+            "
+          >
+            <span
+              style="
+                color: var(--text-secondary);
+                font-size: 12px;
+                display: block;
+                font-weight: 500;
+              "
+              >{% trans "عبر التطبيق:" %}</span
+            >
+            {% trans "افتح تذكرة دعم بعنوان 'حذف حساب'" %}
+          </div>
+        </div>
+      </div>
+
+      <div class="animate-fade-up" style="animation-delay: 550ms">
+        <a href="mailto:support@elbazaare.com" class="btn-neo-danger">
+          <i class="fas fa-paper-plane"></i> {% trans "إرسال طلب الآن" %}
+        </a>
+      </div>
     </div>
-</body>
+  </body>
 </html>

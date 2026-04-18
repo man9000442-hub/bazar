@@ -18,9 +18,9 @@ class MerchantProfile(models.Model):
         GOLD = 'GOLD', 'توثيق ذهبي'
         
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='merchant_profile')
-    national_id = models.CharField(max_length=14, unique=True, verbose_name="الرقم القومي")
-    id_card_front = models.ImageField(upload_to='merchant_ids/', verbose_name="صورة البطاقة (أمام)")
-    id_card_back = models.ImageField(upload_to='merchant_ids/', verbose_name="صورة البطاقة (خلف)")
+    #national_id = models.CharField(max_length=14, unique=True, verbose_name="الرقم القومي")
+    #id_card_front = models.ImageField(upload_to='merchant_ids/', verbose_name="صورة البطاقة (أمام)")
+    #id_card_back = models.ImageField(upload_to='merchant_ids/', verbose_name="صورة البطاقة (خلف)")
     shop_image = models.ImageField(upload_to='shops/', verbose_name="صورة المحل/الشخصية")
     minimum_balance_required = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="الحد الأدنى للرصيد")
     is_approved = models.BooleanField(default=False, verbose_name="تمت الموافقة من المشرف")
@@ -195,16 +195,21 @@ class Order(models.Model):
     governorate = models.ForeignKey(Governorate, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="المحافظة")
     is_first_order = models.BooleanField(default=False, verbose_name="أول طلب (شحن مجاني)")
     recipient_name = models.CharField(max_length=255, null=True, blank=True, verbose_name="اسم المستلم")
-    
+    payment_method = models.CharField(
+        max_length=20, 
+        default='COD', 
+        verbose_name=_("طريقة الدفع")
+    )
     class PaymentMethod(models.TextChoices):
         COD = "COD", "الدفع عند الاستلام"
         ONLINE = "ONLINE", "دفع إلكتروني (Paymob)"
         WALLET = "WALLET", "محفظة إلكترونية"
         
-    payment_method = models.CharField(max_length=10, choices=PaymentMethod.choices, default=PaymentMethod.COD, verbose_name="طريقة الدفع")
-    paymob_order_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="رقم طلب Paymob المبدئي")    
-    paymob_transaction_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="رقم معاملة Paymob")
-    
+# امسح الحقول القديمة بتاعة باي موب وحط دول:
+    gateway_order_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="رقم الفاتورة في البوابة")    
+    gateway_transaction_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="رقم المعاملة (Transaction)")
+    payment_gateway_used = models.CharField(max_length=20, blank=True, null=True, verbose_name="البوابة المستخدمة (Paymob/Fawaterk)")
+
     def save(self, *args, **kwargs):
         if not self.order_id:
             self.order_id = "OR-" + str(uuid.uuid4()).split('-')[0].upper()
@@ -258,15 +263,17 @@ class OrderItem(models.Model):
         price = self.price_at_purchase if self.price_at_purchase else self.product_size.product.base_price
         return self.quantity * price
     
-class PaymobTransaction(models.Model):
+class WalletDepositTransaction(models.Model): # كان اسمه PaymobTransaction
     merchant = models.ForeignKey(MerchantProfile, on_delete=models.CASCADE)
-    paymob_order_id = models.CharField(max_length=50, unique=True) 
-    amount_cents = models.IntegerField() 
+    gateway_order_id = models.CharField(max_length=100, unique=True, verbose_name="رقم الفاتورة الخارجي") 
+    gateway_name = models.CharField(max_length=20, default='PAYMOB') # عشان نعرف الشحن تم منين
+    amount_cents = models.IntegerField(verbose_name="المبلغ بالقروش (لو باي موب)") 
+    amount_actual = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="المبلغ الفعلي")
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.merchant} - {self.paymob_order_id}"
+        return f"{self.merchant} - {self.gateway_name} - {self.gateway_order_id}"
     
 class Favorite(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorites')
@@ -361,6 +368,14 @@ class SiteSetting(models.Model):
         # 🔥 تعديل جوهري: نستخدم get_or_create مباشرة لضمان وجود كائن دايماً
         obj, created = cls.objects.get_or_create(country=country)
         return obj
+    class PaymentGateway(models.TextChoices):
+        PAYMOB = 'PAYMOB', 'باي موب (Paymob)'
+        FAWATERK = 'FAWATERK', 'فواتيرك (Fawaterk)'
+        
+    active_payment_gateway = models.CharField(
+        max_length=20, choices=PaymentGateway.choices, 
+        default=PaymentGateway.FAWATERK, verbose_name="بوابة الدفع الفعالة"
+    )
 
 class WithdrawalRequest(models.Model):
     class Status(models.TextChoices):

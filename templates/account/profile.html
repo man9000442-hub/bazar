@@ -1,303 +1,585 @@
-{% extends 'base.html' %}
-{% load i18n %}
+{% extends 'base.html' %} 
+{% load i18n %} 
+
 {% block content %}
 
 <style>
-    /* ألوان وخلفيات المنصة الجديدة */
-    :root {
-        --glass-bg: rgba(18, 29, 58, 0.6);
-        --glass-border: rgba(255, 255, 255, 0.08);
-        --gold-glow: rgba(255, 193, 7, 0.3);
-        --hover-bg: rgba(255, 255, 255, 0.04);
-    }
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #f4f5f8;
+    --surface: #ffffff;
+    --text-primary: #0a0a0a;
+    --text-secondary: #71717a;
+    --accent-dark: #000000;
+    --accent-gold: #f5a623;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
 
-    /* تأثير الزجاج للكروت */
-    .glass-card {
-        background: var(--glass-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border);
-        border-radius: 24px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-    }
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: "Tajawal", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
-    /* تأثيرات عناصر القائمة */
-    .menu-item {
-        background-color: transparent !important;
-        border-color: var(--glass-border) !important;
-        color: #fff;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-    }
-    
-    .menu-item:hover {
-        background: var(--hover-bg) !important;
-        transform: translateX(8px);
-        padding-left: 20px !important;
-    }
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
 
-    .menu-item::before {
-        content: '';
-        position: absolute;
-        right: 0;
-        top: 20%;
-        height: 60%;
-        width: 3px;
-        background: #ffc107;
-        border-radius: 5px;
-        opacity: 0;
-        transition: 0.3s;
-    }
+  /* --- الهيدر الخاص بالبروفايل --- */
+  .profile-header-neo {
+    background: var(--surface);
+    border-radius: 0 0 40px 40px;
+    padding: 50px 20px 40px 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+    margin-bottom: 24px;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+  }
 
-    .menu-item:hover::before {
-        opacity: 1;
-    }
+  .avatar-wrapper-neo {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 16px;
+  }
 
-    /* الأيقونات المضيئة */
-    .icon-box-premium {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: 0.3s;
-    }
+  .avatar-neo {
+    border-radius: 50%;
+    border: 4px solid var(--surface);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    background: var(--bg-main);
+  }
 
-    /* أنيميشن الصورة الشخصية */
-    .avatar-wrapper {
-        position: relative;
-        display: inline-block;
-    }
-    
-    .avatar-wrapper::after {
-        content: '';
-        position: absolute;
-        top: -5px; left: -5px; right: -5px; bottom: -5px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #ffc107, #ff4081);
-        z-index: -1;
-        animation: pulseGlow 2s infinite alternate;
-    }
+  .role-badge-neo {
+    position: absolute;
+    bottom: 0; left: 0; 
+    background: var(--accent-dark);
+    color: var(--accent-gold);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--surface);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
 
-    @keyframes pulseGlow {
-        0% { transform: scale(1); opacity: 0.6; }
-        100% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 20px var(--gold-glow); }
-    }
+  /* --- الكروت الحاوية --- */
+  .neo-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 20px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    margin-bottom: 24px;
+  }
 
-    /* نصوص */
-    .gold-text { color: #ffc107 !important; }
-    .text-muted-dark { color: #a1b2d3 !important; }
+  .group-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #a1a1aa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 24px 10px 24px;
+    display: flex;
+    align-items: center;
+  }
+  .group-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px; height: 14px;
+    background: var(--text-secondary);
+    border-radius: 4px;
+    margin-inline-end: 8px;
+    opacity: 0.5;
+  }
 
-    /* زر الخروج */
-    .btn-exit {
-        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.02));
-        border: 1px solid rgba(220, 53, 69, 0.2);
-        color: #ff6b6b;
-        border-radius: 16px;
-        transition: all 0.3s ease;
-    }
-    .btn-exit:hover {
-        background: rgba(220, 53, 69, 0.2);
-        color: #fff;
-        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
-        transform: translateY(-3px);
-    }
+  /* --- تصميم الأزرار الجديد والمبهر (Neo Pill Menu Item) --- */
+  .neo-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    border-radius: 20px;
+    background: #F8F9FA;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid transparent;
+    width: 100%;
+    text-align: start;
+  }
+  .neo-menu-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .neo-menu-item:hover {
+    background: var(--surface);
+    border-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+  }
+  
+  .neo-menu-item:active {
+    transform: scale(0.98);
+  }
+
+  .neo-menu-item i.fa-chevron-left {
+    transition: transform 0.3s;
+    color: #d4d4d8;
+  }
+  .neo-menu-item:hover i.fa-chevron-left {
+    transform: translateX(-4px);
+    color: var(--accent-dark);
+  }
+
+  .icon-box-neo {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 20px;
+    background: var(--surface);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  }
+
+  /* --- زر الخروج --- */
+  .btn-neo-exit {
+    background: var(--danger-light);
+    border: 2px solid transparent;
+    color: var(--danger);
+    border-radius: 20px;
+    font-weight: 800;
+    padding: 18px;
+    transition: all 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .btn-neo-exit:hover {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+  }
+  .btn-neo-exit:active { transform: scale(0.96); }
+
+  /* --- النوافذ المنبثقة (Modals) --- */
+  .neo-modal-content {
+    border-radius: 32px; border: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    background: var(--surface);
+  }
+  .neo-modal-header {
+    border-bottom: 1px solid var(--border-light);
+    padding: 24px;
+  }
+  .neo-modal-body { padding: 24px; color: var(--text-secondary); }
 </style>
 
-<div class="profile-header text-center position-relative" style="background: url('https://www.transparenttextures.com/patterns/cubes.png'), linear-gradient(135deg, #060b19 0%, #101a35 100%); padding: 4rem 1rem 6rem 1rem; border-bottom-left-radius: 50px; border-bottom-right-radius: 50px;">
-    
-    <div class="position-absolute top-0 end-0 p-4 z-3">
-        <a href="#" class="btn btn-sm btn-outline-light rounded-pill border-0 shadow-sm" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(5px);">
-            <i class="fas fa-globe me-1"></i> AR
-        </a>
-    </div>
+{% if request.user.is_authenticated %}
 
-    <div class="avatar-wrapper mb-3">
-        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=121d3a&color=ffc107&size=128&bold=true" 
-             class="rounded-circle border border-3 border-dark shadow-lg" width="100" height="100" style="object-fit: cover; z-index: 2; position: relative;">
-        
-        {% if request.user.role == 'MERCHANT' %}
-        <span class="position-absolute bottom-0 start-0 bg-warning text-dark border border-dark border-2 rounded-circle d-flex align-items-center justify-content-center shadow-lg" style="width: 32px; height: 32px; z-index: 3;" title="{% trans 'حساب تاجر' %}">
-            <i class="fas fa-store" style="font-size: 13px;"></i>
-        </span>
-        {% endif %}
-    </div>
-    
-    <h3 class="fw-bold mb-1 text-white" style="letter-spacing: 0.5px;">{{ request.user.first_name }} {{ request.user.last_name|default:"" }}</h3>
-    <p class="gold-text mb-0 fw-bold" dir="ltr" style="font-size: 15px;">{{ request.user.phone_primary }}</p>
-    {% if request.user.country %}
-    <span class="badge rounded-pill mt-2 px-3 py-2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);"><i class="fas fa-map-marker-alt text-danger me-1"></i> {% trans request.user.country.name %}</span>
+<div class="profile-header-neo animate-fade-up">
+  <div class="avatar-wrapper-neo">
+    <img src="https://ui-avatars.com/api/?name={{ request.user.first_name }}+{{ request.user.last_name }}&background=F4F4F5&color=0A0A0A&size=128&bold=true" class="avatar-neo" width="100" height="100" style="object-fit: cover" />
+    {% if request.user.role == 'MERCHANT' %}
+    <span class="role-badge-neo" title="{% trans 'حساب تاجر' %}">
+      <i class="fas fa-store" style="font-size: 13px"></i>
+    </span>
     {% endif %}
+  </div>
+
+  <h3 class="fw-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.5px">
+    {{ request.user.first_name }} {{ request.user.last_name|default:"" }}
+  </h3>
+  <p class="mb-2 fw-bold" dir="ltr" style="font-size: 15px; color: var(--text-secondary)">
+    {{ request.user.phone_primary }}
+  </p>
+
+  {% if request.user.country %}
+  <span class="badge rounded-pill px-3 py-2 mt-1" style="background: #f4f4f5; color: var(--text-primary); border: 1px solid var(--border-light); font-weight: 700;">
+    <i class="fas fa-map-marker-alt text-danger me-1"></i> {% trans request.user.country.name %}
+  </span>
+  {% endif %}
 </div>
 
-<div class="container" style="margin-top: -60px; position: relative; z-index: 10; padding-bottom: 90px; max-width: 650px;">
+<div class="container pb-5" style="max-width: 650px">
+  
+  {% if request.user.role == 'MERCHANT' and request.user.merchant_profile.is_approved or request.user.is_superuser or request.user.role in 'OWNER,ADMIN_LVL2,ADMIN_LVL3,COUNTRY_ADMIN' %}
+  <span class="group-title animate-fade-up" style="animation-delay: 100ms">{% trans "الإدارة والتحكم" %}</span>
+  <div class="neo-card animate-fade-up" style="animation-delay: 100ms">
     
-    {% if request.user.role == 'MERCHANT' and request.user.merchant_profile.is_approved or request.user.is_superuser or request.user.role == 'OWNER' or request.user.role == 'ADMIN_LVL2' or request.user.role == 'ADMIN_LVL3' or request.user.role == 'COUNTRY_ADMIN' %}
-    <div class="glass-card mb-4">
-        <div class="list-group list-group-flush">
-            {% if request.user.role == 'MERCHANT' and request.user.merchant_profile.is_approved %}
-            <a href="{% url 'merchant_dashboard' %}" class="list-group-item menu-item d-flex align-items-center p-3 border-bottom">
-                <div class="icon-box-premium me-3" style="background: rgba(255, 193, 7, 0.15); box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);">
-                    <i class="fas fa-store-alt fs-5 gold-text"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "لوحة تحكم التاجر" %}</h6>
-                    <small class="text-muted-dark" style="font-size: 12px;">{% trans "إدارة منتجاتك ومبيعاتك" %}</small>
-                </div>
-                <i class="fas fa-arrow-left ms-auto text-muted-dark opacity-50"></i>
-            </a>
-            {% endif %}
-
-            {% if request.user.is_superuser or request.user.role in 'OWNER,COUNTRY_ADMIN,ADMIN_LVL2,ADMIN_LVL3' %}
-            <a href="{% url 'supervisor_dashboard' %}" class="list-group-item menu-item d-flex align-items-center p-3">
-                <div class="icon-box-premium me-3" style="background: rgba(110, 168, 254, 0.15); box-shadow: 0 0 15px rgba(110, 168, 254, 0.2);">
-                    <i class="fas fa-user-shield fs-5 text-primary"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "لوحة الإشراف والإدارة" %}</h6>
-                    <small class="text-muted-dark" style="font-size: 12px;">{% trans "إدارة المنصة وعرض التقارير" %}</small>
-                </div>
-                <i class="fas fa-arrow-left ms-auto text-muted-dark opacity-50"></i>
-            </a>
-            {% endif %}
-        </div>
-    </div>
+    {% if request.user.role == 'MERCHANT' and request.user.merchant_profile.is_approved %}
+    <a href="{% url 'merchant_dashboard' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: #d97706">
+        <i class="fas fa-store-alt"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "لوحة تحكم التاجر" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "إدارة منتجاتك ومبيعاتك" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </a>
+    {% endif %} 
+    
+    {% if request.user.is_superuser or request.user.role in 'OWNER,COUNTRY_ADMIN,ADMIN_LVL2,ADMIN_LVL3' %}
+    <a href="{% url 'supervisor_dashboard' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: #2563eb">
+        <i class="fas fa-user-shield"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "لوحة الإشراف والإدارة" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "إدارة المنصة وعرض التقارير" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </a>
     {% endif %}
+  </div>
+  {% endif %}
 
-    <h6 class="fw-bold text-muted-dark ms-3 mb-3 text-uppercase" style="font-size: 12px; letter-spacing: 1px;">{% trans "إعدادات الحساب" %}</h6>
-    <div class="glass-card mb-4">
-        <div class="list-group list-group-flush">
-            
-            <a href="{% url 'my_orders' %}" class="list-group-item menu-item d-flex align-items-center p-3 border-bottom">
-                <div class="icon-box-premium me-3" style="background: rgba(255, 193, 7, 0.1);">
-                    <i class="fas fa-box-open fs-5 gold-text"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "طلباتي السابقة" %}</h6>
-                    <small class="text-muted-dark" style="font-size: 12px;">{% trans "تتبع مشترياتك وحالة طلبك" %}</small>
-                </div>
-                <i class="fas fa-chevron-left ms-auto text-muted-dark opacity-50"></i>
-            </a>
-
-            <a href="{% url 'wishlist' %}" class="list-group-item menu-item d-flex align-items-center p-3 border-bottom">
-                <div class="icon-box-premium me-3" style="background: rgba(255, 107, 107, 0.1);">
-                    <i class="fas fa-heart fs-5" style="color: #ff6b6b;"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "المفضلة" %}</h6>
-                    <small class="text-muted-dark" style="font-size: 12px;">{% trans "المنتجات التي أعجبتك" %}</small>
-                </div>
-                <i class="fas fa-chevron-left ms-auto text-muted-dark opacity-50"></i>
-            </a>
-
-            <a href="{% url 'referral_center' %}" class="list-group-item menu-item d-flex align-items-center p-3 border-bottom">
-                <div class="icon-box-premium me-3" style="background: rgba(74, 222, 128, 0.1);">
-                    <i class="fas fa-gift fs-5" style="color: #4ade80;"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "مركز الهدايا والدعوات" %}</h6>
-                    <small class="fw-bold" style="font-size: 12px; color: #4ade80;">{% trans "شارك واربح رصيد مجاني!" %}</small>
-                </div>
-                <i class="fas fa-chevron-left ms-auto text-muted-dark opacity-50"></i>
-            </a>
-
-            <a href="#LanguageLink" class="list-group-item menu-item d-flex align-items-center p-3 border-bottom">
-                <div class="icon-box-premium me-3" style="background: rgba(0, 201, 255, 0.1);">
-                    <i class="fas fa-language fs-5 text-info"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "تغيير لغة التطبيق" %}</h6>
-                    <small class="text-muted-dark" style="font-size: 12px;">{% trans "العربية / English" %}</small>
-                </div>
-                <div class="ms-auto d-flex align-items-center">
-                    <span class="badge bg-dark border border-secondary text-light me-2">AR</span>
-                    <i class="fas fa-sync-alt text-muted-dark opacity-50"></i>
-                </div>
-            </a>
-
-            <a href="{% url 'account_change_password' %}" class="list-group-item menu-item d-flex align-items-center p-3 border-bottom">
-                <div class="icon-box-premium me-3" style="background: rgba(255, 255, 255, 0.05);">
-                    <i class="fas fa-lock fs-5 text-white-50"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "الأمان وكلمة المرور" %}</h6>
-                    <small class="text-muted-dark" style="font-size: 12px;">{% trans "تغيير بيانات الدخول" %}</small>
-                </div>
-                <i class="fas fa-chevron-left ms-auto text-muted-dark opacity-50"></i>
-            </a>
-            
-        </div>
-    </div>
-
-    <h6 class="fw-bold text-muted-dark ms-3 mb-3 text-uppercase" style="font-size: 12px; letter-spacing: 1px;">{% trans "الدعم والسياسات" %}</h6>
-    <div class="glass-card mb-4">
-        <div class="list-group list-group-flush">
-            
-            <a href="{% url 'my_tickets' %}" class="list-group-item menu-item d-flex align-items-center p-3 border-bottom">
-                <div class="icon-box-premium me-3" style="background: rgba(13, 110, 253, 0.1);">
-                    <i class="fas fa-headset fs-5" style="color: #6ea8fe;"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "الدعم الفني والمساعدة" %}</h6>
-                    <small class="text-muted-dark" style="font-size: 12px;">{% trans "تواصل معنا لحل أي مشكلة" %}</small>
-                </div>
-                <i class="fas fa-chevron-left ms-auto text-muted-dark opacity-50"></i>
-            </a>
-
-            <button type="button" class="list-group-item menu-item d-flex align-items-center p-3 border-0 text-start w-100" data-bs-toggle="modal" data-bs-target="#policiesCenterModal">
-                <div class="icon-box-premium me-3" style="background: rgba(255, 255, 255, 0.05);">
-                    <i class="fas fa-balance-scale fs-5 text-white-50"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-white">{% trans "المركز القانوني والسياسات" %}</h6>
-                    <small class="text-muted-dark" style="font-size: 12px;">{% trans "الشروط، الخصوصية، والاسترجاع" %}</small>
-                </div>
-                <i class="fas fa-chevron-left ms-auto text-muted-dark opacity-50"></i>
-            </button>
-        </div>
-    </div>
-
-    <a href="{% url 'account_logout' %}" class="btn btn-exit w-100 p-3 fw-bold d-flex align-items-center justify-content-center gap-2 mt-2">
-        <i class="fas fa-sign-out-alt fs-5"></i> {% trans "تسجيل الخروج بأمان" %}
+  <span class="group-title animate-fade-up" style="animation-delay: 200ms">{% trans "حسابي" %}</span>
+  <div class="neo-card animate-fade-up" style="animation-delay: 200ms">
+    
+    <a href="{% url 'my_orders' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: var(--text-primary)">
+        <i class="fas fa-box-open"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "طلباتي السابقة" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "تتبع مشترياتك وحالة طلبك" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
     </a>
 
-    <div class="text-center mt-5 mb-2">
-        <span class="text-muted-dark small fw-bold opacity-50" style="letter-spacing: 2px;">ELBAZAAR APP <i class="fas fa-bolt text-warning mx-1"></i> V1.0</span>
+    <a href="{% url 'wishlist' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: var(--danger)">
+        <i class="fas fa-heart"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "المفضلة" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "المنتجات التي أعجبتك" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </a>
+
+    <a href="{% url 'referral_center' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: var(--success)">
+        <i class="fas fa-gift"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "مركز الهدايا والدعوات" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "شارك واربح رصيد مجاني!" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </a>
+
+    <a href="{% url 'user_settings' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: #0284c7">
+        <i class="fas fa-cog"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "الإعدادات" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "اللغة، الأمان، والبيانات الشخصية" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </a>
+
+  </div>
+
+  <span class="group-title animate-fade-up" style="animation-delay: 300ms">{% trans "الدعم والسياسات" %}</span>
+  <div class="neo-card animate-fade-up" style="animation-delay: 300ms">
+    
+    <a href="{% url 'my_tickets' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: #4f46e5">
+        <i class="fas fa-headset"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "الدعم الفني والمساعدة" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "تواصل معنا لحل أي مشكلة" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </a>
+
+    <a href="{% url 'about_us' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: #10b981">
+        <i class="fas fa-info-circle"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "من نحن" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "تعرف أكثر على قصتنا ورؤيتنا" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </a>
+
+    <button type="button" class="neo-menu-item" data-bs-toggle="modal" data-bs-target="#policiesCenterModal">
+      <div class="icon-box-neo me-3" style="color: var(--text-primary)">
+        <i class="fas fa-balance-scale"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "المركز القانوني والسياسات" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "الشروط، الخصوصية، والاسترجاع" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </button>
+  </div>
+
+  <div class="animate-fade-up" style="animation-delay: 400ms">
+    <a href="{% url 'account_logout' %}" class="btn-neo-exit w-100">
+      <i class="fas fa-sign-out-alt"></i> {% trans "تسجيل الخروج بأمان" %}
+    </a>
+
+    <div class="text-center mt-4 mb-2">
+      <span class="small fw-bold" style="color: #d4d4d8; letter-spacing: 2px">ELBAZAAR APP <i class="fas fa-bolt text-warning mx-1"></i> V1.0</span>
     </div>
+  </div>
+</div>
+
+{% else %}
+
+<div class="profile-header-neo animate-fade-up">
+  <div class="avatar-wrapper-neo">
+    <div class="avatar-neo d-flex align-items-center justify-content-center" style="width: 100px; height: 100px; background: #f4f4f5">
+      <i class="fas fa-user-lock fa-3x" style="color: var(--text-secondary); opacity: 0.5"></i>
+    </div>
+  </div>
+  <h3 class="fw-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.5px">{% trans "مرحباً بك في المنصة" %}</h3>
+  <p class="mb-0 small" style="color: var(--text-secondary); font-weight: 500">{% trans "سجل دخولك الآن لتجربة تسوق أفضل" %}</p>
+</div>
+
+<div class="container pb-5" style="max-width: 650px">
+  
+  <div class="neo-card mb-4 p-4 text-center animate-fade-up" style="animation-delay: 100ms">
+    <div class="icon-box-neo mx-auto mb-3" style="width: 60px; height: 60px; background: rgba(245, 166, 35, 0.1); color: var(--accent-gold); font-size: 24px;">
+      <i class="fas fa-sign-in-alt"></i>
+    </div>
+    <h5 class="fw-bold mb-2" style="color: var(--text-primary)">{% trans "تسجيل الدخول" %}</h5>
+    <p class="small mb-4" style="color: var(--text-secondary); font-weight: 500">{% trans "سجل الدخول للوصول إلى طلباتك، محفظتك، وإعدادات حسابك." %}</p>
+    <a href="{% url 'account_login' %}" class="btn w-100 py-3 fw-bold rounded-pill shadow-sm" style="background: var(--accent-dark); color: #fff; font-size: 15px">
+      <i class="fas fa-user-check me-2"></i> {% trans "تسجيل الدخول أو إنشاء حساب" %}
+    </a>
+  </div>
+
+  <span class="group-title animate-fade-up" style="animation-delay: 200ms">{% trans "إعدادات عامة والسياسات" %}</span>
+  <div class="neo-card animate-fade-up" style="animation-delay: 200ms">
+    
+    <button type="button" class="neo-menu-item" data-bs-toggle="modal" data-bs-target="#guestSettingsModal">
+      <div class="icon-box-neo me-3" style="color: #0284c7">
+        <i class="fas fa-sliders-h"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "إعدادات الزائر" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "تغيير لغة التطبيق والدولة المؤقتة" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </button>
+
+    <a href="{% url 'about_us' %}" class="neo-menu-item">
+      <div class="icon-box-neo me-3" style="color: #10b981">
+        <i class="fas fa-info-circle"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "من نحن" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "تعرف أكثر على قصتنا ورؤيتنا" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </a>
+
+    <button type="button" class="neo-menu-item" data-bs-toggle="modal" data-bs-target="#policiesCenterModal">
+      <div class="icon-box-neo me-3" style="color: var(--text-primary)">
+        <i class="fas fa-balance-scale"></i>
+      </div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-0" style="font-size: 15px">{% trans "المركز القانوني والسياسات" %}</h6>
+        <small style="color: var(--text-secondary); font-size: 12px; font-weight: 600;">{% trans "الشروط، الخصوصية، والاسترجاع" %}</small>
+      </div>
+      <i class="fas fa-chevron-left"></i>
+    </button>
+  </div>
+
+  <div class="text-center mt-5 mb-2">
+    <span class="small fw-bold" style="color: #d4d4d8; letter-spacing: 2px">ELBAZAAR APP <i class="fas fa-bolt text-warning mx-1"></i> V1.0</span>
+  </div>
+</div>
+{% endif %}
+
+
+<div class="modal fade" id="guestSettingsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content neo-modal-content">
+      <div class="neo-modal-header d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: var(--text-primary)">
+          <i class="fas fa-sliders-h me-2" style="color: #0284c7"></i> {% trans "إعدادات الزائر" %}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="neo-modal-body">
+        
+        <h6 class="fw-bold mb-3 text-dark"><i class="fas fa-language text-primary me-2"></i>{% trans "لغة العرض" %}</h6>
+        <form action="{% url 'set_language' %}" method="post" class="mb-4">
+          {% csrf_token %}
+          <input name="next" type="hidden" value="{{ request.path }}" />
+          <select name="language" class="form-select form-select-lg border-0 bg-light fw-bold text-dark rounded-4 mb-3" onchange="this.form.submit()">
+            {% get_available_languages as LANGUAGES %}
+            {% for lang in LANGUAGES %}
+            <option value="{{ lang.0 }}" {% if lang.0 == LANGUAGE_CODE %}selected{% endif %}>
+              {% if lang.0 == 'ar' %}العربية 🇪🇬{% else %}English 🇺🇸{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </form>
+
+        <h6 class="fw-bold mb-3 text-dark"><i class="fas fa-globe text-success me-2"></i>{% trans "دولة المتجر (مؤقت)" %}</h6>
+        <form action="{% url 'set_user_country' %}" method="post">
+          {% csrf_token %}
+          <div class="d-grid gap-2" style="max-height: 250px; overflow-y: auto;">
+            {% for country in available_countries %}
+            <button type="submit" name="country_id" value="{{ country.id }}" class="btn btn-light bg-white p-3 rounded-4 fw-bold text-start d-flex justify-content-between align-items-center border border-2 border-light transition-hover {% if current_country and current_country.id == country.id %}border-primary{% endif %}">
+              <div class="d-flex align-items-center gap-3">
+                <img src="https://flagcdn.com/w40/{{ country.code|lower }}.png" width="24" class="rounded-1 shadow-sm">
+                <span class="text-dark">{{ country.name }}</span>
+              </div>
+              <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2">
+                  {{ country.currency_symbol }}
+              </span>
+            </button>
+            {% endfor %}
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal fade" id="policiesCenterModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg glass-card" style="background: #121d3a;">
-            <div class="modal-header border-0 pb-0 mt-3 px-4">
-                <h5 class="modal-title fw-bold text-white"><i class="fas fa-shield-alt gold-text ms-2"></i> {% trans "مركز السياسات" %}</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content neo-modal-content">
+      <div class="neo-modal-header d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: var(--text-primary); letter-spacing: -0.5px">
+          <i class="fas fa-shield-alt me-2" style="color: var(--accent-gold)"></i> {% trans "مركز السياسات" %}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" style="box-shadow: none"></button>
+      </div>
+      <div class="neo-modal-body">
+        <div class="row g-3">
+          <div class="col-4">
+            <div class="card h-100 text-center p-3 border-0" role="button" data-bs-toggle="modal" data-bs-target="#termsModal" data-bs-dismiss="modal" style="background: #f4f4f5; border-radius: 20px; transition: transform 0.2s;">
+              <i class="fas fa-file-contract fs-3 mb-2" style="color: var(--text-primary)"></i>
+              <span class="fw-bold" style="font-size: 12px; color: var(--text-primary)">{% trans "الشروط" %}</span>
             </div>
-            <div class="modal-body p-4">
-                <div class="row g-3">
-                    <div class="col-4">
-                        <div class="card glass-card h-100 text-center p-3 menu-item" role="button">
-                            <i class="fas fa-file-contract fa-2x gold-text mb-2"></i>
-                            <span class="fw-bold text-white" style="font-size: 11px;">{% trans "الشروط" %}</span>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card glass-card h-100 text-center p-3 menu-item" role="button">
-                            <i class="fas fa-user-shield fa-2x gold-text mb-2"></i>
-                            <span class="fw-bold text-white" style="font-size: 11px;">{% trans "الخصوصية" %}</span>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card glass-card h-100 text-center p-3 menu-item" role="button">
-                            <i class="fas fa-truck fa-2x gold-text mb-2"></i>
-                            <span class="fw-bold text-white" style="font-size: 11px;">{% trans "الاسترجاع" %}</span>
-                        </div>
-                    </div>
-                </div>
+          </div>
+          <div class="col-4">
+            <div class="card h-100 text-center p-3 border-0" role="button" data-bs-toggle="modal" data-bs-target="#privacyModal" data-bs-dismiss="modal" style="background: #f4f4f5; border-radius: 20px; transition: transform 0.2s;">
+              <i class="fas fa-user-shield fs-3 mb-2" style="color: var(--text-primary)"></i>
+              <span class="fw-bold" style="font-size: 12px; color: var(--text-primary)">{% trans "الخصوصية" %}</span>
             </div>
+          </div>
+          <div class="col-4">
+            <div class="card h-100 text-center p-3 border-0" role="button" data-bs-toggle="modal" data-bs-target="#shippingModal" data-bs-dismiss="modal" style="background: #f4f4f5; border-radius: 20px; transition: transform 0.2s;">
+              <i class="fas fa-truck fs-3 mb-2" style="color: var(--text-primary)"></i>
+              <span class="fw-bold" style="font-size: 12px; color: var(--text-primary)">{% trans "الاسترجاع" %}</span>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
+
+<div class="modal fade" id="termsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content neo-modal-content">
+      <div class="neo-modal-header d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: var(--text-primary)">
+          <i class="fas fa-file-contract me-2" style="color: var(--accent-gold)"></i> {% trans "الأحكام والشروط" %}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="neo-modal-body" style="line-height: 1.8; font-size: 14px">
+        {% if terms_policies %} {% for item in terms_policies %}
+        <h6 class="fw-bold mt-3" style="color: var(--text-primary)">{{ item.title }}</h6>
+        <p class="mb-4">{{ item.content|linebreaksbr }}</p>
+        {% endfor %} {% else %}
+        <div class="text-center py-4">
+          <i class="fas fa-folder-open fa-2x mb-3" style="color: #d4d4d8"></i>
+          <p>{% trans "لا توجد بنود متاحة حالياً." %}</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer border-0 p-3">
+        <button class="btn w-100 py-3 rounded-pill fw-bold" style="background: #f4f4f5; color: var(--text-primary)" data-bs-toggle="modal" data-bs-target="#policiesCenterModal" data-bs-dismiss="modal">
+          {% trans "رجوع للمركز" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content neo-modal-content">
+      <div class="neo-modal-header d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: var(--text-primary)">
+          <i class="fas fa-user-shield me-2" style="color: var(--accent-gold)"></i> {% trans "سياسة الخصوصية" %}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="neo-modal-body" style="line-height: 1.8; font-size: 14px">
+        {% if privacy_policies %} {% for item in privacy_policies %}
+        <h6 class="fw-bold mt-3" style="color: var(--text-primary)">{{ item.title }}</h6>
+        <p class="mb-4">{{ item.content|linebreaksbr }}</p>
+        {% endfor %} {% else %}
+        <div class="text-center py-4">
+          <i class="fas fa-folder-open fa-2x mb-3" style="color: #d4d4d8"></i>
+          <p>{% trans "لا توجد بنود متاحة حالياً." %}</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer border-0 p-3">
+        <button class="btn w-100 py-3 rounded-pill fw-bold" style="background: #f4f4f5; color: var(--text-primary)" data-bs-toggle="modal" data-bs-target="#policiesCenterModal" data-bs-dismiss="modal">
+          {% trans "رجوع للمركز" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="shippingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content neo-modal-content">
+      <div class="neo-modal-header d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: var(--text-primary)">
+          <i class="fas fa-truck me-2" style="color: var(--accent-gold)"></i> {% trans "سياسة الشحن والاسترجاع" %}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="neo-modal-body" style="line-height: 1.8; font-size: 14px">
+        {% if shipping_policies %} {% for item in shipping_policies %}
+        <h6 class="fw-bold mt-3" style="color: var(--text-primary)">{{ item.title }}</h6>
+        <p class="mb-4">{{ item.content|linebreaksbr }}</p>
+        {% endfor %} {% else %}
+        <div class="text-center py-4">
+          <i class="fas fa-folder-open fa-2x mb-3" style="color: #d4d4d8"></i>
+          <p>{% trans "لا توجد بنود متاحة حالياً." %}</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer border-0 p-3">
+        <button class="btn w-100 py-3 rounded-pill fw-bold" style="background: #f4f4f5; color: var(--text-primary)" data-bs-toggle="modal" data-bs-target="#policiesCenterModal" data-bs-dismiss="modal">
+          {% trans "رجوع للمركز" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

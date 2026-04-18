@@ -1,0 +1,398 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load supervisor_tags i18n %} 
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    
+    /* ألوان الإحصائيات */
+    --color-green: #10B981;
+    --bg-green: #ECFDF5;
+    --color-red: #EF4444;
+    --bg-red: #FEE2E2;
+    --color-blue: #3B82F6;
+    --bg-blue: #EFF6FF;
+    --color-gold: #D97706;
+    --bg-gold: #FEF3C7;
+    --color-purple: #8B5CF6;
+    --bg-purple: #F3E8FF;
+    
+    --border-light: rgba(0, 0, 0, 0.05);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* إخفاء القائمة السفلية إجبارياً للوحة تحكم المالك */
+  .bottom-nav, .bottom-navigation-bar { display: none !important; }
+
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- شريط البورصة العصري (Light Ticker) --- */
+  .neo-ticker-wrap {
+    width: 100%;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-light);
+    overflow: hidden;
+    padding: 10px 0;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+  }
+  .neo-ticker-heading {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    background: #F4F4F5; color: var(--text-primary);
+    font-weight: 800; padding: 10px 24px; z-index: 10;
+    display: flex; align-items: center; font-size: 13px;
+    border-left: 1px solid var(--border-light);
+  }
+  .neo-ticker {
+    display: inline-block; white-space: nowrap;
+    animation: tickerNeo 30s linear infinite;
+    color: var(--text-secondary); font-family: monospace; font-size: 14px; font-weight: 700;
+  }
+  @keyframes tickerNeo {
+    0% { transform: translate3d(100vw, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+  }
+
+  /* --- الهيدر العالمي (Global Overview) --- */
+  .global-hero-neo {
+    background: var(--surface);
+    border-radius: 0 0 40px 40px;
+    padding: 50px 20px 40px 20px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.03);
+    position: relative;
+    z-index: 10;
+    background-image: radial-gradient(circle at top right, rgba(245, 166, 35, 0.05), transparent 40%);
+  }
+
+  .portfolio-label {
+    font-size: 11px; font-weight: 800; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 3px; display: block; margin-bottom: 8px;
+  }
+  .hero-balance {
+    font-size: 3.5rem; font-weight: 900; color: var(--text-primary);
+    letter-spacing: -1px; margin-bottom: 16px; display: inline-block;
+  }
+
+  .hero-mini-badge {
+    display: inline-flex; align-items: center;
+    background: #F4F4F5; padding: 10px 20px;
+    border-radius: 100px; border: 1px solid var(--border-light);
+    font-size: 13px; font-weight: 700; color: var(--text-secondary);
+  }
+  .hero-mini-badge span { color: var(--text-primary); font-weight: 800; margin-left: 6px; }
+
+  /* --- محدد الدول (Country Orbits) --- */
+  .countries-wrapper {
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; padding: 30px 20px;
+  }
+
+  .country-squircle {
+    width: 75px; height: 75px;
+    background: var(--surface); border-radius: 22px; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+    border: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* الألوان ظاهرة 100% بدون وضع الماوس كما طلبت */
+    filter: none; opacity: 0.8;
+  }
+  .country-squircle img {
+    width: 32px; height: 24px; object-fit: cover;
+    border-radius: 4px; margin-bottom: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .country-squircle span { font-size: 11px; font-weight: 800; color: var(--text-secondary); transition: 0.3s;}
+
+  .country-squircle:hover {
+    transform: translateY(-5px); opacity: 1;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.06);
+  }
+  .country-squircle.active {
+    opacity: 1; border-color: var(--accent-dark);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+    transform: translateY(-5px) scale(1.05);
+  }
+  .country-squircle.active span { color: var(--accent-dark); }
+
+  /* --- لوحة التفاصيل (Detail Panel) --- */
+  .neo-detail-panel {
+    background: var(--surface); border-radius: 40px;
+    padding: 32px; margin: 0 15px 50px 15px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.04);
+    display: none; 
+    animation: slideUpNeo 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+  }
+
+  @keyframes slideUpNeo {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- كروت الإحصائيات (Neo Stats) --- */
+  .neo-stat-card {
+    background: var(--surface); border-radius: 20px;
+    padding: 16px; border: 1px solid var(--border-light);
+    display: flex; flex-direction: column;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.01);
+    transition: transform 0.2s, box-shadow 0.2s;
+    height: 100%;
+  }
+  .neo-stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.04); }
+  
+  .stat-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .stat-icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .stat-label { font-size: 12px; font-weight: 800; color: var(--text-secondary); }
+  .stat-val { font-size: 20px; font-weight: 900; color: var(--text-primary); letter-spacing: -0.5px; font-family: monospace; }
+
+  /* الألوان المخصصة للأيقونات */
+  .ic-green { background: var(--bg-green); color: var(--color-green); }
+  .ic-blue { background: var(--bg-blue); color: var(--color-blue); }
+  .ic-red { background: var(--bg-red); color: var(--color-red); }
+  .ic-gold { background: var(--bg-gold); color: var(--color-gold); }
+  .ic-purple { background: var(--bg-purple); color: var(--color-purple); }
+  .ic-dark { background: #F4F4F5; color: var(--accent-dark); }
+
+  /* عناوين الأقسام الداخلية */
+  .section-title {
+    font-size: 15px; font-weight: 800; color: var(--text-primary);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* --- صندوق الرسم البياني --- */
+  .chart-neo-box {
+    height: 320px; background: #F4F4F5; border-radius: 24px;
+    padding: 20px; border: 1px solid var(--border-light);
+  }
+</style>
+
+<div class="neo-ticker-wrap">
+    <div class="neo-ticker-heading"><i class="fas fa-satellite-dish text-primary me-2 animate__animated animate__flash animate__infinite"></i> LIVE FX</div>
+    <div class="neo-ticker" dir="ltr">{{ exchange_ticker }}  |  {{ exchange_ticker }}</div>
+</div>
+
+<div class="global-hero-neo animate-fade-up">
+    <div class="container">
+        <span class="portfolio-label"><i class="fas fa-globe-americas me-1"></i> {% trans "GLOBAL NET PROFIT (USD)" %}</span>
+        <div class="hero-balance" dir="ltr">${{ global_net_usd|floatformat:2 }}</div>
+        <br>
+        <div class="hero-mini-badge">
+            <i class="fas fa-chart-line" style="color: var(--accent-gold);"></i> {% trans "Total Sales Volume:" %} <span>${{ global_sales_usd|floatformat:2 }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5" style="max-width: 1100px;">
+    
+    <div class="countries-wrapper animate-fade-up" style="animation-delay: 100ms;">
+        {% for c in countries_list %}
+        <div class="country-squircle" id="orb-{{ c.id }}" onclick="activateTerminal({{ c.id }})">
+            <img src="https://flagcdn.com/w160/{{ c.code|lower }}.png" alt="">
+            <span>{{ c.code }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="command-panel" class="neo-detail-panel">
+        
+        <div class="row align-items-center border-bottom pb-4 mb-4" style="border-color: var(--border-light) !important;">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="d-flex align-items-center gap-3">
+                    <img id="term-flag" src="" style="width: 60px; height: 45px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <div>
+                        <h2 id="term-name" class="fw-bold mb-0" style="font-size: 26px; color: var(--text-primary); letter-spacing: -0.5px;"></h2>
+                        <span id="term-rate" class="fw-bold text-muted" style="font-size: 12px; font-family: monospace;"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <p class="text-muted mb-0 small fw-bold text-uppercase" style="letter-spacing: 1px;">{% trans "صافي الربح الإقليمي" %}</p>
+                <h2 id="term-net-profit" class="fw-bold m-0" style="color: var(--color-green); font-size: 28px; letter-spacing: -0.5px;"></h2>
+            </div>
+        </div>
+
+        <h6 class="section-title"><i class="fas fa-money-check-alt text-primary"></i> {% trans "العمليات المالية والمبيعات" %}</h6>
+        <div class="row g-3 mb-5">
+            <div class="col-12 col-md-4">
+                <div class="neo-stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon ic-blue"><i class="fas fa-shopping-bag"></i></div>
+                        <span class="stat-label">{% trans "إجمالي المبيعات" %}</span>
+                    </div>
+                    <div id="term-sales" class="stat-val"></div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="neo-stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon ic-gold"><i class="fas fa-hand-holding-usd"></i></div>
+                        <span class="stat-label">{% trans "العمولات المتحصلة" %}</span>
+                    </div>
+                    <div id="term-commissions" class="stat-val"></div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="neo-stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon ic-red"><i class="fas fa-undo"></i></div>
+                        <span class="stat-label">{% trans "التعويضات" %}</span>
+                    </div>
+                    <div id="term-compensations" class="stat-val"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-lg-6">
+                <h6 class="section-title"><i class="fas fa-box text-warning"></i> {% trans "حالة الطلبات" %}</h6>
+                <div class="row g-3">
+                    <div class="col-6"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-green"><i class="fas fa-check"></i></div><span class="stat-label">{% trans "ناجحة" %}</span></div><div id="term-o-del" class="stat-val"></div></div></div>
+                    <div class="col-6"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-red"><i class="fas fa-times"></i></div><span class="stat-label">{% trans "مرتجعة" %}</span></div><div id="term-o-ret" class="stat-val"></div></div></div>
+                    <div class="col-12"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-gold"><i class="fas fa-clock"></i></div><span class="stat-label">{% trans "معلقة / جارية" %}</span></div><div id="term-o-pen" class="stat-val"></div></div></div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <h6 class="section-title"><i class="fas fa-boxes text-info"></i> {% trans "المخزون والمنتجات" %}</h6>
+                <div class="row g-3">
+                    <div class="col-6"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-blue"><i class="fas fa-layer-group"></i></div><span class="stat-label">{% trans "منتجات نشطة" %}</span></div><div id="term-prod-active" class="stat-val"></div></div></div>
+                    <div class="col-6"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-gold"><i class="fas fa-hourglass-half"></i></div><span class="stat-label">{% trans "تحت المراجعة" %}</span></div><div id="term-prod-pending" class="stat-val"></div></div></div>
+                </div>
+            </div>
+        </div>
+
+        <h6 class="section-title"><i class="fas fa-users-cog text-purple"></i> {% trans "الموارد البشرية والمخاطر" %}</h6>
+        <div class="row g-3 mb-5">
+            <div class="col-6 col-md-3"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-purple"><i class="fas fa-users"></i></div><span class="stat-label">{% trans "العملاء" %}</span></div><div id="term-users" class="stat-val"></div></div></div>
+            <div class="col-6 col-md-3"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-dark"><i class="fas fa-store"></i></div><span class="stat-label">{% trans "التجار" %}</span></div><div id="term-merchants" class="stat-val"></div></div></div>
+            <div class="col-6 col-md-3"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-red"><i class="fas fa-user-slash"></i></div><span class="stat-label">{% trans "حظر (Ban)" %}</span></div><div id="term-banned" class="stat-val"></div></div></div>
+            <div class="col-6 col-md-3"><div class="neo-stat-card"><div class="stat-header"><div class="stat-icon ic-gold"><i class="fas fa-exclamation-triangle"></i></div><span class="stat-label">{% trans "الشكاوي" %}</span></div><div id="term-complaints" class="stat-val"></div></div></div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <h6 class="section-title"><i class="fas fa-chart-area text-success"></i> {% trans "مؤشر الإيرادات (6 أشهر)" %}</h6>
+                <div class="chart-neo-box">
+                    <canvas id="terminalChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const db = JSON.parse('{{ countries_json|escapejs }}');
+    let radarChart = null;
+
+    function formatCur(val, curr) {
+        return new Intl.NumberFormat('en-US').format(val) + ' ' + curr;
+    }
+
+    function activateTerminal(id) {
+        const d = db[id];
+        
+        // 1. تفعيل الكرة
+        document.querySelectorAll('.country-squircle').forEach(el => el.classList.remove('active'));
+        document.getElementById('orb-' + id).classList.add('active');
+
+        // 2. إظهار الشاشة
+        const panel = document.getElementById('command-panel');
+        panel.style.display = 'block';
+
+        // 3. حقن البيانات
+        document.getElementById('term-name').innerText = d.name;
+        document.getElementById('term-flag').src = d.flag;
+        document.getElementById('term-rate').innerText = `1 USD = ${d.rate_to_usd.toFixed(2)} ${d.currency}`;
+        
+        // المالية
+        document.getElementById('term-net-profit').innerText = formatCur(d.finance.net_profit, d.currency);
+        document.getElementById('term-sales').innerText = formatCur(d.finance.sales, d.currency);
+        document.getElementById('term-commissions').innerText = formatCur(d.finance.commissions, d.currency);
+        document.getElementById('term-compensations').innerText = formatCur(d.finance.compensations, d.currency);
+
+        // الطلبات
+        document.getElementById('term-o-del').innerText = d.orders.delivered;
+        document.getElementById('term-o-ret').innerText = d.orders.returned;
+        document.getElementById('term-o-pen').innerText = d.orders.pending;
+
+        // البشر
+        document.getElementById('term-users').innerText = d.people.users;
+        document.getElementById('term-merchants').innerText = d.people.merchants;
+        document.getElementById('term-banned').innerText = d.people.banned;
+        document.getElementById('term-complaints').innerText = d.people.complaints;
+
+        // المنتجات
+        document.getElementById('term-prod-active').innerText = d.products.active;
+        document.getElementById('term-prod-pending').innerText = d.products.pending;
+
+        // 4. رسم الرسم البياني (Light UI Style)
+        updateRadar(d.charts.labels, d.charts.data, d.currency);
+
+        // Scroll
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function updateRadar(labels, data, currency) {
+        const ctx = document.getElementById('terminalChart').getContext('2d');
+        if (radarChart) radarChart.destroy();
+
+        radarChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: data,
+                    borderColor: '#0A0A0A', // خط أسود فخم
+                    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                    borderWidth: 3,
+                    tension: 0.4, // انحناء ناعم
+                    fill: true,
+                    pointBackgroundColor: '#F5A623', // نقاط ذهبية
+                    pointBorderColor: '#FFF',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false, backgroundColor: '#0A0A0A', titleFont: {family:'Tajawal'}, bodyFont: {family:'Tajawal', weight:'bold'} }
+                },
+                scales: {
+                    y: { grid: { color: 'rgba(0,0,0,0.05)', borderDash: [5,5] }, border: {display: false}, ticks: { color: '#71717A', font: {family: 'monospace'} } },
+                    x: { grid: { display: false }, border: {display: false}, ticks: { color: '#71717A', font: {family: 'monospace'} } }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

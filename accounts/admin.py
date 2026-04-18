@@ -8,6 +8,7 @@ from .models import UserFCMToken
 
 from .models import NotificationLog
 
+
 @admin.register(NotificationLog)
 class NotificationLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'title', 'status', 'created_at')

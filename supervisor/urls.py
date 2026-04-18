@@ -44,9 +44,10 @@ path('withdrawals/pending/', views.pending_withdrawals, name='super_pending_with
 path('withdrawals/approve/<int:pk>/', views.approve_withdrawal, name='super_approve_withdrawal'),
 
 # Settings & Others
-# ضيف السطر ده وسط مسارات لوحة المشرف (supervisor)
+path('owner-dashboard/', views.owner_dashboard, name='owner_dashboard'),
 path('supervisor/translations/', views.system_translations_view, name='super_system_translations'),
 path('categories/', views.manage_categories, name='super_categories'),
+path('merchant/<int:pk>/toggle-verify/', views.toggle_verify_merchant, name='super_toggle_verify_merchant'),
 path('categories/delete/<int:pk>/', views.delete_category, name='super_delete_category'),
 path('settings/', views.site_settings_view, name='super_site_settings'),
 path('offers/create/', views.create_platform_offer, name='super_create_offer'),

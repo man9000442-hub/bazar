@@ -112,7 +112,8 @@ TEMPLATES = [
                 'store.context_processors.site_settings',
                 'support.context_processors.support_tickets_processor',
                 'accounts.context_processors.mobile_app_detector',
-                'store.context_processors.active_promo_popup'
+                'store.context_processors.active_promo_popup',
+                'store.context_processors.global_country_context',
             ],
         },
     },
@@ -144,11 +145,6 @@ CACHES = {
         'LOCATION': 'django_cache_table',
     }
 }
-
-
-
-
-
 
 USE_I18N = True
 USE_L10N = True
@@ -226,9 +222,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-
-
-
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # مدة صلاحية التوكن الأساسي (يوم واحد)
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30), # مدة صلاحية توكن التجديد (شهر)
@@ -297,3 +290,9 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 
+# ==========================================
+# 12. Fawaterk Payment Gateway Settings
+# ==========================================
+FAWATERK_API_KEY = "87df49bce65c9ea7b75df8efeaed5d4f1570958b08eceab275"
+FAWATERK_SUCCESS_URL = "https://pluvious-ejectively-violet.ngrok-free.dev/my-orders/"
+FAWATERK_WEBHOOK_URL = "https://pluvious-ejectively-violet.ngrok-free.dev/payment/callback/"

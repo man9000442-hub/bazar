@@ -1,22 +1,128 @@
 {% extends "base.html" %}
 {% load i18n %}
+
 {% block content %}
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
-    <div class="card shadow-sm border-0 p-4 p-md-5 text-center rounded-4 w-100" style="max-width: 400px; background-color: #fff;">
-        <div class="mb-4">
-            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 80px; height: 80px;">
-                <i class="fas fa-sign-out-alt fa-3x text-warning"></i>
-            </div>
+
+<style>
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --danger: #EF4444;
+    --danger-light: #FEE2E2;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول (Staggered Fade-Up) --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- كارت الخروج العائم --- */
+  .neo-logout-card {
+    background: var(--surface);
+    border-radius: 32px;
+    padding: 48px 32px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.03);
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  /* --- أيقونة الخروج --- */
+  .logout-icon-box {
+    width: 80px; height: 80px;
+    background: var(--danger-light);
+    color: var(--danger);
+    border-radius: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.1);
+    transform: rotate(-5deg);
+    transition: transform 0.3s ease;
+  }
+  .neo-logout-card:hover .logout-icon-box {
+    transform: rotate(0deg) scale(1.05);
+  }
+
+  /* --- الأزرار العصرية --- */
+  .btn-neo-danger {
+    background: var(--danger) !important;
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 50px;
+    padding: 16px;
+    font-size: 15px;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2);
+  }
+  .btn-neo-danger:active { 
+    transform: scale(0.96); 
+    box-shadow: 0 5px 10px rgba(239, 68, 68, 0.1); 
+  }
+
+  .btn-neo-outline {
+    background: var(--surface);
+    color: var(--text-primary) !important;
+    border: 2px solid var(--border-light);
+    font-weight: 800;
+    border-radius: 50px;
+    padding: 16px;
+    font-size: 15px;
+    transition: all 0.3s;
+  }
+  .btn-neo-outline:hover { 
+    background: #F4F4F5; 
+    border-color: transparent; 
+  }
+  .btn-neo-outline:active { 
+    transform: scale(0.96); 
+  }
+</style>
+
+<div class="container d-flex flex-column justify-content-center py-5" style="min-height: 85vh;">
+    
+    <div class="neo-logout-card animate-fade-up">
+        
+        <div class="logout-icon-box mx-auto">
+            <i class="fas fa-sign-out-alt"></i>
         </div>
-        <h4 class="fw-bold mb-2 text-dark">{% trans "تسجيل الخروج" %}</h4>
-        <p class="text-muted mb-4 small">{% trans "هل أنت متأكد أنك تريد المغادرة؟" %}</p>
+        
+        <h3 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "تسجيل الخروج" %}</h3>
+        <p class="mb-4" style="color: var(--text-secondary); font-weight: 500; font-size: 15px;">{% trans "هل أنت متأكد أنك تريد المغادرة؟" %}</p>
+        
         <form method="post" action="{% url 'account_logout' %}">
             {% csrf_token %}
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-danger fw-bold py-3 rounded-pill shadow-sm">{% trans "نعم، تسجيل الخروج" %}</button>
-                <a href="{% url 'home' %}" class="btn btn-light border fw-bold py-3 rounded-pill text-dark mt-2">{% trans "تراجع والبقاء" %}</a>
+            <div class="d-grid gap-3">
+                <button type="submit" class="btn btn-neo-danger w-100">
+                    {% trans "نعم، تسجيل الخروج" %}
+                </button>
+                <a href="{% url 'home' %}" class="btn btn-neo-outline w-100 text-decoration-none">
+                    {% trans "تراجع والبقاء" %}
+                </a>
             </div>
         </form>
+
     </div>
+
 </div>
 {% endblock %}

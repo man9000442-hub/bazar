@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+
+<style>
+  /* --- متغيرات النظام (Ultra-Modern UI) --- */
+  :root {
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --danger: #EF4444; /* أحمر عصري للخصومات */
+    --success: #10B981;
+    --border-light: rgba(0, 0, 0, 0.04);
+  }
+
+  body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- أنيميشن الدخول --- */
+  @keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUpIn 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+  }
+
+  /* --- هيدر العروض --- */
+  .offers-hero {
+    background: var(--surface);
+    padding: 40px 20px;
+    border-radius: 0 0 40px 40px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.02);
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .fire-icon-box {
+    width: 65px; height: 65px;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border-radius: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.1);
+    transform: rotate(-10deg);
+  }
+
+  /* --- كروت المنتجات العصرية --- */
+  .neo-offer-card {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .neo-offer-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+  }
+
+  /* --- منطقة الصورة وشارة الخصم --- */
+  .img-showcase {
+    background: #F4F4F5;
+    border-radius: 20px;
+    height: 170px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    padding: 15px;
+    margin-bottom: 12px;
+  }
+  .img-showcase img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    mix-blend-mode: darken; /* لجعل الخلفيات البيضاء للصور تندمج مع الرمادي الفاتح */
+  }
+
+  .discount-tag-neo {
+    position: absolute;
+    top: 10px; right: 10px; /* متوافق مع RTL */
+    background: var(--danger);
+    color: #fff;
+    font-weight: 800;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    z-index: 5;
+    letter-spacing: 0.5px;
+  }
+
+  /* --- نصوص الكارت --- */
+  .product-category {
+    font-size: 10px;
+    font-weight: 800;
+    color: #A1A1AA;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .product-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+
+  /* --- الأسعار --- */
+  .price-wrapper {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .new-price-neo {
+    color: var(--text-primary);
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+  }
+  .currency-neo {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 700;
+  }
+  .old-price-neo {
+    text-decoration: line-through;
+    color: #A1A1AA;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* --- شحن مجاني --- */
+  .free-shipping-neo {
+    color: var(--success);
+    font-weight: 800;
+    font-size: 11px;
+    background: #ECFDF5;
+    padding: 4px 8px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  /* --- زر التسوق --- */
+  .btn-neo-buy {
+    background: var(--accent-dark);
+    color: #fff !important;
+    border: none;
+    font-weight: 800;
+    border-radius: 16px;
+    padding: 12px;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-top: auto; /* لدفعه لأسفل الكارت دائماً */
+  }
+  .btn-neo-buy:active { transform: scale(0.96); }
+
+  /* ريسبونسيف للموبايل */
+  @media (max-width: 768px) {
+    .img-showcase { height: 140px; }
+    .new-price-neo { font-size: 16px; }
+  }
+</style>
+
+<div class="offers-hero animate-fade-up">
+    <div class="container">
+        <div class="fire-icon-box">
+            <i class="fas fa-fire-alt"></i>
+        </div>
+        <h2 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "عروض لا تقاوم" %}</h2>
+        <p class="mb-0" style="color: var(--text-secondary); font-weight: 500; font-size: 14px;">{% trans "اكتشف أفضل الخصومات المتاحة اليوم في بلدك، ووفر أكثر!" %}</p>
+    </div>
+</div>
+
+<div class="container pb-5 mb-4">
+    {% if offers %}
+        <div class="row g-3">
+            {% for offer in offers %}
+                <div class="col-6 col-md-4 col-lg-3 animate-fade-up" style="animation-delay: {{ forloop.counter0|add:1 }}00ms;">
+                    <div class="neo-offer-card">
+                        
+                        <div class="img-showcase">
+                            <span class="discount-tag-neo" dir="ltr">-{{ offer.discount_percentage|floatformat:0 }}%</span>
+                            {% if offer.product.image %}
+                                <img src="{{ offer.product.image.url }}" alt="{{ offer.product.name }}">
+                            {% else %}
+                                <i class="fas fa-box text-muted fa-2x opacity-25"></i>
+                            {% endif %}
+                        </div>
+
+                        <div class="px-2 d-flex flex-column flex-grow-1">
+                            <span class="product-category">{{ offer.product.category.name }}</span>
+                            <h6 class="product-title text-truncate">{{ offer.product.name }}</h6>
+                            
+                            <div class="price-wrapper">
+                                <div>
+                                    <span class="new-price-neo">{{ offer.discounted_price|floatformat:0 }}</span>
+                                    <span class="currency-neo">{{ offer.product.country.currency_symbol|default:"ج.م" }}</span>
+                                </div>
+                                <span class="old-price-neo">{{ offer.product.base_price|floatformat:0 }}</span>
+                            </div>
+
+                            {% if offer.free_shipping %}
+                            <div>
+                                <span class="free-shipping-neo">
+                                    <i class="fas fa-truck"></i> {% trans "شحن مجاني" %}
+                                </span>
+                            </div>
+                            {% endif %}
+
+                            <a href="{% url 'product_detail' offer.product.id %}" class="btn-neo-buy">
+                                {% trans "تسوق الآن" %}
+                            </a>
+                        </div>
+                        
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5 mt-4 animate-fade-up" style="animation-delay: 200ms;">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 120px; height: 120px; background: var(--surface); box-shadow: 0 15px 35px rgba(0,0,0,0.05);">
+                <i class="fas fa-percentage fa-3x" style="color: var(--text-secondary); opacity: 0.3;"></i>
+            </div>
+            <h4 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "لا توجد عروض حالياً" %}</h4>
+            <p class="mb-4" style="color: var(--text-secondary); font-weight: 500;">{% trans "عد لاحقاً لاكتشاف أقوى التخفيضات والأسعار الحصرية." %}</p>
+            <a href="{% url 'home' %}" class="btn btn-dark rounded-pill px-5 py-3 fw-bold shadow-sm text-decoration-none">
+                {% trans "تصفح المنتجات" %} <i class="fas fa-store ms-2"></i>
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

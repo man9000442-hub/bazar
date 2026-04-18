@@ -34,6 +34,8 @@ urlpatterns = [
     path('merchant/notifications/', views.merchant_notifications_view, name='merchant_notifications'),
     path('delete-account/', views.delete_account_request, name='delete-account'),
     path('save-fcm-token/', views.save_fcm_token, name='save_fcm_token'),
+    path('settings/', views.user_settings, name='user_settings'),
+
     #---------------------------------------
     #------------FLUTTER--------------------
     path('api/profile/change-password/', ChangePasswordAPI.as_view(), name='api_change_password'),

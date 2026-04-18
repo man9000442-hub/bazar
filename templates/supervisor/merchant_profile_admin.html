@@ -1,18 +1,33 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% load i18n supervisor_tags %}
+{% load i18n supervisor_tags l10n %}
 {% block head_title %}{% blocktrans with first_name=merchant.user.first_name %}ملف التاجر: {{ first_name }} | Elbazaar{% endblocktrans %}{% endblock %} 
 {% block page_title %}{% trans "إدارة ملف التاجر" %}{% endblock %} 
 
 {% block content %}
 <div class="container-fluid p-0">
     
-    <div class="d-flex align-items-center mb-4 gap-3">
-        <a href="{% url 'super_merchants_list' %}" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
-            <i class="fas fa-arrow-right text-dark"></i>
-        </a>
-        <div>
-            <h5 class="fw-bold text-dark m-0">{% trans "ملف التاجر:" %} <span class="text-primary">{{ merchant.user.first_name }}</span></h5>
+    <div class="d-flex align-items-center justify-content-between mb-4 gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'super_merchants_list' %}" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-arrow-right text-dark"></i>
+            </a>
+            <div>
+                <h5 class="fw-bold text-dark m-0">{% trans "ملف التاجر:" %} <span class="text-primary">{{ merchant.user.first_name }}</span></h5>
+            </div>
         </div>
+
+        <form action="{% url 'super_toggle_verify_merchant' merchant.id %}" method="POST" class="d-inline">
+            {% csrf_token %}
+            {% if merchant.is_verified %}
+                <button type="submit" class="btn btn-success rounded-pill fw-bold shadow-sm px-4" onclick="return confirm('{% trans "هل أنت متأكد من سحب شارة التوثيق من هذا التاجر؟" %}')">
+                    <i class="fas fa-check-circle me-1"></i> {% trans "حساب موثق (إلغاء)" %}
+                </button>
+            {% else %}
+                <button type="submit" class="btn btn-outline-secondary bg-white rounded-pill fw-bold shadow-sm px-4" onclick="return confirm('{% trans "هل تريد منح هذا التاجر شارة التوثيق الزرقاء؟" %}')">
+                    <i class="fas fa-times-circle me-1"></i> {% trans "غير موثق (توثيق الآن)" %}
+                </button>
+            {% endif %}
+        </form>
     </div>
 
     <div class="bg-white rounded-pill shadow-sm p-1 mb-4 d-inline-flex" style="max-width: 100%; overflow-x: auto; white-space: nowrap;">
@@ -49,12 +64,8 @@
                                 {% endif %}
                                 
                                 <div class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 shadow-sm">
-                                    {% if merchant.verification_rank == 'GOLD' %}
-                                        <i class="fas fa-check-circle text-warning fs-5" title="{% trans 'توثيق ذهبي' %}"></i>
-                                    {% elif merchant.verification_rank == 'BLUE' %}
-                                        <i class="fas fa-check-circle text-primary fs-5" title="{% trans 'توثيق أزرق' %}"></i>
-                                    {% elif merchant.verification_rank == 'SILVER' %}
-                                        <i class="fas fa-check-circle text-secondary fs-5" title="{% trans 'توثيق فضي' %}"></i>
+                                    {% if merchant.is_verified %}
+                                        <i class="fas fa-check-circle text-primary fs-5" title="{% trans 'موثق' %}"></i>
                                     {% else %}
                                         <i class="fas fa-circle text-light fs-5" title="{% trans 'عادي' %}"></i>
                                     {% endif %}
@@ -75,18 +86,9 @@
 
                         <h6 class="fw-bold text-primary mb-3 pb-2 border-bottom border-light"><i class="fas fa-id-card me-1"></i> {% trans "الوثائق (KYC)" %}</h6>
                         <div class="bg-light rounded-3 p-3 mb-3">
-                            <div class="mb-2"><span class="text-muted small">{% trans "الرقم القومي:" %}</span> <span class="fw-bold text-dark font-monospace float-start">{{ merchant.national_id }}</span></div>
                             <div><span class="text-muted small">{% trans "السجل الضريبي:" %}</span> <span class="fw-bold {% if merchant.tax_register_number %}text-success{% else %}text-muted{% endif %} font-monospace float-start">{% if merchant.tax_register_number %}{{ merchant.tax_register_number }}{% else %}{% trans "غير متوفر" %}{% endif %}</span></div>
                         </div>
 
-                        <div class="d-flex gap-2 mt-auto">
-                            {% if merchant.id_card_front %}
-                                <a href="{{ merchant.id_card_front.url }}" target="_blank" class="btn btn-outline-secondary btn-sm flex-grow-1 fw-bold rounded-3"><i class="fas fa-image me-1 text-primary"></i> {% trans "بطاقة أمامي" %}</a>
-                            {% endif %} 
-                            {% if merchant.id_card_back %}
-                                <a href="{{ merchant.id_card_back.url }}" target="_blank" class="btn btn-outline-secondary btn-sm flex-grow-1 fw-bold rounded-3"><i class="fas fa-image me-1 text-primary"></i> {% trans "بطاقة خلفي" %}</a>
-                            {% endif %}
-                        </div>
                     </div>
                 </div>
 
@@ -230,10 +232,10 @@
                                 </div>
                                 
                                 <div class="mb-4">
-                                    <label class="form-label fw-bold small text-muted">{% trans "الحد الأدنى للرصيد بالسالب (مسموحيات)" %}</label>
+                                    <label class="form-label fw-bold small text-muted">{% trans "الحد الأدنى للرصيد ( لعرض المنتجات )" %}</label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light border-0"><i class="fas fa-wallet text-warning"></i></span>
-                                        <input type="number" step="0.01" name="minimum_balance_required" class="form-control bg-light border-0 fw-bold" value="{{ merchant.minimum_balance_required }}">
+                                        <input type="number" step="0.01" name="minimum_balance_required" class="form-control bg-light border-0 fw-bold" value="{{ merchant.minimum_balance_required|unlocalize }}">
                                         <span class="input-group-text bg-light border-0 small text-muted">{{ merchant.user.country.currency_symbol|default:"ج.م" }}</span>
                                     </div>
                                 </div>
@@ -258,29 +260,25 @@
                 <div class="col-12 col-xl-7">
                     <div class="card border-0 shadow-sm rounded-4 bg-white">
                         <div class="card-body p-4">
-                            <h6 class="fw-bold mb-4 pb-3 border-bottom border-light"><i class="fas fa-pen-to-square text-primary me-2"></i> {% trans "تحديث بيانات التوثيق (KYC)" %}</h6>
+                            <h6 class="fw-bold mb-4 pb-3 border-bottom border-light"><i class="fas fa-pen-to-square text-primary me-2"></i> {% trans "تحديث بيانات (KYC) وأولوية التاجر" %}</h6>
                             
                             <form method="POST" enctype="multipart/form-data">
                                 {% csrf_token %}
                                 <div class="row g-3">
                                     <div class="col-12 mb-3">
-                                        <div class="bg-light rounded-3 p-3 border border-light">
-                                            <label class="form-label fw-bold text-dark mb-2"><i class="fas fa-award text-warning me-1"></i> {% trans "رتبة توثيق التاجر (Badge)" %}</label>
+                                        <div class="bg-warning bg-opacity-10 rounded-3 p-3 border border-warning border-opacity-25">
+                                            <label class="form-label fw-bold text-dark mb-2"><i class="fas fa-layer-group text-warning me-1"></i> {% trans "أولوية ظهور المنتجات (رتبة خفية)" %}</label>
+                                            <p class="small text-muted mb-2">{% trans "هذه الرتبة لا تظهر للتاجر وتستخدم فقط لتحديد ترتيب عرض منتجاته في الصفحة الرئيسية للعملاء." %}</p>
                                             <select name="verification_rank" class="form-select bg-white border-0 fw-bold py-2 shadow-sm">
-                                                <option value="NONE" {% if merchant.verification_rank == 'NONE' %}selected{% endif %}>{% trans "عادي (بدون شارة)" %}</option>
-                                                <option value="SILVER" {% if merchant.verification_rank == 'SILVER' %}selected{% endif %}>{% trans "شارة فضية 🥈" %}</option>
-                                                <option value="BLUE" {% if merchant.verification_rank == 'BLUE' %}selected{% endif %}>{% trans "شارة زرقاء 🔵" %}</option>
-                                                <option value="GOLD" {% if merchant.verification_rank == 'GOLD' %}selected{% endif %}>{% trans "شارة ذهبية 🥇" %}</option>
+                                                <option value="NONE" {% if merchant.verification_rank == 'NONE' %}selected{% endif %}>{% trans "ترتيب عادي (افتراضي)" %}</option>
+                                                <option value="SILVER" {% if merchant.verification_rank == 'SILVER' %}selected{% endif %}>{% trans "أولوية برونزية 🥉" %}</option>
+                                                <option value="BLUE" {% if merchant.verification_rank == 'BLUE' %}selected{% endif %}>{% trans "أولوية فضية 🥈" %}</option>
+                                                <option value="GOLD" {% if merchant.verification_rank == 'GOLD' %}selected{% endif %}>{% trans "أولوية ذهبية 🥇 (المركز الأول)" %}</option>
                                             </select>
                                         </div>
                                     </div>
                                     
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold small text-muted">{% trans "الرقم القومي" %} <span class="text-danger">*</span></label>
-                                        <input type="text" name="national_id" class="form-control bg-light border-0 rounded-3 px-3 py-2" value="{{ merchant.national_id }}" required />
-                                    </div>
-
-                                    <div class="col-md-6">
+                                    <div class="col-md-12">
                                         <label class="form-label fw-bold small text-muted">{% trans "رقم السجل الضريبي" %}</label>
                                         <input type="text" name="tax_register" class="form-control bg-light border-0 rounded-3 px-3 py-2" value="{{ merchant.tax_register_number|default:'' }}" />
                                     </div>

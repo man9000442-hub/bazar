@@ -1,108 +1,192 @@
-{% extends 'supervisor/base_supervisor.html' %}
-{% load i18n %} {% block head_title %}{% trans "ملف العميل:" %} {{ customer.first_name }} | Elbazaar{% endblock %}
-{% block page_title %}{% trans "ملف العميل وطلباته" %}{% endblock %}
-
-{% block content %}
-{% trans "ج.م" as default_currency %}
+{% extends 'supervisor/base_supervisor.html' %} {% load i18n %} {% block
+head_title %}{% trans "ملف العميل:" %} {{ customer.first_name }} | Elbazaar{%
+endblock %} {% block page_title %}{% trans "ملف العميل وطلباته" %}{% endblock %}
+{% block content %} {% trans "ج.م" as default_currency %}
 
 <div class="container-fluid p-0">
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a
+      href="{% url 'super_users_list' %}"
+      class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center"
+      style="width: 40px; height: 40px"
+    >
+      <i class="fas fa-arrow-right text-dark"></i>
+    </a>
+    <div>
+      <h5 class="fw-bold text-dark m-0">{% trans "بروفايل المشتري" %}</h5>
+    </div>
+  </div>
 
-    <div class="d-flex align-items-center mb-4 gap-3">
-        <a href="{% url 'super_users_list' %}" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
-            <i class="fas fa-arrow-right text-dark"></i>
-        </a>
-        <div>
-            <h5 class="fw-bold text-dark m-0">{% trans "بروفايل المشتري" %}</h5>
+  <div class="row g-4">
+    <div class="col-12 col-xl-4">
+      <div
+        class="card border-0 shadow-sm p-4 text-center rounded-4 h-100 bg-white position-relative overflow-hidden"
+      >
+        <div
+          class="position-absolute top-0 start-0 w-100 bg-primary opacity-10"
+          style="height: 100px"
+        ></div>
+
+        <img
+          src="https://ui-avatars.com/api/?name={{ customer.first_name }}+{{ customer.last_name }}&background=fff&color=3b82f6&bold=true"
+          class="rounded-circle shadow-sm mx-auto position-relative border border-4 border-white mt-4 mb-3"
+          width="110"
+          height="110"
+        />
+
+        <h5 class="fw-bold text-dark mb-1">
+          {{ customer.first_name }} {{ customer.last_name|default:"" }}
+        </h5>
+        <span
+          class="badge bg-light text-dark border rounded-pill px-3 py-2 mb-4 mt-2"
+          dir="ltr"
+          ><i class="fas fa-phone-alt text-muted me-1"></i> {{
+          customer.phone_primary }}</span
+        >
+
+        <div class="bg-light rounded-4 p-3 text-start">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small"
+              ><i class="fas fa-calendar-alt me-1"></i> {% trans "تاريخ
+              الانضمام" %}</span
+            >
+            <span class="fw-bold text-dark small"
+              >{{ customer.date_joined|date:"d M Y" }}</span
+            >
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small"
+              ><i class="fas fa-shopping-bag me-1"></i> {% trans "إجمالي
+              الطلبات" %}</span
+            >
+            <span class="fw-bold text-dark small">
+              {% blocktrans count count=orders.count %}{{ count }} طلب{% plural
+              %}{{ count }} طلبات{% endblocktrans %}
+            </span>
+          </div>
+          <div
+            class="d-flex justify-content-between align-items-center border-top border-secondary border-opacity-10 pt-3"
+          >
+            <span class="text-muted small fw-bold"
+              >{% trans "إجمالي الإنفاق" %}</span
+            >
+            <span class="fw-bolder text-success"
+              >{{ total_spent|floatformat:2 }}
+              <small
+                >{{
+                request.user.country.currency_symbol|default:default_currency
+                }}</small
+              ></span
+            >
+          </div>
         </div>
+      </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-12 col-xl-4">
-            <div class="card border-0 shadow-sm p-4 text-center rounded-4 h-100 bg-white position-relative overflow-hidden">
-                <div class="position-absolute top-0 start-0 w-100 bg-primary opacity-10" style="height: 100px;"></div>
-                
-                <img src="https://ui-avatars.com/api/?name={{ customer.first_name }}+{{ customer.last_name }}&background=fff&color=3b82f6&bold=true" class="rounded-circle shadow-sm mx-auto position-relative border border-4 border-white mt-4 mb-3" width="110" height="110">
-                
-                <h5 class="fw-bold text-dark mb-1">{{ customer.first_name }} {{ customer.last_name|default:"" }}</h5>
-                <span class="badge bg-light text-dark border rounded-pill px-3 py-2 mb-4 mt-2" dir="ltr"><i class="fas fa-phone-alt text-muted me-1"></i> {{ customer.phone_primary }}</span>
-                
-                <div class="bg-light rounded-4 p-3 text-start">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted small"><i class="fas fa-calendar-alt me-1"></i> {% trans "تاريخ الانضمام" %}</span>
-                        <span class="fw-bold text-dark small">{{ customer.date_joined|date:"d M Y" }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted small"><i class="fas fa-shopping-bag me-1"></i> {% trans "إجمالي الطلبات" %}</span>
-                        <span class="fw-bold text-dark small">
-                            {% blocktrans count count=orders.count %}{{ count }} طلب{% plural %}{{ count }} طلبات{% endblocktrans %}
-                        </span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center border-top border-secondary border-opacity-10 pt-3">
-                        <span class="text-muted small fw-bold">{% trans "إجمالي الإنفاق" %}</span>
-                        <span class="fw-bolder text-success">{{ total_spent|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:default_currency }}</small></span>
-                    </div>
-                </div>
-            </div>
+    <div class="col-12 col-xl-8">
+      <div class="card border-0 shadow-sm rounded-4 h-100 bg-transparent">
+        <div
+          class="d-flex justify-content-between align-items-center mb-4 px-2"
+        >
+          <h6 class="fw-bold m-0 text-dark">
+            <i class="fas fa-history text-primary me-2"></i> {% trans "سجل
+            المشتريات السابقة" %}
+          </h6>
         </div>
 
-        <div class="col-12 col-xl-8">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-transparent">
-                <div class="d-flex justify-content-between align-items-center mb-4 px-2">
-                    <h6 class="fw-bold m-0 text-dark"><i class="fas fa-history text-primary me-2"></i> {% trans "سجل المشتريات السابقة" %}</h6>
+        <div class="row g-3">
+          {% for order in orders %}
+          <div class="col-12 col-md-6">
+            <div
+              class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card overflow-hidden"
+            >
+              <div class="card-body p-4 d-flex flex-column">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-3"
+                >
+                  <div>
+                    <span
+                      class="text-muted d-block mb-1"
+                      style="font-size: 11px"
+                      >{% trans "رقم الطلب" %}</span
+                    >
+                    <h5 class="fw-bolder text-dark m-0">
+                      #{{ order.order_id }}
+                    </h5>
+                  </div>
+                  <span
+                    class="badge rounded-pill {% if order.status == 'DELIVERED' %}bg-success-subtle text-success {% elif order.status == 'PENDING' %}bg-warning-subtle text-warning {% elif order.status == 'CANCELLED' or order.status == 'RETURNED' %}bg-danger-subtle text-danger {% else %}bg-primary-subtle text-primary{% endif %}"
+                    style="font-size: 10px"
+                  >
+                    {{ order.get_status_display }}
+                  </span>
                 </div>
-                
-                <div class="row g-3">
-                    {% for order in orders %}
-                    <div class="col-12 col-md-6">
-                        <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card overflow-hidden">
-                            <div class="card-body p-4 d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <div>
-                                        <span class="text-muted d-block mb-1" style="font-size: 11px;">{% trans "رقم الطلب" %}</span>
-                                        <h5 class="fw-bolder text-dark m-0">#{{ order.order_id }}</h5>
-                                    </div>
-                                    <span class="badge rounded-pill 
-                                        {% if order.status == 'DELIVERED' %}bg-success-subtle text-success
-                                        {% elif order.status == 'PENDING' %}bg-warning-subtle text-warning
-                                        {% elif order.status == 'CANCELLED' or order.status == 'RETURNED' %}bg-danger-subtle text-danger
-                                        {% else %}bg-primary-subtle text-primary{% endif %}" style="font-size: 10px;">
-                                        {{ order.get_status_display }}
-                                    </span>
-                                </div>
 
-                                <div class="mt-auto pt-3 border-top border-light d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <span class="text-muted d-block" style="font-size: 11px;">{% trans "تاريخ الطلب" %}</span>
-                                        <span class="fw-bold text-dark" style="font-size: 12px;">{{ order.created_at|date:"d M Y" }}</span>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="text-muted d-block" style="font-size: 11px;">{% trans "القيمة الإجمالية" %}</span>
-                                        <span class="fw-bolder text-primary" style="font-size: 14px;">{{ order.final_total }} <small>{{ request.user.country.currency_symbol|default:default_currency }}</small></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <a href="{% url 'super_order_detail' order.order_id %}" class="btn btn-light rounded-0 border-top fw-bold text-secondary text-center py-2" style="font-size: 13px;">
-                                {% trans "عرض التفاصيل كاملة" %} <i class="fas fa-chevron-left ms-1" style="font-size: 10px;"></i>
-                            </a>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="col-12 text-center py-5">
-                        <div class="bg-white p-5 rounded-4 shadow-sm">
-                            <i class="fas fa-box-open text-muted mb-3" style="font-size: 3rem; opacity: 0.2;"></i>
-                            <h6 class="fw-bold text-dark">{% trans "لا يوجد سجل مشتريات" %}</h6>
-                            <p class="text-muted small mb-0">{% trans "هذا العميل لم يقم بأي طلبات حتى الآن." %}</p>
-                        </div>
-                    </div>
-                    {% endfor %}
+                <div
+                  class="mt-auto pt-3 border-top border-light d-flex justify-content-between align-items-center"
+                >
+                  <div>
+                    <span class="text-muted d-block" style="font-size: 11px"
+                      >{% trans "تاريخ الطلب" %}</span
+                    >
+                    <span class="fw-bold text-dark" style="font-size: 12px"
+                      >{{ order.created_at|date:"d M Y" }}</span
+                    >
+                  </div>
+                  <div class="text-end">
+                    <span class="text-muted d-block" style="font-size: 11px"
+                      >{% trans "القيمة الإجمالية" %}</span
+                    >
+                    <span class="fw-bolder text-primary" style="font-size: 14px"
+                      >{{ order.final_total }}
+                      <small
+                        >{{
+                        request.user.country.currency_symbol|default:default_currency
+                        }}</small
+                      ></span
+                    >
+                  </div>
                 </div>
+              </div>
+              <a
+                href="{% url 'super_order_detail' order.order_id %}"
+                class="btn btn-light rounded-0 border-top fw-bold text-secondary text-center py-2"
+                style="font-size: 13px"
+              >
+                {% trans "عرض التفاصيل كاملة" %}
+                <i class="fas fa-chevron-left ms-1" style="font-size: 10px"></i>
+              </a>
             </div>
+          </div>
+          {% empty %}
+          <div class="col-12 text-center py-5">
+            <div class="bg-white p-5 rounded-4 shadow-sm">
+              <i
+                class="fas fa-box-open text-muted mb-3"
+                style="font-size: 3rem; opacity: 0.2"
+              ></i>
+              <h6 class="fw-bold text-dark">
+                {% trans "لا يوجد سجل مشتريات" %}
+              </h6>
+              <p class="text-muted small mb-0">
+                {% trans "هذا العميل لم يقم بأي طلبات حتى الآن." %}
+              </p>
+            </div>
+          </div>
+          {% endfor %}
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
-    .hover-card { transition: all 0.2s ease-in-out; }
-    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; }
+  .hover-card {
+    transition: all 0.2s ease-in-out;
+  }
+  .hover-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05) !important;
+  }
 </style>
 {% endblock %}

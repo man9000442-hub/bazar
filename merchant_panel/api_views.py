@@ -20,7 +20,7 @@ from store.models import (
     Category, Product, ProductSize, ProductImage, Order, OrderItem, 
     Wallet, WalletTransaction, MerchantProfile, Governorate, 
     MerchantShippingRate, DepositRequest, WithdrawalRequest, 
-    Offer, PaymobTransaction, SiteSetting
+    Offer, WalletDepositTransaction, SiteSetting
 )
 from store.paymob_utils import PaymobManager
 
@@ -600,7 +600,7 @@ def paymob_deposit_api(request):
         token = paymob.get_token()
         pm_order_id = paymob.create_order(token, amount_cents)
         
-        PaymobTransaction.objects.create(merchant=request.user.merchant_profile, paymob_order_id=str(pm_order_id), amount_cents=amount_cents, is_paid=False)
+        WalletDepositTransaction.objects.create(merchant=request.user.merchant_profile, paymob_order_id=str(pm_order_id), amount_cents=amount_cents, is_paid=False)
 
         user = request.user
         phone = getattr(user, 'phone_primary', '01000000000')
@@ -780,7 +780,7 @@ def wallet_transaction_api(request):
 
 from decimal import Decimal
 from django.db import transaction
-from store.models import WalletTransaction, WithdrawalRequest, PaymobTransaction, SiteSetting
+from store.models import WalletTransaction, WithdrawalRequest, WalletDepositTransaction, SiteSetting
 from store.paymob_utils import PaymobManager
 
 @api_view(['GET'])
@@ -883,7 +883,7 @@ def api_paymob_deposit(request):
         token = paymob.get_token()
         pm_order_id = paymob.create_order(token, amount_cents)
         
-        PaymobTransaction.objects.create(merchant=merchant, paymob_order_id=str(pm_order_id), amount_cents=amount_cents, is_paid=False)
+        WalletDepositTransaction.objects.create(merchant=merchant, paymob_order_id=str(pm_order_id), amount_cents=amount_cents, is_paid=False)
         
         billing_data = {
             "first_name": request.user.first_name or "Merchant", "last_name": request.user.last_name or "User",
@@ -921,7 +921,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
-from store.models import PaymobTransaction, WalletTransaction, Order, SiteSetting
+from store.models import WalletDepositTransaction, WalletTransaction, Order, SiteSetting
 
 logger = logging.getLogger(__name__)
 
@@ -945,7 +945,7 @@ def central_paymob_callback(request):
         # ---------------------------------------------------------
         # السيناريو الأول: فحص هل الدفع يخص (شحن محفظة تاجر)؟
         # ---------------------------------------------------------
-        merchant_tx = PaymobTransaction.objects.filter(paymob_order_id=paymob_order_id).first()
+        merchant_tx = WalletDepositTransaction.objects.filter(paymob_order_id=paymob_order_id).first()
         if merchant_tx:
             if success and not merchant_tx.is_paid:
                 with transaction.atomic():
@@ -1148,7 +1148,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # 🔴 تأكد من استدعاء SiteSetting في الأعلى لو لم تكن مستدعاة
-from store.models import PaymobTransaction, WalletTransaction, SiteSetting 
+from store.models import WalletDepositTransaction, WalletTransaction, SiteSetting 
 
 @csrf_exempt
 @api_view(['POST']) 
@@ -1168,7 +1168,7 @@ def api_paymob_callback(request):
         if not paymob_order_id:
             return HttpResponse(status=200)
 
-        pm_tx = PaymobTransaction.objects.get(paymob_order_id=str(paymob_order_id))
+        pm_tx = WalletDepositTransaction.objects.get(paymob_order_id=str(paymob_order_id))
         
         if success and not pm_tx.is_paid:
             with transaction.atomic():
@@ -1206,7 +1206,7 @@ def api_paymob_callback(request):
 
         return HttpResponse(status=200)
 
-    except PaymobTransaction.DoesNotExist:
+    except WalletDepositTransaction.DoesNotExist:
         logger.warning(f"⚠️ معاملة بيموب رقم {paymob_order_id} غير موجودة في قاعدة البيانات")
         return HttpResponse(status=200)
     except Exception as e:
