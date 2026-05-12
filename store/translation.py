@@ -1,21 +1,24 @@
-from modeltranslation.translator import translator, TranslationOptions 
-
-from .models import Category, Governorate, TermsAndCondition, AboutUs
+from modeltranslation.translator import translator, TranslationOptions
+from .models import Category, Product, Governorate, AboutUs, TermsAndCondition
 
 class CategoryTranslationOptions(TranslationOptions):
     fields = ('name',)
 
+class ProductTranslationOptions(TranslationOptions):
+    fields = ('name', 'description')
+
 class GovernorateTranslationOptions(TranslationOptions):
     fields = ('name',)
-
-class TermsTranslationOptions(TranslationOptions):
-    fields = ('title', 'content')
 
 class AboutUsTranslationOptions(TranslationOptions):
     fields = ('content',)
 
-# تسجيل الموديلات في المترجم
+class TermsAndConditionTranslationOptions(TranslationOptions):
+    fields = ('title', 'content')
+
+# تسجيل الموديلات في مكتبة الترجمة
 translator.register(Category, CategoryTranslationOptions)
+translator.register(Product, ProductTranslationOptions)
 translator.register(Governorate, GovernorateTranslationOptions)
-translator.register(TermsAndCondition, TermsTranslationOptions)
 translator.register(AboutUs, AboutUsTranslationOptions)
+translator.register(TermsAndCondition, TermsAndConditionTranslationOptions)

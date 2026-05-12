@@ -1,31 +1,8 @@
 from django.urls import path
 from . import views
-from . import api_views
 urlpatterns = [
-# --- الداش بورد والأقسام ---
-    path('api/dashboard/', api_views.merchant_dashboard_api, name='api_merchant_dashboard'),
-    path('api/categories/', api_views.merchant_categories_api, name='api_merchant_categories'),
-    path('api/products/', api_views.merchant_products_api, name='api_merchant_products'),
-    path('api/products/add/', api_views.add_product_api, name='api_merchant_add_product'),
-    path('api/products/<int:product_id>/delete/', api_views.delete_product_api, name='api_merchant_delete_product'),
-    path('api/products/<int:product_id>/edit/', api_views.edit_product_api, name='api_merchant_edit_product'),
-    path('api/products/<int:product_id>/offer/', api_views.manage_offer_api, name='api_merchant_manage_offer'),
-    path('api/orders/', api_views.merchant_orders_api, name='api_merchant_orders'),
-    path('api/orders/<str:order_id>/', api_views.api_merchant_order_detail, name='api_merchant_order_detail'),
-    path('api/orders/<str:order_id>/update/', api_views.update_order_status_api, name='api_merchant_update_order'),   
-    path('api/wallet/', api_views.merchant_wallet_api, name='api_merchant_wallet'),
-    path('api/wallet/data/', api_views.api_wallet_data, name='api_wallet_data'),
-    path('api/wallet/transaction/', api_views.wallet_transaction_api, name='api_merchant_wallet_transaction'),
-    path('api/wallet/withdraw/', api_views.api_wallet_withdraw, name='api_wallet_withdraw'),
-    path('api/wallet/deposit/', api_views.api_paymob_deposit, name='api_wallet_deposit'),     
-    path('api/payment/callback/', api_views.central_paymob_callback, name='central_paymob_callback'),
-    path('api/payment/app-return/', api_views.central_app_return, name='central_app_return'),
-    path('api/reports/', api_views.merchant_reports_api, name='api_merchant_reports'),
-    path('api/shipping/', api_views.merchant_shipping_api, name='api_merchant_shipping'),
-    path('api/profile/', api_views.merchant_profile_api, name='api_merchant_profile'),
-    path('api/change-password/', api_views.change_password_api, name='api_change_password'),
 
-   #=====================================================================
+#=====================================================================
 
     path('merchant/pending-approval/', views.merchant_pending_approval, name='merchant_pending_approval'),
     path('', views.dashboard, name='merchant_dashboard'),

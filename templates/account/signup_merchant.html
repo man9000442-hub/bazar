@@ -24,7 +24,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* --- أنيميشن الدخول --- */
   @keyframes fadeUpIn {
     0% { opacity: 0; transform: translateY(20px); }
     100% { opacity: 1; transform: translateY(0); }
@@ -34,7 +33,6 @@
     opacity: 0;
   }
 
-  /* --- الكارت الرئيسي --- */
   .neo-auth-card {
     background: var(--surface);
     border-radius: 32px;
@@ -46,7 +44,6 @@
     margin: 0 auto;
   }
 
-  /* --- الأيقونة الترحيبية --- */
   .welcome-icon-box {
     width: 75px; height: 75px;
     background: rgba(245, 166, 35, 0.1);
@@ -59,7 +56,6 @@
     transform: rotate(-5deg);
   }
 
-  /* --- عناوين الأقسام --- */
   .section-title {
     font-weight: 800;
     color: var(--text-primary);
@@ -74,10 +70,9 @@
     width: 4px; height: 20px;
     background: var(--accent-gold);
     border-radius: 4px;
-    margin-inline-end: 12px; /* RTL Support */
+    margin-inline-end: 12px; 
   }
 
-  /* --- حقول الإدخال العصرية --- */
   .form-label-neo {
     font-weight: 800;
     color: var(--text-primary);
@@ -112,7 +107,6 @@
   }
   .neo-form-group input::placeholder, .neo-form-group textarea::placeholder { color: #A1A1AA !important; font-weight: 500; }
 
-  /* زر إظهار الباسورد */
   .toggle-pass-btn {
     position: absolute;
     top: 50%;
@@ -128,7 +122,6 @@
     z-index: 10;
   }
 
-  /* --- حقول رفع الصور (Neo Uploaders) --- */
   .upload-box-neo {
     background: #F4F4F5;
     border: 2px dashed #D4D4D8;
@@ -147,17 +140,15 @@
   }
   .upload-box-neo i { font-size: 32px; color: #A1A1AA; margin-bottom: 12px; transition: 0.3s; }
   .upload-box-neo:hover i { color: var(--accent-gold); transform: scale(1.1); }
-  
-  .neo-form-group input[type="file"] { display: none; } /* إخفاء الزر الافتراضي */
+  .neo-form-group input[type="file"] { display: none; } 
 
-  /* --- صندوق الشروط --- */
   .terms-box-neo {
     background: rgba(245, 166, 35, 0.05);
     border: 1px solid rgba(245, 166, 35, 0.2);
     border-radius: 16px;
     padding: 20px;
     display: flex;
-    align-items: flex-start; /* لضبط التوازي مع النص الطويل */
+    align-items: flex-start;
   }
   .neo-checkbox {
     width: 24px !important; height: 24px !important;
@@ -167,7 +158,6 @@
     flex-shrink: 0;
   }
 
-  /* --- الأزرار --- */
   .btn-neo-gold {
     background: var(--accent-dark);
     color: #fff !important;
@@ -182,9 +172,7 @@
   .btn-neo-gold:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
   .btn-neo-gold:disabled { background: #E4E4E7 !important; color: #A1A1AA !important; box-shadow: none; cursor: not-allowed; }
 
-  /* خط فاصل ناعم */
   .neo-hr { border-color: var(--border-light); margin: 32px 0; border-width: 2px; }
-
 </style>
 
 <div class="container d-flex flex-column justify-content-center py-5" style="min-height: 90vh;">
@@ -207,12 +195,8 @@
             
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-6">
-                    <label class="form-label-neo">{% trans "الاسم الأول" %} <span class="text-danger ms-1">*</span></label>
+                    <label class="form-label-neo">{% trans " (الذي سيظهر للعملاء) الاسم الأول" %} <span class="text-danger ms-1">*</span></label>
                     {{ form.first_name }}
-                </div>
-                <div class="col-12 col-md-6">
-                    <label class="form-label-neo">{% trans "اسم العائلة" %} <span class="text-danger ms-1">*</span></label>
-                    {{ form.last_name }}
                 </div>
             </div>
 
@@ -223,10 +207,24 @@
                 {% if form.country.errors %}<div class="text-danger small mt-2 fw-bold"><i class="fas fa-exclamation-circle me-1"></i> {{ form.country.errors.0 }}</div>{% endif %}
             </div>
             
-            <div class="mb-4">
-                <label class="form-label-neo">{% trans "رقم الهاتف (للتواصل والدخول)" %} <span class="text-danger ms-1">*</span></label>
-                {{ form.phone_primary }}
-                {% if form.phone_primary.errors %}<div class="text-danger small mt-2 fw-bold"><i class="fas fa-exclamation-circle me-1"></i> {{ form.phone_primary.errors.0 }}</div>{% endif %}
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <label class="form-label-neo">{% trans "رقم الهاتف (الأساسي)" %} <span class="text-danger ms-1">*</span></label>
+                    {{ form.phone_primary }}
+                    {% if form.phone_primary.errors %}<div class="text-danger small mt-2 fw-bold"><i class="fas fa-exclamation-circle me-1"></i> {{ form.phone_primary.errors.0 }}</div>{% endif %}
+                </div>
+                
+                <div class="col-12 col-md-6">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label-neo mb-0">{% trans "رقم الواتساب" %} <span class="text-danger ms-1">*</span></label>
+                        <div class="form-check mb-0 d-flex align-items-center p-0">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="sameAsPhone" style="cursor: pointer; width: 18px; height: 18px;">
+                            <label class="form-check-label small fw-bold text-success ms-1" for="sameAsPhone" style="cursor:pointer; font-size: 12px;"><i class="fab fa-whatsapp"></i> {% trans "نفس الرقم الأساسي" %}</label>
+                        </div>
+                    </div>
+                    {{ form.whatsapp_number }}
+                    {% if form.whatsapp_number.errors %}<div class="text-danger small mt-2 fw-bold"><i class="fas fa-exclamation-circle me-1"></i> {{ form.whatsapp_number.errors.0 }}</div>{% endif %}
+                </div>
             </div>
 
             <div class="mb-4" style="position: relative;">
@@ -263,8 +261,9 @@
             </div>
             
             <div class="mb-4">
-                <label class="form-label-neo">{% trans "المقاسات المتاحة" %}</label>
-                {{ form.goods_sizes }}
+                <label class="form-label-neo">{% trans "الكميات المتوقع بيعها (شهرياً)" %}</label>
+                {{ form.expected_sales_quantity }}
+                <div class="form-text small mt-2" style="color: var(--text-secondary); font-weight: 500;">{% trans "مثال: 500 قطعة، 100 أوردر." %}</div>
             </div>
         </div>
 
@@ -274,7 +273,7 @@
             <h6 class="section-title">{% trans "هوية وشعار المتجر" %}</h6>
             
             <div class="mb-4">
-                <label class="form-label-neo">{% trans "صورة المحل / لوجو المتجر" %}</label>
+                <label class="form-label-neo">{% trans "صورة المحل / لوجو المتجر" %} <span class="text-danger ms-1">*</span></label>
                 <label class="upload-box-neo w-100 py-4" for="id_shop_image">
                     <i class="fas fa-image"></i>
                     <span class="small fw-bold" style="color: var(--text-primary);">{% trans "اضغط لرفع الشعار" %}</span>
@@ -353,14 +352,42 @@
         }
     }
 
-    // عرض علامة صح خضراء عند رفع الملفات بنجاح
+    // نظام نسخ رقم الهاتف للواتساب تلقائياً
     document.addEventListener('DOMContentLoaded', function() {
+        const phoneInput = document.getElementById('id_phone_primary');
+        const whatsappInput = document.getElementById('id_whatsapp_number');
+        const sameAsPhoneCheckbox = document.getElementById('sameAsPhone');
+
+        function syncWhatsApp() {
+            if (sameAsPhoneCheckbox.checked) {
+                whatsappInput.value = phoneInput.value;
+                whatsappInput.readOnly = true;
+                whatsappInput.style.backgroundColor = '#E4E4E7';
+                whatsappInput.style.color = '#71717A';
+            } else {
+                whatsappInput.readOnly = false;
+                whatsappInput.style.backgroundColor = '#F4F4F5';
+                whatsappInput.style.color = '#0A0A0A';
+            }
+        }
+
+        if(sameAsPhoneCheckbox) {
+            sameAsPhoneCheckbox.addEventListener('change', syncWhatsApp);
+        }
+
+        if(phoneInput) {
+            phoneInput.addEventListener('input', function() {
+                if (sameAsPhoneCheckbox.checked) {
+                    whatsappInput.value = this.value;
+                }
+            });
+        }
+
+        // عرض علامة صح خضراء عند رفع الملفات بنجاح
         const fileInputs = document.querySelectorAll('input[type="file"]');
         fileInputs.forEach(input => {
             input.addEventListener('change', function() {
-                // العثور على الـ label المحيط للزر المخفي
                 const uploadBox = this.closest('.col-12, .mb-4').querySelector('.upload-box-neo');
-                
                 const existingCheck = uploadBox.querySelector('.file-check-mark');
                 if (existingCheck) { existingCheck.remove(); }
                 
@@ -369,7 +396,6 @@
                     checkMark.className = 'text-success mt-2 file-check-mark fw-bold animate__animated animate__fadeInUp';
                     checkMark.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success); font-size: 20px;"></i> <span class="d-block mt-1" style="font-size: 11px;">تم الرفع</span>';
                     
-                    // إخفاء الأيقونة الأصلية وعرض الصح الخضراء
                     const originalIcon = uploadBox.querySelector('i:not(.fa-check-circle)');
                     if(originalIcon) originalIcon.style.display = 'none';
                     

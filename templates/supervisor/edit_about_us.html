@@ -1,11 +1,10 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% block head_title %}إعدادات: من نحن | Elbazaar{% endblock %}
+{% block head_title %}إعدادات: من نحن | {{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}تعديل صفحة "من نحن"{% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0 d-flex justify-content-center">
-    
-    <div class="w-100" style="max-width: 800px;">
+    <div class="w-100" style="max-width: 900px;">
         
         <div class="d-flex align-items-center mb-4 gap-3">
             <a href="javascript:history.back()" class="btn btn-light shadow-sm border rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
@@ -13,55 +12,54 @@
             </a>
             <div>
                 <h5 class="fw-bold text-dark m-0"><i class="fas fa-address-card text-primary me-2"></i> صفحة "من نحن" (About Us)</h5>
-                <small class="text-muted">القصة، الرؤية، والأهداف التي يقرأها عملاؤك وتجارك.</small>
+                <small class="text-muted">القصة، الرؤية، والأهداف التي يقرأها عملاؤك وتجارك باللغتين.</small>
             </div>
         </div>
 
         <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-            
             <div class="card-header bg-primary bg-opacity-10 border-0 p-4 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold text-primary m-0"><i class="fas fa-pen-fancy me-2"></i> تحرير محتوى الصفحة</h6>
-                <span class="badge bg-white text-primary shadow-sm rounded-pill px-3 py-2"><i class="fas fa-globe me-1"></i> تظهر للعامة</span>
+                <h6 class="fw-bold text-primary m-0"><i class="fas fa-pen-fancy me-2"></i> محتوى الصفحة</h6>
             </div>
             
-            <form method="POST" class="card-body p-4">
+            <form method="POST" class="card-body p-4 p-md-5 bg-white">
                 {% csrf_token %}
                 
-                <div class="mb-4">
-                    <label class="form-label fw-bold small text-muted mb-3">اكتب محتوى الصفحة هنا بحرية <span class="text-danger">*</span></label>
-                    <textarea name="content" class="form-control bg-light border-0 rounded-4 p-4 text-dark custom-textarea" rows="14" placeholder="اكتب قصة المنصة، رؤيتكم، وأهدافكم هنا لتلهم عملائك..." required>{{ about.content }}</textarea>
-                    
-                    <div class="form-text mt-3 small text-muted d-flex align-items-center gap-2">
-                        <i class="fas fa-info-circle text-primary fs-5"></i> 
-                        <span>سيتم عرض هذا النص وتحديثه فوراً في تطبيق الهاتف وموقع الويب الخاص بالمنصة.</span>
+                <div class="row g-4 mb-4">
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label fw-bold text-dark d-flex align-items-center gap-2">
+                            <span class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center" style="width: 25px; height: 25px; font-size: 12px;">ع</span>
+                            النص باللغة العربية <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="content" class="form-control bg-light text-dark border-0 rounded-4 p-4 custom-textarea shadow-sm" rows="12" placeholder="اكتب قصتك هنا لتلهم عملائك..." required>{{ about.content }}</textarea>
                     </div>
+
+                    <div class="col-12 col-lg-6" dir="ltr">
+                        <label class="form-label fw-bold text-dark d-flex align-items-center gap-2 justify-content-start">
+                            <span class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center" style="width: 25px; height: 25px; font-size: 12px;">EN</span>
+                            Content in English
+                        </label>
+                        <textarea name="content_en" class="form-control bg-light text-dark border-0 rounded-4 p-4 custom-textarea shadow-sm text-start" rows="12" placeholder="Write your story here to inspire your customers...">{{ about.content_en|default:'' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="form-text mb-4 small text-muted d-flex align-items-center gap-2">
+                    <i class="fas fa-info-circle text-primary fs-5"></i> 
+                    <span>سيتم عرض هذه النصوص وتحديثها فوراً في تطبيق الهاتف وموقع الويب الخاص بالمنصة حسب لغة العميل.</span>
                 </div>
                 
                 <button type="submit" class="btn btn-primary w-100 rounded-4 fw-bold py-3 shadow-sm fs-6 d-flex justify-content-center align-items-center gap-2 transition-hover" onclick="return confirm('هل أنت متأكد من حفظ هذه التعديلات ونشرها للعامة؟')">
                     <i class="fas fa-paper-plane"></i> حفظ التعديلات ونشرها 🚀
                 </button>
             </form>
-            
         </div>
-        
     </div>
 </div>
 
 <style>
     .transition-hover { transition: all 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-3px); filter: brightness(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
-    
-    /* تحسين شكل صندوق الكتابة ليكون مريحاً كالورقة */
-    .custom-textarea { 
-        line-height: 1.8; 
-        font-size: 15px; 
-        resize: vertical; 
-        transition: all 0.3s ease;
-    }
-    .custom-textarea:focus { 
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important; 
-        background-color: #fff !important; 
-        border: 1px solid #3b82f6 !important; 
-    }
+    .transition-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .custom-textarea { line-height: 1.8; font-size: 15px; resize: vertical; transition: all 0.3s ease; }
+    .form-control, .form-select { color: #212529 !important; }
+    .form-control:focus, .form-select:focus { color: #212529 !important; }
 </style>
 {% endblock %}

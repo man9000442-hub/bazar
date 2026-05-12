@@ -1,0 +1,96 @@
+{% extends 'supervisor/base_supervisor.html' %}
+{% load i18n supervisor_tags %}
+
+{% block head_title %}{% trans "أرشيف المنتجات" %} | {{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
+{% block page_title %}{% trans "أرشيف المنتجات" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 pb-5">
+
+    <!-- رسالة تعريفية بالصفحة -->
+    <div class="d-flex align-items-center justify-content-between mb-4 bg-white p-4 rounded-4 shadow-sm border-start border-5 border-danger">
+        <div>
+            <h5 class="fw-bold mb-1 text-danger"><i class="fas fa-archive me-2"></i> {% trans "سجل المنتجات المؤرشفة" %}</h5>
+            <p class="text-muted small mb-0 fw-bold">
+                {% trans "هنا تظهر المنتجات التي قام التجار بحذفها، ولكن النظام احتفظ بها (أرشفها) نظراً لارتباطها بطلبات أو فواتير سابقة لضمان سلامة الحسابات." %}
+            </p>
+        </div>
+    </div>
+
+    <!-- جدول المنتجات المؤرشفة -->
+    <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden">
+        <div class="card-header bg-light border-bottom border-light pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold text-dark m-0"><i class="fas fa-list text-primary me-2"></i> {% trans "قائمة المنتجات المحذوفة مؤقتاً" %}</h6>
+            <span class="badge bg-danger rounded-pill px-3 py-2 shadow-sm">{{ products.count }} {% trans "منتج مؤرشف" %}</span>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-white text-muted small">
+                    <tr>
+                        <th class="px-4 py-3">{% trans "المنتج" %}</th>
+                        <th class="py-3">{% trans "التاجر" %}</th>
+                        <th class="py-3">{% trans "السعر الأساسي" %}</th>
+                        <th class="py-3">{% trans "تاريخ الإضافة" %}</th>
+                        <th class="py-3 text-end px-4">{% trans "إجراء" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr class="transition-hover">
+                        <td class="px-4 py-3">
+                            <div class="d-flex align-items-center gap-3">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" class="rounded-3 shadow-sm border" width="55" height="55" style="object-fit: contain; background-color: #f8fafc;">
+                                {% else %}
+                                    <div class="bg-light border rounded-3 d-flex justify-content-center align-items-center" style="width: 55px; height: 55px;">
+                                        <i class="fas fa-box text-muted fs-4"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-dark">{{ product.name }}</h6>
+                                    <span class="badge bg-light text-muted border rounded-pill" style="font-size: 10px;">{{ product.category.name|default:"بدون قسم" }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <a href="{% url 'super_merchant_profile' product.merchant.id %}" class="fw-bold text-primary text-decoration-none">
+                                <i class="fas fa-store me-1 text-muted"></i> {{ product.merchant.user.first_name }}
+                            </a>
+                        </td>
+                        <td class="py-3 fw-bold text-dark">
+                            {{ product.base_price }} <small class="text-muted">{{ product.country.currency_symbol|default:"ج.م" }}</small>
+                        </td>
+                        <td class="py-3 text-muted small fw-bold">
+                            <i class="far fa-calendar-alt me-1"></i> {{ product.created_at|date:"Y-m-d" }}
+                        </td>
+                        <td class="py-3 text-end px-4">
+                            <!-- زر الاستعادة -->
+                            <a href="{% url 'super_restore_product' product.pk %}" class="btn btn-sm btn-success rounded-pill fw-bold shadow-sm px-3" onclick="return confirm('{% trans "هل أنت متأكد من استعادة هذا المنتج لمتجر التاجر؟ (المنتج سيحتاج للمراجعة والتفعيل مجدداً)" %}')">
+                                <i class="fas fa-undo-alt me-1"></i> {% trans "استعادة للتاجر" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="bg-light rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 100px; height: 100px;">
+                                <i class="fas fa-box-open fa-3x text-muted opacity-50"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark">{% trans "الأرشيف فارغ حالياً" %}</h6>
+                            <p class="small text-muted mb-0">{% trans "المنتجات التي تم حذفها ولها طلبات سابقة ستظهر هنا." %}</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .transition-hover { transition: background-color 0.2s ease-in-out; }
+    .transition-hover:hover { background-color: #f8fafc !important; }
+</style>
+{% endblock %}

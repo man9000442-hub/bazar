@@ -5,6 +5,8 @@
 {% block title %}{% trans "منتجاتي | لوحة التاجر" %}{% endblock %}
 
 {% block content %}
+<!-- جلب الوقت الحالي للمقارنة مع وقت انتهاء العرض -->
+{% now "U" as current_timestamp %}
 
 <div class="d-flex align-items-center mb-4 mt-2 bg-white p-3 rounded-4 shadow-sm border border-light sticky-top" style="top: 10px; z-index: 1020;">
     <a href="{% url 'merchant_dashboard' %}" class="btn btn-light rounded-circle p-2 mx-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -35,7 +37,8 @@
                             </div>
                         {% endif %}
                         
-                        {% if product.active_offer and product.active_offer.is_active %}
+                        <!-- التعديل: التأكد من أن وقت العرض لم ينتهِ -->
+                        {% if product.active_offer and product.active_offer.is_active and product.active_offer.end_date|date:"U" >= current_timestamp %}
                             <span class="badge bg-danger position-absolute top-0 start-0 m-1 rounded-pill shadow-sm" style="font-size: 10px;" dir="ltr">
                                 -{{ product.active_offer.discount_percentage }}%
                             </span>
@@ -55,7 +58,8 @@
                         </div>
                         
                         <div class="mb-1" dir="ltr" style="text-align: {% if LANGUAGE_BIDI %}right{% else %}left{% endif %};">
-                            {% if product.active_offer and product.active_offer.is_active %}
+                            <!-- التعديل: التأكد من أن وقت العرض لم ينتهِ لعرض السعر بعد الخصم -->
+                            {% if product.active_offer and product.active_offer.is_active and product.active_offer.end_date|date:"U" >= current_timestamp %}
                                 <span class="text-danger fw-bold small mx-1">{{ product.active_offer.discounted_price|floatformat:2 }} <small>{{ request.user.country.currency_symbol|default:'ج.م' }}</small></span>
                                 <span class="text-muted text-decoration-line-through" style="font-size: 10px;">{{ product.base_price|floatformat:2 }}</span>
                             {% else %}
@@ -67,7 +71,8 @@
                             <small class="text-muted text-truncate" style="font-size: 10px; max-width: 80px;"><i class="fas fa-tags mx-1 opacity-50"></i>{{ product.category.name }}</small>
                             
                             <div class="d-flex gap-2">
-                                <a href="{% url 'merchant_add_offer' product.id %}" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center {% if product.active_offer %}btn-warning text-dark{% else %}btn-outline-warning text-warning{% endif %}" style="width: 28px; height: 28px;" title="{% trans 'إدارة العروض' %}">
+                                <!-- التعديل: تغيير لون الأيقونة إذا انتهى العرض -->
+                                <a href="{% url 'merchant_add_offer' product.id %}" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center {% if product.active_offer and product.active_offer.is_active and product.active_offer.end_date|date:'U' >= current_timestamp %}btn-warning text-dark{% else %}btn-outline-warning text-warning{% endif %}" style="width: 28px; height: 28px;" title="{% trans 'إدارة العروض' %}">
                                     <i class="fas fa-tag" style="font-size: 11px;"></i>
                                 </a>
                                 

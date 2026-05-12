@@ -1,6 +1,6 @@
 {% extends 'supervisor/base_supervisor.html' %}
 {% load i18n supervisor_tags %}
-{% block head_title %}{% trans "عروض العملاء (VIP) | Elbazaar" %}{% endblock %}
+{% block head_title %}{% trans "عروض العملاء (VIP) | " %}{{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}{% trans "إدارة العروض المخصصة للعملاء" %}{% endblock %}
 
 {% block content %}

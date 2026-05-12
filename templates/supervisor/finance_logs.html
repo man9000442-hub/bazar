@@ -1,98 +1,134 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% load supervisor_tags i18n %} {% block head_title %}{% trans "السجل المالي الشامل" %} | Elbazaar{% endblock %}
-{% block page_title %}{% trans "سجل الحركات المالية" %}{% endblock %}
+{% load i18n %}
+
+{% block page_title %}{% trans "سجل المعاملات المالية" %}{% endblock %}
 
 {% block content %}
 {% trans "ج.م" as default_currency %}
+<div class="container-fluid p-0 pb-5">
 
-<div class="container-fluid p-0">
-
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div class="d-flex align-items-center justify-content-between mb-4 bg-white p-4 rounded-4 shadow-sm border-start border-5 border-primary">
         <div>
-            <h5 class="fw-bold text-dark m-0"><i class="fas fa-list-ul text-primary me-2"></i> {% trans "السجل المالي الشامل" %}</h5>
-            <small class="text-muted">{% trans "مراقبة وتتبع جميع الحركات المالية وعمليات محافظ التجار في المنصة." %}</small>
+            <h5 class="fw-bold mb-1 text-dark"><i class="fas fa-list-ul text-primary me-2"></i> {% trans "السجل المالي الشامل" %}</h5>
+            <p class="text-muted small mb-0 fw-bold">{% trans "تتبع كل حركة مالية (إضافة، خصم، سحب، إيداع) تتم في محافظ التجار مع إمكانية البحث المتقدم." %}</p>
         </div>
-        <a href="{% url 'super_finance_overview' %}" class="btn btn-light border shadow-sm rounded-3 px-3 fw-bold">
+        <a href="{% url 'super_finance_overview' %}" class="btn btn-light border shadow-sm rounded-3 px-3 fw-bold d-none d-md-inline-block">
             <i class="fas fa-chart-pie me-1"></i> {% trans "ملخص المالية" %}
         </a>
     </div>
 
-    <div class="card border-0 shadow-sm p-3 mb-4 rounded-4 bg-white">
-        <form method="GET" class="row g-2 align-items-center">
-            <div class="col-8 col-md-4 col-lg-3">
-                <select name="type" class="form-select bg-light border-0 fw-bold rounded-3 text-dark py-2" onchange="this.form.submit()">
-                    <option value="">{% trans "كل العمليات المالية" %}</option>
-                    <option value="SALE" {% if request.GET.type == 'SALE' %}selected{% endif %}>{% trans "مبيعات / عمولات" %}</option>
-                    <option value="COMPENSATION" {% if request.GET.type == 'COMPENSATION' %}selected{% endif %}>{% trans "تعويضات / إيداع" %}</option>
-                    <option value="WITHDRAWAL" {% if request.GET.type == 'WITHDRAWAL' %}selected{% endif %}>{% trans "سحب أرباح" %}</option>
-                    <option value="PENDING" {% if request.GET.type == 'PENDING' %}selected{% endif %}>{% trans "عمليات معلقة" %}</option>
-                </select>
-            </div>
-            <div class="col-4 col-md-2 col-lg-2">
-                <button type="submit" class="btn btn-dark w-100 fw-bold rounded-3 shadow-sm py-2">{% trans "تصفية" %}</button>
-            </div>
-        </form>
-    </div>
-
-    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4">
-        
-        <div class="list-group list-group-flush">
-            {% for log in logs %}
-            <div class="list-group-item p-3 px-4 border-light hover-bg-light transition-hover">
-                <div class="row align-items-center g-3">
-                    
-                    <div class="col-12 col-md-5 d-flex align-items-start gap-3">
-                        <div class="rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 mt-1
-                            {% if log.amount > 0 %}bg-success bg-opacity-10 text-success{% else %}bg-danger bg-opacity-10 text-danger{% endif %}"
-                            style="width: 45px; height: 45px;">
-                            <i class="fas {% if log.amount > 0 %}fa-arrow-down{% else %}fa-arrow-up{% endif %} fs-5"></i>
-                        </div>
-                        <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size: 10px;">#{{ log.id }}</span>
-                                <h6 class="fw-bold text-dark m-0" style="font-size: 14px;">{{ log.get_transaction_type_display }}</h6>
-                            </div>
-                            <span class="text-secondary small d-block" style="line-height: 1.5;">{{ log.description }}</span>
-                        </div>
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted">{% trans "بحث متقدم" %}</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0"><i class="fas fa-search"></i></span>
+                        <input type="text" name="q" class="form-control bg-light border-0" placeholder="{% trans 'رقم الطلب، التاجر، أو الوصف...' %}" value="{{ search_query }}">
                     </div>
-
-                    <div class="col-6 col-md-4">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="bg-primary-subtle text-primary rounded-circle d-flex justify-content-center align-items-center fw-bold shadow-sm flex-shrink-0" style="width: 35px; height: 35px; font-size: 13px;">
-                                {{ log.wallet.merchant.user.first_name|slice:":1" }}
-                            </div>
-                            <div class="overflow-hidden">
-                                <span class="fw-bold text-dark d-block text-truncate" style="font-size: 13px;" title="{{ log.wallet.merchant.user.first_name }}">{{ log.wallet.merchant.user.first_name }}</span>
-                                <span class="text-muted" style="font-size: 11px;"><i class="far fa-clock me-1"></i>{{ log.created_at|date:"d M Y, g:i A" }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-6 col-md-3 text-end">
-                        <h5 class="fw-bolder m-0 {% if log.amount > 0 %}text-success{% else %}text-danger{% endif %}" dir="ltr">
-                            {% if log.amount > 0 %}+{% endif %}{{ log.amount|floatformat:2 }}
-                        </h5>
-                        <span class="text-muted" style="font-size: 11px;">{{ request.user.country.currency_symbol|default:default_currency }}</span>
-                    </div>
-
                 </div>
-            </div>
-            {% empty %}
-            <div class="text-center py-5">
-                <div class="bg-white rounded-4 p-5 d-inline-block w-100" style="max-width: 500px;">
-                    <i class="fas fa-receipt text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
-                    <h5 class="text-dark fw-bold">{% trans "لا توجد عمليات مالية" %}</h5>
-                    <p class="text-muted small mb-0">{% trans "لم يتم العثور على أي حركات مالية مطابقة للفلتر المحدد." %}</p>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">{% trans "نوع المعاملة" %}</label>
+                    <select name="type" class="form-select bg-light border-0 fw-bold">
+                        <option value="">{% trans "الكل" %}</option>
+                        {% for value, label in tx_types %}
+                        <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </div>
-            {% endfor %}
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted">{% trans "الفترة الزمنية" %}</label>
+                    <div class="input-group">
+                        <input type="date" name="start_date" class="form-control bg-light border-0 small" value="{{ start_date }}">
+                        <span class="input-group-text bg-light border-0">{% trans "إلى" %}</span>
+                        <input type="date" name="end_date" class="form-control bg-light border-0 small" value="{{ end_date }}">
+                    </div>
+                </div>
+
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-dark w-100 rounded-3 shadow-sm py-2"><i class="fas fa-filter"></i></button>
+                </div>
+            </form>
         </div>
-        
     </div>
+
+    <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted small">
+                    <tr>
+                        <th class="px-4 py-3">{% trans "رقم العملية/الطلب" %}</th>
+                        <th class="py-3">{% trans "التاجر (المحفظة)" %}</th>
+                        <th class="py-3">{% trans "المبلغ" %}</th>
+                        <th class="py-3">{% trans "النوع" %}</th>
+                        <th class="py-3 w-25">{% trans "التفاصيل" %}</th>
+                        <th class="py-3 text-end px-4">{% trans "التاريخ" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr class="transition-hover">
+                        <td class="px-4 py-3 fw-bold text-dark">
+                            {% if log.related_order_id %}
+                                <a href="{% url 'super_order_detail' log.related_order_id %}" class="text-primary text-decoration-none">
+                                    #{{ log.related_order_id }}
+                                </a>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border rounded-pill">#{{ log.id }}</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="py-3">
+                            <a href="{% url 'super_merchant_profile' log.wallet.merchant.id %}" class="text-dark text-decoration-none fw-bold">
+                                <i class="fas fa-store text-muted me-1"></i> {{ log.wallet.merchant.user.first_name }}
+                            </a>
+                        </td>
+                        
+                        <td class="py-3 fw-bolder {% if log.amount > 0 %}text-success{% else %}text-danger{% endif %}" dir="ltr">
+                            {% if log.amount > 0 %}+{% endif %}{{ log.amount|floatformat:2 }} <small class="text-muted">{{ log.wallet.merchant.user.country.currency_symbol|default:default_currency }}</small>
+                        </td>
+
+                        <td class="py-3">
+                            <span class="badge 
+                                {% if log.transaction_type == 'SALE' or log.transaction_type == 'COMPENSATION' %}bg-success
+                                {% elif log.transaction_type == 'WITHDRAWAL' %}bg-secondary
+                                {% elif log.transaction_type == 'REFUND_DEDUCTION' %}bg-danger
+                                {% else %}bg-warning text-dark{% endif %} 
+                                rounded-pill shadow-sm">
+                                {{ log.get_transaction_type_display }}
+                            </span>
+                        </td>
+
+                        <td class="py-3 text-muted small fw-bold" style="line-height: 1.5;">
+                            {{ log.description }}
+                        </td>
+
+                        <td class="py-3 text-end px-4 text-muted small fw-bold">
+                            <i class="far fa-clock me-1"></i> {{ log.created_at|date:"Y-m-d g:i A" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="bg-light rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 100px; height: 100px;">
+                                <i class="fas fa-receipt fa-3x text-muted opacity-50"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark">{% trans "لا توجد معاملات مسجلة" %}</h6>
+                            <p class="small text-muted mb-0">{% trans "لم يتم العثور على أي حركة مالية تطابق بحثك." %}</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 
 <style>
-    .transition-hover { transition: all 0.2s ease-in-out; }
-    .hover-bg-light:hover { background-color: #f8fafc !important; }
+    .transition-hover { transition: background-color 0.2s ease-in-out; }
+    .transition-hover:hover { background-color: #f8fafc !important; }
 </style>
 {% endblock %}

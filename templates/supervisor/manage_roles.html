@@ -1,5 +1,5 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% load i18n %} {% block head_title %}{% trans "إدارة الصلاحيات" %} | Elbazaar{% endblock %}
+{% load i18n %} {% block head_title %}{% trans "إدارة الصلاحيات" %} | {{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}{% trans "إدارة الصلاحيات" %}{% endblock %}
 
 {% block content %}

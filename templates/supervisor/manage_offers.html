@@ -1,5 +1,5 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% load supervisor_tags i18n %} {% block head_title %}{% trans "إدارة عروض المنصة" %} | Elbazaar{% endblock %}
+{% load supervisor_tags i18n %} {% block head_title %}{% trans "إدارة عروض المنصة" %} | {{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}{% trans "عروض المنصة النشطة" %}{% endblock %}
 
 {% block content %}

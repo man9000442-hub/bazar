@@ -1,0 +1,159 @@
+{% extends 'merchant/base_merchant.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "الرئيسية | لوحة التاجر" %}{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center mb-4 bg-white p-3 rounded-4 shadow-sm border border-light mt-2">
+    <div class="me-auto">
+        <h5 class="fw-bold mb-1">{% trans "مرحباً بك،" %} {{ request.user.first_name }} 👋</h5>
+        <p class="text-muted small mb-0">{% trans "لوحة تحكم متجرك" %}</p>
+    </div>
+    
+    <div class="text-center border-start ps-3 ms-3">
+        <span class="d-block small text-muted fw-bold mb-1">{% trans "الرتبة" %}</span>
+        {% if request.user.merchant_profile.verification_rank == 'GOLD' %}
+            <span class="badge bg-warning text-dark px-2 py-1 rounded-pill shadow-sm border border-warning">
+                <i class="fas fa-medal me-1"></i> {% trans "ذهبي" %}
+            </span>
+        {% elif request.user.merchant_profile.verification_rank == 'BLUE' %}
+            <span class="badge bg-primary px-2 py-1 rounded-pill shadow-sm">
+                <i class="fas fa-medal me-1"></i> {% trans "أزرق" %}
+            </span>
+        {% elif request.user.merchant_profile.verification_rank == 'SILVER' %}
+            <span class="badge bg-secondary px-2 py-1 rounded-pill shadow-sm">
+                <i class="fas fa-medal me-1"></i> {% trans "فضي" %}
+            </span>
+        {% else %}
+            <span class="badge bg-light text-dark px-2 py-1 rounded-pill border">{% trans "غير موثق" %}</span>
+            <div class="mt-1"><small class="text-danger" style="font-size: 10px;">{% trans "تواصل للتوثيق" %}</small></div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mb-4">
+    <a href="{% url 'merchant_add_product' %}" class="btn w-100 rounded-pill fw-bold shadow-sm text-white py-3 fs-5" style="background: linear-gradient(90deg, #ff8c00, #ffb347);">
+        <i class="fas fa-plus-circle me-1"></i> {% trans "إضافة منتج جديد" %}
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6">
+        <a href="{% url 'merchant_wallet' %}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm text-white p-3 h-100 position-relative overflow-hidden rounded-4" 
+                 style="background: linear-gradient(135deg, #0d6efd, #0dcaf0);">
+                <i class="fas fa-wallet fs-1 mb-2 position-absolute top-0 end-0 p-3 opacity-25"></i>
+                <small class="opacity-75 d-block mb-1 fw-bold">{% trans "الرصيد الحالي" %}</small>
+                <h4 class="fw-bold mb-0" dir="ltr">{{ balance|default:"0.00"|floatformat:2 }} <span class="fs-6 fw-normal">{{ request.user.country.currency_symbol|default:'ج.م' }}</span></h4>
+            </div>
+        </a>
+    </div>
+    
+    <div class="col-6">
+        <a href="{% url 'merchant_products' %}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm bg-white p-3 h-100 text-dark rounded-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted d-block mb-1 fw-bold">{% trans "المنتجات" %}</small>
+                        <h4 class="fw-bold mb-0">{{ total_products|default:"0" }}</h4>
+                    </div>
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                        <i class="fas fa-box text-primary fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<h6 class="fw-bold mb-3 text-dark">{% trans "إدارة المتجر" %}</h6>
+<div class="row g-3 mb-4">
+    <div class="col-4">
+        <a href="{% url 'merchant_products' %}" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 bg-white rounded-4 transition-hover">
+            <div class="mx-auto bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <i class="fas fa-tshirt text-primary fs-5"></i>
+            </div>
+            <small class="d-block text-dark fw-bold">{% trans "منتجاتي" %}</small>
+        </a>
+    </div>
+    <div class="col-4">
+        <a href="{% url 'merchant_orders' %}" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 bg-white rounded-4 transition-hover">
+            <div class="mx-auto bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <i class="fas fa-clipboard-list text-warning fs-5"></i>
+            </div>
+            <small class="d-block text-dark fw-bold">{% trans "الطلبات" %}</small>
+        </a>
+    </div>
+    <div class="col-4">
+        <a href="{% url 'merchant_shipping' %}" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 bg-white rounded-4 transition-hover">
+            <div class="mx-auto bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <i class="fas fa-truck text-success fs-5"></i>
+            </div>
+            <small class="d-block text-dark fw-bold">{% trans "الشحن" %}</small>
+        </a>
+    </div>
+    <div class="col-4">
+        <a href="{% url 'my_tickets' %}" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 bg-white rounded-4 transition-hover">
+            <div class="mx-auto bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <i class="fas fa-headset text-danger fs-5"></i>
+            </div>
+            <small class="d-block text-dark fw-bold">{% trans "الدعم" %}</small>
+        </a>
+    </div>
+    <div class="col-4">
+        <a href="{% url 'merchant_reports' %}" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 bg-white rounded-4 transition-hover">
+            <div class="mx-auto bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <i class="fas fa-chart-pie text-info fs-5"></i>
+            </div>
+            <small class="d-block text-dark fw-bold">{% trans "التقارير" %}</small>
+        </a>
+    </div>
+    <div class="col-4">
+        <a href="{% url 'merchant_products' %}" class="card border-0 shadow-sm p-3 text-center text-decoration-none h-100 bg-white rounded-4 transition-hover">
+            <div class="mx-auto bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <i class="fas fa-tags text-secondary fs-5"></i>
+            </div>
+            <small class="d-block text-dark fw-bold">{% trans "العروض" %}</small>
+        </a>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between mb-3 align-items-center">
+    <h6 class="fw-bold m-0 text-dark">{% trans "آخر الطلبات" %}</h6>
+    <a href="{% url 'merchant_orders' %}" class="small text-primary text-decoration-none fw-bold">{% trans "عرض الكل" %}</a>
+</div>
+
+<div class="mb-2">
+    {% for item in recent_items %}
+    <a href="{% url 'merchant_order_detail' item.order.order_id|default:item.order.id %}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm mb-3 p-3 rounded-4 d-flex flex-row align-items-center bg-white transition-hover">
+            <div class="bg-light rounded-3 p-2 me-3 text-center" style="width: 45px; height: 45px;">
+                <i class="fas fa-box text-muted mt-1"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="fw-bold mb-1 small text-dark">{% trans "طلب #" %}{{ item.order.order_id|default:item.order.id }}</h6>
+                <small class="text-muted d-block text-truncate" style="max-width: 150px;">{{ item.product_size.product.name }} (x{{ item.quantity }})</small>
+            </div>
+            <div class="text-end ms-2">
+                <span class="badge {% if item.order.status == 'PENDING' %}bg-warning text-dark{% elif item.order.status == 'DELIVERED' %}bg-success{% else %}bg-primary{% endif %} rounded-pill mb-1" style="font-size: 10px;">
+                    {% trans item.order.get_status_display|default:item.order.status %}
+                </span>
+                <small class="d-block text-muted" style="font-size: 10px;">{{ item.order.created_at|date:"d M" }}</small>
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <div class="text-center py-5 bg-white rounded-4 shadow-sm border border-light">
+        <i class="fas fa-inbox fa-3x text-muted opacity-25 mb-3"></i>
+        <p class="text-muted small m-0 fw-bold">{% trans "لا توجد طلبات حديثة." %}</p>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 .25rem .5rem rgba(0,0,0,.1)!important; }
+</style>
+
+{% endblock %}

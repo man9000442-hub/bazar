@@ -1,6 +1,5 @@
-{% extends 'supervisor/base_supervisor.html' %} {% load i18n %} {% block
-head_title %}{% trans "ملف العميل:" %} {{ customer.first_name }} | Elbazaar{%
-endblock %} {% block page_title %}{% trans "ملف العميل وطلباته" %}{% endblock %}
+{% extends 'supervisor/base_supervisor.html' %} {% load i18n %} {% blockhead_title %}{% trans "ملف العميل:" %} {{ customer.first_name }} | {{ site_settings.site_name|default:"Elbazaar" }}{%endblock %} 
+{% block page_title %}{% trans "ملف العميل وطلباته" %}{% endblock %}
 {% block content %} {% trans "ج.م" as default_currency %}
 
 <div class="container-fluid p-0">

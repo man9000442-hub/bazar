@@ -1,6 +1,6 @@
 {% extends 'supervisor/base_supervisor.html' %}
 {% load i18n supervisor_tags %}
-{% block head_title %}{% blocktrans with name=product.name %}مراجعة: {{ name }} | Elbazaar{% endblocktrans %}{% endblock %}
+{% block head_title %}{% blocktrans with name=product.name %}مراجعة: {{ name }} | {{ site_settings.site_name|default:"Elbazaar" }}{% endblocktrans %}{% endblock %}
 {% block page_title %}{% trans "مراجعة المنتج" %}{% endblock %}
 
 {% block content %}

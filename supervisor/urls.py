@@ -1,28 +1,15 @@
 from django.urls import path
 from . import views
-from . import api_views
+
 
 urlpatterns = [
-# الإحصائيات المالية والعامة
-    path('api/dashboard/', api_views.admin_dashboard_api, name='api_admin_dashboard'),
-    path('api/finance/', api_views.finance_overview_api, name='api_finance_overview'),
-
-    # إدارة التجار
-    path('api/merchants/pending/', api_views.pending_merchants_api, name='api_pending_merchants'),
-    path('api/merchants/<int:merchant_id>/approve/', api_views.approve_merchant_api, name='api_approve_merchant'),
-
-    # إدارة المنتجات
-    path('api/products/pending/', api_views.pending_products_api, name='api_pending_products'),
-    path('api/products/<int:product_id>/approve/', api_views.approve_product_api, name='api_approve_product'),
-
-
 
 path('', views.supervisor_dashboard, name='supervisor_dashboard'),
 
 # Orders
 path('orders/all/', views.all_orders, name='super_all_orders'),
-path('orders/<str:order_id>/', views.order_detail, name='super_order_detail'),
 path('orders/export/', views.export_orders, name='super_export_orders'),
+path('orders/<str:order_id>/', views.order_detail, name='super_order_detail'),
 
 # Products
 path('products/pending/', views.pending_products, name='super_pending_products'),
@@ -75,14 +62,17 @@ path('analytics/customers/', views.customers_analytics, name='super_customers_an
 path('analytics/customer/<int:user_id>/', views.customer_profile_admin, name='super_customer_profile'),
 path('banners/', views.manage_banners, name='super_manage_banners'),
 path('banners/delete/<int:pk>/', views.delete_banner, name='super_delete_banner'),
-    # Terms & Conditions
+
+# Terms & Conditions
 path('terms/', views.manage_terms, name='super_manage_terms'),
 path('terms/delete/<int:pk>/', views.delete_term, name='super_delete_term'),
 path('terms/edit/<int:pk>/', views.edit_term, name='super_edit_term'),
 path('merchants/reject/<int:pk>/', views.reject_merchant, name='super_reject_merchant'),
 path('merchants/all/', views.merchants_list, name='super_merchants_list'),
 path('merchants/profile/<int:pk>/', views.merchant_profile_admin, name='super_merchant_profile'),
+
 # Settings & Others
+
 path('categories/', views.manage_categories, name='super_categories'),
 path('categories/delete/<int:pk>/', views.delete_category, name='super_delete_category'),
 path('categories/edit/<int:pk>/', views.edit_category, name='super_edit_category'),
@@ -103,4 +93,7 @@ path('countries/', views.manage_countries, name='super_manage_countries'),
 path('countries/delete/<int:pk>/', views.delete_country, name='super_delete_country'),
 path('governorates/', views.manage_governorates, name='super_manage_governorates'),
 path('governorates/delete/<int:pk>/', views.delete_governorate, name='super_delete_governorate'),
-]
+path('products/archived/', views.archived_products, name='super_archived_products'),
+path('products/restore/<int:pk>/', views.restore_archived_product, name='super_restore_product'),
+
+    ]

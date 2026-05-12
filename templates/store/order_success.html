@@ -102,7 +102,7 @@
         </h3>
         
         <p class="mb-5 mx-auto animate-fade-up" style="color: var(--text-secondary); max-width: 320px; line-height: 1.8; font-size: 15px; font-weight: 500; animation-delay: 300ms;">
-            {% trans "شكراً لتسوقك في" %} <strong style="color: var(--text-primary);">{% trans "البازار" %}</strong>{% trans ". رقم طلبك محفوظ بأمان، وسيتم تجهيزه وشحنه في أسرع وقت." %}
+            {% trans "شكراً لتسوقك في" %} <strong style="color: var(--text-primary);">{{ site_settings.site_name|default:"Elbazaar" }}</strong>{% trans ". رقم طلبك محفوظ بأمان، وسيتم تجهيزه وشحنه في أسرع وقت." %}
         </p>
         
         <div class="d-grid gap-3 col-12 mx-auto animate-fade-up" style="animation-delay: 450ms;">

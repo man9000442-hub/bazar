@@ -18,9 +18,15 @@
 
         <h6 class="fw-bold text-primary mb-3"><i class="fas fa-info-circle mx-1"></i> {% trans "1. تفاصيل المنتج" %}</h6>
         
-        <div class="mb-3">
-            <label class="form-label small text-muted fw-bold">{% trans "اسم المنتج" %}</label>
-            <input type="text" name="name" class="form-control bg-light border-0 shadow-sm" required>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label small text-muted fw-bold">{% trans "اسم المنتج (عربي)" %} <span class="text-danger">*</span></label>
+                <input type="text" name="name" class="form-control bg-light border-0 shadow-sm" required>
+            </div>
+            <div class="col-md-6 mb-3" dir="ltr">
+                <label class="form-label small text-muted fw-bold d-block text-start">Product Name (English) <span class="text-danger">*</span></label>
+                <input type="text" name="name_en" class="form-control bg-light border-0 shadow-sm text-start" required>
+            </div>
         </div>
 
         <div class="row">
@@ -34,15 +40,21 @@
                 <select name="category" class="form-select bg-light border-0 shadow-sm" required>
                     <option value="">{% trans "اختر..." %}</option>
                     {% for cat in categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    <option value="{{ cat.id }}">{{ cat.name }} {% if cat.name_en %} / {{ cat.name_en }}{% endif %}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label small text-muted fw-bold">{% trans "وصف المنتج" %}</label>
-            <textarea name="description" class="form-control bg-light border-0 shadow-sm" rows="3" required></textarea>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label small text-muted fw-bold">{% trans "وصف المنتج (عربي)" %} <span class="text-danger">*</span></label>
+                <textarea name="description" class="form-control bg-light border-0 shadow-sm" rows="4" required></textarea>
+            </div>
+            <div class="col-md-6 mb-3" dir="ltr">
+                <label class="form-label small text-muted fw-bold d-block text-start">Product Description (English) <span class="text-danger">*</span></label>
+                <textarea name="description_en" class="form-control bg-light border-0 shadow-sm text-start" rows="4" required></textarea>
+            </div>
         </div>
 
         <div class="mb-4">
@@ -98,25 +110,39 @@
 <script>
 let groupCounter = 0;
 
-// دالة للتبديل بين النوعين
+// دالة التبديل السحرية المحدثة
 function toggleVariations() {
     const isChecked = document.getElementById('hasVariationsToggle').checked;
     const simpleSection = document.getElementById('simple-stock-section');
     const variationsSection = document.getElementById('variations-section');
     const simpleInput = document.getElementById('simpleStockInput');
+    
+    // جلب جميع حقول الإدخال داخل قسم المقاسات (المخفي)
+    const variationInputs = variationsSection.querySelectorAll('input');
 
     if (isChecked) {
         variationsSection.style.display = 'block';
         simpleSection.style.display = 'none';
+        
+        // إلغاء إجبارية حقل المخزون البسيط وتعطيله
         simpleInput.removeAttribute('required');
+        simpleInput.disabled = true;
+        
+        // تفعيل حقول المقاسات لتُرسل مع الفورم
+        variationInputs.forEach(input => input.disabled = false);
     } else {
         variationsSection.style.display = 'none';
         simpleSection.style.display = 'block';
+        
+        // جعل حقل المخزون البسيط إجباري وتفعيله
         simpleInput.setAttribute('required', 'required');
+        simpleInput.disabled = false;
+        
+        // 🔥 الحل: تعطيل حقول المقاسات المخفية لكي لا تمنع حفظ الفورم
+        variationInputs.forEach(input => input.disabled = true);
     }
 }
 
-// تعديل الدالة لتعمل عند بدء التحميل
 document.addEventListener('DOMContentLoaded', function() {
     addColorGroup();
     toggleVariations(); // استدعاء لضبط الحالة الأولية
@@ -169,6 +195,9 @@ function addSizeRow(groupId) {
         </div>
     `;
     container.appendChild(row);
+    
+    // تحديث حالة الحقول الجديدة فور إضافتها (تفعيل/تعطيل)
+    toggleVariations();
 }
 </script>
 {% endblock %}

@@ -6,13 +6,15 @@
   @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
 
   :root {
-    --bg-main: #F4F5F8;        /* خلفية التطبيق رمادي نقي فاتح جداً */
-    --surface: #FFFFFF;        /* الكروت بيضاء تماماً */
-    --text-primary: #0A0A0A;   /* أسود حاد للنصوص الأساسية */
-    --text-secondary: #71717A; /* رمادي عصري للتفاصيل */
-    --accent-dark: #000000;    /* أسود نقي للتباين (الأزرار واللمسات الداكنة) */
-    --accent-gold: #F5A623;    /* أصفر/ذهبي للخصومات ولفت الانتباه */
-    --danger: #FF3B30;         /* أحمر حيوي للإشعارات والخصومات القوية */
+    --bg-main: #F4F5F8;
+    --surface: #FFFFFF;
+    --text-primary: #0A0A0A;
+    --text-secondary: #71717A;
+    --accent-dark: #000000;
+    --accent-gold: #F5A623;
+    --danger: #FF3B30;
+    --success-bg: #ECFDF5;
+    --success-text: #10B981;
   }
 
   body {
@@ -22,7 +24,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* --- الهيدر العصري (Compact) --- */
+  /* --- الهيدر العصري --- */
   .ultra-header {
     background: rgba(244, 245, 248, 0.85);
     backdrop-filter: blur(20px);
@@ -32,13 +34,13 @@
 
   .logo-text {
     font-weight: 900;
-    font-size: 22px; /* تصغير اللوجو */
+    font-size: 22px;
     letter-spacing: -0.5px;
     color: var(--accent-dark);
   }
 
   .icon-btn {
-    width: 38px; height: 38px; /* تصغير الأزرار العلوية */
+    width: 38px; height: 38px;
     background: var(--surface);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -49,11 +51,11 @@
   }
   .icon-btn:active { transform: scale(0.92); }
 
-  /* --- شريط البحث (Compact) --- */
+  /* --- شريط البحث --- */
   .search-wrapper {
     background: var(--surface);
     border-radius: 100px;
-    padding: 4px 4px 4px 16px; /* تقليل الحواف الداخلية */
+    padding: 4px 4px 4px 16px;
     display: flex; align-items: center;
     box-shadow: 0 8px 24px rgba(0,0,0,0.04);
     border: 1px solid rgba(0,0,0,0.02);
@@ -72,20 +74,20 @@
     background: var(--accent-dark);
     color: #fff;
     border-radius: 50px;
-    width: 34px; height: 34px; /* تصغير زر البحث */
+    width: 34px; height: 34px;
     display: flex; align-items: center; justify-content: center;
     transition: background 0.3s;
     font-size: 14px;
   }
 
-  /* --- الأقسام (Compact) --- */
+  /* --- الأقسام --- */
   .category-pill {
     background: var(--surface);
     color: var(--text-secondary);
-    padding: 8px 20px; /* تصغير الحواف */
+    padding: 8px 20px;
     border-radius: 100px;
     font-weight: 700;
-    font-size: 13px; /* تصغير الخط */
+    font-size: 13px;
     white-space: nowrap;
     border: 1px solid rgba(0,0,0,0.03);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -97,18 +99,18 @@
     box-shadow: 0 8px 16px rgba(0,0,0,0.15);
   }
 
-  /* --- البانرات (Compact) --- */
+  /* --- البانرات --- */
   .banner-container {
-    border-radius: 24px; /* دوران أقل */
+    border-radius: 24px;
     overflow: hidden;
     box-shadow: 0 15px 30px rgba(0,0,0,0.05);
   }
 
-  /* --- كروت المنتجات العادية (Compact) --- */
+  /* --- كروت المنتجات --- */
   .neo-product-card {
     background: var(--surface);
-    border-radius: 20px; /* دوران أقل */
-    padding: 10px; /* حواف داخلية أصغر */
+    border-radius: 20px;
+    padding: 10px;
     border: none;
     box-shadow: 0 10px 25px rgba(0,0,0,0.03);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -120,7 +122,7 @@
   .img-showcase {
     background: #F4F4F5;
     border-radius: 16px;
-    height: 130px; /* تقليل طول الصورة */
+    height: 130px;
     display: flex; align-items: center; justify-content: center;
     position: relative;
     padding: 10px;
@@ -130,12 +132,61 @@
     background: var(--danger);
     color: #fff;
     font-weight: 800;
-    font-size: 10px; /* تصغير الخط */
+    font-size: 11px; 
     padding: 4px 8px;
     border-radius: 8px;
     position: absolute;
     top: 8px; right: 8px;
     box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
+    z-index: 2;
+  }
+
+  /* شارة الشحن المجاني */
+  .badge-free-shipping {
+    background: var(--success-bg);
+    color: var(--success-text);
+    font-size: 8px;
+    font-weight: 900;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid #D1FAE5;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* 🔥 شارات العروض والعداد التنازلي الجديد */
+  .urgency-badge {
+    background: rgba(255, 59, 48, 0.08);
+    border: 1px solid rgba(255, 59, 48, 0.15);
+    padding: 3px 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  
+  .pulse-dot {
+    width: 6px; height: 6px;
+    background-color: var(--danger);
+    border-radius: 50%;
+    margin-inline-end: 4px;
+    animation: pulseDanger 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
+  }
+
+  @keyframes pulseDanger {
+    to { box-shadow: 0 0 0 6px rgba(255, 59, 48, 0); }
+  }
+
+  .offer-countdown {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--accent-gold);
+    background: rgba(245, 166, 35, 0.1);
+    padding: 2px 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 6px;
   }
 
   .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -164,7 +215,6 @@
       </span>
       {% endif %}
     </a>
-
   </div>
 
   <form action="{% url 'home' %}" method="GET">
@@ -189,7 +239,6 @@
       </div>
       {% endfor %}
     </div>
-
     <div class="carousel-indicators mb-2">
       {% for banner in banners %}
       <button type="button" data-bs-target="#mainBanner" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}" style="width: 16px; height: 4px; border-radius: 10px; background-color: #fff; border: none; opacity: 0.5;"></button>
@@ -238,14 +287,37 @@
                 {% endif %}
               </div>
               
-              <div class="px-1 pb-2"> 
-                <span class="d-block mb-1 text-uppercase" style="font-size: 9px; font-weight: 800; color: #A1A1AA; letter-spacing: 0.5px;">{{ product.category.name }}</span>
+              <div class="px-1 pb-1"> 
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="text-uppercase text-truncate" style="font-size: 9px; font-weight: 800; color: #A1A1AA; letter-spacing: 0.5px; max-width: 50%;">{{ product.category.name }}</span>
+                  {% if product.active_offer and product.active_offer.is_currently_active and product.active_offer.free_shipping %}
+                    <span class="badge-free-shipping"><i class="fas fa-truck" style="margin-inline-end: 3px;"></i>{% trans "شحن مجاني" %}</span>
+                  {% endif %}
+                </div>
+
                 <h6 class="text-truncate fw-bold mb-1" style="font-size: 13px; color: var(--text-primary);">{{ product.name }}</h6>
                 
-                <div class="d-flex align-items-center">
-                  {% if product.active_offer and product.active_offer.is_currently_active %}
-                    <span class="fw-bold" style="font-size: 15px; color: var(--text-primary);">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
-                    <span class="ms-1 fw-bold" style="font-size: 9px; color: var(--text-secondary);">{{ product.merchant.user.country.currency_symbol|default:"ج.م" }}</span>
+                {% if product.active_offer and product.active_offer.is_currently_active %}
+                  <div class="d-flex flex-wrap gap-1">
+                    <div class="urgency-badge">
+                      <span class="pulse-dot"></span>
+                      <span style="font-size: 9px; font-weight: 800; color: var(--danger);">{% trans "عرض لفترة محدودة" %}</span>
+                    </div>
+                    {% if product.active_offer.end_date %}
+                    <div class="offer-countdown" data-countdown="{{ product.active_offer.end_date|date:'c' }}">
+                      <i class="fas fa-stopwatch me-1" style="font-size: 9px;"></i>
+                      <span class="time-display">--:--:--</span>
+                    </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+                
+                <div class="d-flex align-items-baseline flex-wrap mt-1">
+                  <!-- 🔥 أضفنا شرط إن الخصم يكون أكبر من صفر عشان نعرض السعر القديم والجديد -->
+                  {% if product.active_offer and product.active_offer.is_currently_active and product.active_offer.discount_percentage > 0 %}
+                    <span class="fw-bold" style="font-size: 16px; color: var(--danger);">{{ product.active_offer.discounted_price|floatformat:0 }}</span>
+                    <span class="ms-1 fw-bold" style="font-size: 9px; color: var(--danger);">{{ product.merchant.user.country.currency_symbol|default:"ج.م" }}</span>
+                    <del class="text-muted ms-2" style="font-size: 11px; text-decoration-thickness: 1.5px;">{{ product.base_price }}</del>
                   {% else %}
                     <span class="fw-bold" style="font-size: 15px; color: var(--text-primary);">{{ product.base_price }}</span>
                     <span class="ms-1 fw-bold" style="font-size: 9px; color: var(--text-secondary);">{{ product.merchant.user.country.currency_symbol|default:"ج.م" }}</span>
@@ -253,7 +325,6 @@
                 </div>
               </div>
             </a>
-
           </div>
         </div>
         {% endif %}
@@ -270,4 +341,47 @@
   </div>
 </div>
 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const timers = document.querySelectorAll(".offer-countdown");
+    
+    function updateTimers() {
+        const now = new Date().getTime();
+        
+        timers.forEach(timer => {
+            const endTimeStr = timer.getAttribute("data-countdown");
+            if (!endTimeStr) return;
+            
+            const countDownDate = new Date(endTimeStr).getTime();
+            const distance = countDownDate - now;
+            const display = timer.querySelector(".time-display");
+            
+            if (distance < 0) {
+                display.innerHTML = "{% trans 'انتهى' %}";
+                timer.style.background = "#F4F4F5";
+                timer.style.color = "#A1A1AA";
+                return;
+            }
+            
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            let timeString = "";
+            if (days > 0) timeString += days + "ي ";
+            
+            const h = hours.toString().padStart(2, '0');
+            const m = minutes.toString().padStart(2, '0');
+            const s = seconds.toString().padStart(2, '0');
+            
+            timeString += `${h}:${m}:${s}`;
+            display.innerHTML = timeString;
+        });
+    }
+    
+    updateTimers();
+    setInterval(updateTimers, 1000);
+});
+</script>
 {% endblock %}

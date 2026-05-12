@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %} 
-{% block title %}{{ product.name }} | Elbazaar{% endblock %} 
+{% block title %}{{ product.name }} | {{ site_settings.site_name|default:"Elbazaar" }}{% endblock %} 
 {% block description %}
     {% blocktrans with name=product.name price=product.base_price %}اشترِ {{ name }} بسعر {{ price }} ج.م. أفضل جودة وتوصيل سريع.{% endblocktrans %}
 {% endblock %} 
@@ -440,7 +440,7 @@
   const msgOutOfStock = '{% trans "نفذت الكمية" %}';
   const msgAvailable = '{% trans "متاح:" %} ';
   const msgShareTitle = '{{ product.name|escapejs }}';
-  const msgShareText = '{% trans "اكتشف هذا المنتج الرائع على البازار!" %}';
+  const msgShareText = '{% trans "اكتشف هذا المنتج الرائع على !" %}{{ site_settings.site_name|default:"Elbazaar" }}';
   const msgShareSuccess = '{% trans "تم نسخ رابط المنتج بنجاح!" %}';
   const msgDayAnd = '{% trans "يوم و" %} ';
 

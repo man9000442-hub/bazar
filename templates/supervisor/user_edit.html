@@ -2,7 +2,7 @@
 {% load i18n supervisor_tags %}
 {% get_current_language_bidi as LANGUAGE_BIDI %}
 
-{% block head_title %}{% trans "تعديل حساب | Elbazaar" %}{% endblock %}
+{% block head_title %}{% trans "تعديل حساب | " %}{{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}{% trans "تعديل بيانات المستخدم" %}{% endblock %}
 
 {% block content %}

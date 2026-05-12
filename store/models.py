@@ -31,12 +31,14 @@ class MerchantProfile(models.Model):
     goods_quantity = models.CharField(max_length=100, verbose_name="كمية البضاعة المحتملة")
     goods_types = models.TextField(verbose_name="أنواع البضاعة")
     goods_average_price = models.CharField(max_length=100, verbose_name="متوسط الأسعار")
-    goods_sizes = models.TextField(verbose_name="المقاسات المتاحة")
+    #goods_sizes = models.TextField(verbose_name="المقاسات المتاحة")
+    expected_sales_quantity = models.CharField(max_length=255, blank=True, null=True, verbose_name="الكميات المتوقع بيعها")
+    whatsapp_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="رقم الواتساب")
     free_shipping_threshold = models.PositiveIntegerField(default=0, verbose_name="حد الشحن المجاني (عدد قطع)")
     is_free_shipping_active = models.BooleanField(default=False, verbose_name="تفعيل عرض الشحن المجاني")
     product_limit = models.PositiveIntegerField(default=50, verbose_name="الحد الأقصى للمنتجات")
     subscription_end_date = models.DateField(null=True, blank=True, verbose_name="تاريخ انتهاء عرض المنتجات")          
-    
+    are_products_hidden = models.BooleanField(default=False, verbose_name="إيقاف عرض المنتجات إدارياً")
     def __str__(self):
         return f"متجر: {self.user.username}"
     
@@ -57,7 +59,7 @@ class Category(models.Model):
 class Product(models.Model):
     # 🔥 ربط المنتج بالدولة لسهولة الفلترة
     country = models.ForeignKey('accounts.Country', on_delete=models.CASCADE, related_name='products', verbose_name="الدولة", null=True, blank=True)
-    
+    is_archived = models.BooleanField(default=False, verbose_name="مؤرشف (مخفي من التاجر)")    
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products', verbose_name="القسم")
     merchant = models.ForeignKey(MerchantProfile, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=200, verbose_name="اسم المنتج")
@@ -72,8 +74,12 @@ class Product(models.Model):
     
     def save(self, *args, **kwargs):
         # سحب الدولة أوتوماتيك من التاجر
-        if not self.country and self.merchant and self.merchant.user.country:
+        if not self.country and getattr(self, 'merchant', None) and self.merchant.user.country:
             self.country = self.merchant.user.country
+     
+        if getattr(self, 'merchant', None) and self.merchant.are_products_hidden:
+            self.is_active = False
+            
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -351,12 +357,19 @@ class SiteSetting(models.Model):
     min_wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=200.00, verbose_name=_("المبلغ المحجوز في المحفظة"))
     min_active_balance = models.DecimalField(max_digits=10, decimal_places=2, default=-500.00, verbose_name=_("الحد الأدنى لتفعيل المنتجات"))    
     pending_balance_release_hours = models.PositiveIntegerField(default=24, verbose_name=_("مدة تعليق الرصيد (ساعة)"))
-    
-    # إعدادات الدعوات
-    referral_reward_limit_orders = models.IntegerField(default=1, verbose_name=_("عدد الطلبات المؤهلة للمكافأة"))    
-    referral_grace_period_hours = models.IntegerField(default=24, verbose_name=_("مهلة إدخال كود الدعوة (ساعة)"))
-    referral_reward_amount = models.DecimalField(max_digits=10, decimal_places=2, default=50.00, verbose_name=_("قيمة المكافأة"))
-    referral_discount_limit_pct = models.IntegerField(default=10, verbose_name=_("أقصى نسبة خصم للمنتج (%)"))   
+    fawaterk_fee_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=2.00, verbose_name="نسبة رسوم Fawaterk (%)")
+    fawaterk_fee_fixed = models.DecimalField(max_digits=10, decimal_places=2, default=2.00, verbose_name="رسوم Fawaterk الثابتة")
+
+
+ #  إعدادات المكافآت 
+    referral_reward_limit_orders = models.IntegerField(default=1, verbose_name="عدد الطلبات المؤهلة للمكافأة")    
+    referral_grace_period_hours = models.IntegerField(default=24, verbose_name="مهلة إدخال كود الدعوة (ساعة)")
+    referral_discount_limit_pct = models.IntegerField(default=10, verbose_name="أقصى نسبة خصم للمنتج (%)")       
+    referral_discount_max_amount = models.DecimalField(max_digits=10, decimal_places=2, default=100.00, verbose_name="الحد الأقصى المالي للخصم (بالعملة المحلية)")
+    referral_reward_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=10.00, verbose_name="نسبة المكافأة من الطلب (%)")
+    referral_reward_max_amount = models.DecimalField(max_digits=10, decimal_places=2, default=100.00, verbose_name="الحد الأقصى المالي للمكافأة (بالعملة المحلية)")
+    referral_reward_validity_days = models.PositiveIntegerField(default=30, verbose_name="صلاحية رصيد المكافأة (أيام)")
+      
     
     banner_image = models.ImageField(upload_to='banners/', blank=True, null=True, verbose_name=_("صورة البانر"))
 
@@ -383,14 +396,25 @@ class WithdrawalRequest(models.Model):
         APPROVED = "APPROVED", "تم التحويل"
         REJECTED = "REJECTED", "مرفوض"
 
-    merchant = models.ForeignKey(MerchantProfile, on_delete=models.CASCADE)
+    # 🔥 إضافة خيارات طرق السحب
+    class Method(models.TextChoices):
+        INSTAPAY = "INSTAPAY", "إنستا باي (InstaPay)"
+        WALLET = "WALLET", "محفظة إلكترونية (Wallet)"
+        BANK = "BANK", "حساب بنكي (Bank Account)"
+
+    merchant = models.OneToOneField('MerchantProfile', on_delete=models.CASCADE, related_name='active_withdrawal_request', null=True, blank=True) # يفضل منع أكثر من طلب معلق
+    merchant = models.ForeignKey('MerchantProfile', on_delete=models.CASCADE) 
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="المبلغ")
-    phone_number = models.CharField(max_length=15, verbose_name="رقم المحفظة")
+    
+    # 🔥 تغيير المسمى ليكون أشمل وتغيير النوع لخيارات
+    withdrawal_method = models.CharField(max_length=20, choices=Method.choices, default=Method.WALLET, verbose_name="طريقة السحب")
+    payment_details = models.CharField(max_length=255, verbose_name="تفاصيل الحساب (رقم/IBAN/عنوان)") 
+    
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"سحب {self.amount} لـ {self.merchant}"
+        return f"سحب {self.amount} ({self.get_withdrawal_method_display()}) لـ {self.merchant}"
 
 class ProductReview(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
@@ -538,3 +562,23 @@ class PromoPopup(models.Model):
 
     class Meta:
         verbose_name = "إعلان منبثق (Popup)"
+
+class MerchantCashback(models.Model):
+    class CashbackType(models.TextChoices):
+        PERCENTAGE = 'PERCENTAGE', 'نسبة مئوية (%)'
+        FIXED = 'FIXED', 'مبلغ ثابت'
+
+    merchant = models.OneToOneField(MerchantProfile, on_delete=models.CASCADE, related_name='cashback_rule', verbose_name="التاجر")
+    cashback_type = models.CharField(max_length=20, choices=CashbackType.choices, default=CashbackType.PERCENTAGE, verbose_name="نوع الكاش باك")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="القيمة")
+    start_date = models.DateTimeField(verbose_name="تاريخ البداية")
+    end_date = models.DateTimeField(verbose_name="تاريخ النهاية")
+    is_active = models.BooleanField(default=True, verbose_name="مفعل")
+
+    def is_valid_now(self):
+        """دالة تتحقق مما إذا كان الكاش باك مفعل وفي نطاق التاريخ المسموح"""
+        now = timezone.now()
+        return self.is_active and self.start_date <= now <= self.end_date
+
+    def __str__(self):
+        return f"كاش باك لـ {self.merchant.user.first_name} ({self.amount})"

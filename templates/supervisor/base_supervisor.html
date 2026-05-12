@@ -5,8 +5,9 @@
 <html lang="{{ LANGUAGE_CODE }}" dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr' }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block head_title %}{% trans "لوحة الإدارة | Elbazaar" %}{% endblock %}</title>
+    <!-- منع التكبير اليدوي لتحسين تجربة التطبيق على الموبايل -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>{% block head_title %}{% trans "لوحة الإدارة | " %}{{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}</title>
     
     {% if LANGUAGE_BIDI %}
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
@@ -25,36 +26,47 @@
             --primary-color: #3b82f6;
             --primary-hover: #2563eb;
             --accent-gold: #f59e0b;
-            --bg-body: #f8fafc;
+            --bg-body: #f4f7fb;
             --text-muted: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.4);
         }
         body { 
             font-family: 'Cairo', sans-serif; 
             background-color: var(--bg-body); 
-            overflow-x: hidden; 
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent; /* إزالة الوميض عند الضغط على الموبايل */
         }
         
+        /* تأثير زجاجي عام */
+        .glass-effect {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        /* ================= Sidebar Styles ================= */
         .sidebar-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-            z-index: 1040; opacity: 0; visibility: hidden; transition: 0.3s ease;
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            z-index: 1040; opacity: 0; visibility: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sidebar-overlay.show { opacity: 1; visibility: visible; }
 
         .sidebar {
             position: fixed; top: 0; bottom: 0; width: var(--sidebar-width);
             background: var(--sidebar-bg); color: var(--text-muted); 
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1050; display: flex; flex-direction: column;
-            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+            box-shadow: 0 0 40px rgba(0,0,0,0.15);
         }
         
-        /* التوافق مع اللغات LTR و RTL */
         [dir="rtl"] .sidebar { right: 0; left: auto; }
         [dir="ltr"] .sidebar { left: 0; right: auto; }
         
         .sidebar-brand {
-            padding: 20px; font-size: 24px; font-weight: 800; color: #fff; 
+            padding: 24px 20px; font-size: 22px; font-weight: 800; color: #fff; 
             border-bottom: 1px solid rgba(255,255,255,0.05);
             display: flex; flex-direction: column;
         }
@@ -65,16 +77,18 @@
 
         .btn-close-sidebar {
             background: rgba(255,255,255,0.1); border: none; color: #fff;
-            width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            transition: 0.2s;
+            width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
         }
-        .btn-close-sidebar:hover { background: #ef4444; color: #fff; }
+        .btn-close-sidebar:active { transform: scale(0.9); }
 
-        .sidebar-menu { flex-grow: 1; padding: 15px 0; overflow-y: auto; }
+        .sidebar-menu { flex-grow: 1; padding: 15px 0 100px 0; overflow-y: auto; }
+        .sidebar-menu::-webkit-scrollbar { width: 4px; }
+        .sidebar-menu::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         
         .nav-link {
-            padding: 10px 15px; margin: 4px 15px; color: #cbd5e1; font-weight: 600; font-size: 15px;
-            display: flex; align-items: center; border-radius: 10px; transition: 0.3s ease;
+            padding: 12px 15px; margin: 4px 15px; color: #cbd5e1; font-weight: 600; font-size: 15px;
+            display: flex; align-items: center; border-radius: 12px; transition: all 0.3s ease;
         }
         
         [dir="rtl"] .nav-link:hover { transform: translateX(-5px); }
@@ -82,7 +96,8 @@
         
         .nav-link:hover { background: var(--sidebar-hover); color: #fff; }
         .nav-link.active {
-            background: var(--primary-color); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            background: var(--primary-color); color: #fff; 
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.25);
         }
         
         [dir="rtl"] .nav-link i.fa-chevron-down { margin-right: auto; margin-left: 0; }
@@ -91,43 +106,95 @@
         .nav-link i.fa-chevron-down { transition: transform 0.3s; font-size: 12px; }
         .nav-link[aria-expanded="true"] i.fa-chevron-down { transform: rotate(180deg); }
         
-        [dir="rtl"] .nav-link > i:first-child { margin-left: 12px; margin-right: 0; }
-        [dir="ltr"] .nav-link > i:first-child { margin-right: 12px; margin-left: 0; }
+        [dir="rtl"] .nav-link > i:first-child { margin-left: 14px; margin-right: 0; }
+        [dir="ltr"] .nav-link > i:first-child { margin-right: 14px; margin-left: 0; }
         
-        .nav-link > i:first-child { width: 28px; font-size: 18px; text-align: center; color: var(--text-muted); transition: 0.3s; }
+        .nav-link > i:first-child { width: 24px; font-size: 18px; text-align: center; color: var(--text-muted); transition: 0.3s; }
         .nav-link.active > i:first-child, .nav-link:hover > i:first-child { color: #fff; }
         
         .nav-title { 
-            padding: 20px 25px 8px; font-size: 11px; color: #64748b; 
-            font-weight: 800; letter-spacing: 0.5px;
+            padding: 24px 25px 10px; font-size: 12px; color: #64748b; 
+            font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;
         }
 
-        .collapse .bg-black { border-radius: 12px; margin: 0 15px; background: rgba(0,0,0,0.2) !important; }
+        .collapse .bg-black { border-radius: 14px; margin: 0 15px; background: rgba(0,0,0,0.2) !important; padding: 5px 0; }
         .collapse .nav-link { margin: 2px 10px; padding: 10px 15px; font-size: 14px; }
         .collapse .nav-link:hover { transform: none; background: rgba(255,255,255,0.05); }
 
-        .main-content { padding: 25px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); min-height: 100vh; }
+        /* ================= Main Content & Navbar ================= */
+        .main-content { padding: 20px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); min-height: 100vh; display: flex; flex-direction: column; }
         
         [dir="rtl"] .main-content { margin-right: var(--sidebar-width); margin-left: 0; }
         [dir="ltr"] .main-content { margin-left: var(--sidebar-width); margin-right: 0; }
         
         .top-navbar {
-            background: #fff; padding: 12px 20px; border-radius: 16px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
-            position: sticky; top: 15px; z-index: 900;
+            padding: 12px 20px; border-radius: 20px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.04); 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 25px; position: sticky; top: 15px; z-index: 900;
         }
-        
-        @media (max-width: 992px) {
-            [dir="rtl"] .sidebar { transform: translateX(100%); }
-            [dir="ltr"] .sidebar { transform: translateX(-100%); }
+
+        .lang-select {
+            background-color: transparent !important; border: none !important; font-weight: 700; color: #334155;
+            cursor: pointer; padding-right: 25px; box-shadow: none !important; outline: none !important;
+        }
+
+        /* ================= Mobile App-Like Masterpiece ================= */
+        .mobile-bottom-nav {
+            display: none; position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05); box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+            z-index: 1020; padding: 10px 20px 25px 20px; /* Padding bottom for iPhone Home Indicator */
+            justify-content: space-between; align-items: center;
+            border-radius: 30px 30px 0 0;
+        }
+
+        .mobile-nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #94a3b8; text-decoration: none; width: 60px; height: 50px;
+            border-radius: 16px; transition: all 0.3s ease; position: relative;
+        }
+
+        .mobile-nav-item i { font-size: 20px; transition: all 0.3s ease; z-index: 2; }
+        .mobile-nav-item span { font-size: 10px; font-weight: 700; margin-top: 4px; transition: all 0.3s ease; z-index: 2;}
+
+        /* Active State for Mobile Nav */
+        .mobile-nav-item.active { color: var(--primary-color); }
+        .mobile-nav-item.active i { transform: translateY(-3px); }
+        .mobile-nav-item.active::before {
+            content: ''; position: absolute; top: -12px; width: 45px; height: 4px;
+            background: var(--primary-color); border-radius: 4px;
+        }
+
+        .mobile-nav-item:active { transform: scale(0.9); }
+
+        @media (max-width: 991.98px) {
+            [dir="rtl"] .sidebar { transform: translateX(100%); border-radius: 30px 0 0 30px; }
+            [dir="ltr"] .sidebar { transform: translateX(-100%); border-radius: 0 30px 30px 0; }
             
             .sidebar.show { transform: translateX(0) !important; }
-            .main-content { margin-right: 0 !important; margin-left: 0 !important; padding: 15px; }
-            .top-navbar { top: 0; border-radius: 0 0 16px 16px; margin-top: -15px; }
+            .main-content { margin-right: 0 !important; margin-left: 0 !important; padding: 15px; padding-bottom: 90px; }
+            
+            .top-navbar { 
+                top: 0; border-radius: 0 0 24px 24px; margin-top: -15px; margin-left: -15px; margin-right: -15px;
+                padding: 15px 20px; padding-top: 25px; /* مساحة علوية لشريط الحالة في الموبايل */
+                border-bottom: 1px solid rgba(0,0,0,0.03);
+            }
+
+            .mobile-bottom-nav { display: flex; }
+            
+            /* إخفاء الهامبرجر من الأعلى لأننا وضعناه في الأسفل */
+            .top-hamburger { display: none !important; }
+            
+            /* تصغير النصوص العلوية */
+            .top-navbar h5 { font-size: 1.1rem !important; }
+            .top-navbar .lang-container { margin: 0 5px !important; }
+            .top-navbar .lang-select { width: 45px; color: transparent; background-image: none !important; }
+            .top-navbar .lang-select option { color: #000; }
+            .top-navbar .globe-icon { font-size: 1.2rem; }
+            
+            .alert { border-radius: 20px !important; }
         }
-        
-        .sidebar-menu::-webkit-scrollbar { width: 4px; }
-        .sidebar-menu::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -137,41 +204,48 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <div class="brand-header">
-                <div><i class="fas fa-chart-pie text-primary me-2"></i> {{ site_settings.site_name|default:"Elbazaar" }}<span class="text-primary">.</span></div>
-                <button class="btn-close-sidebar d-lg-none" id="closeSidebarBtn"><i class="fas fa-times"></i></button>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary text-white rounded-3 d-flex justify-content-center align-items-center shadow-sm" style="width: 35px; height: 35px;">
+                        <i class="fas fa-layer-group fs-5"></i>
+                    </div>
+                    <span style="font-size: 20px;">{{ site_settings.site_name|default:"Elbazaar" }}</span>
+                </div>
+                <button class="btn-close-sidebar d-lg-none shadow-sm" id="closeSidebarBtn"><i class="fas fa-times"></i></button>
             </div>
-            <div class="mt-2 py-1 px-2 rounded-2" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2);">
-                <span style="font-size: 12px; color: #60a5fa; font-weight: 700;">
+            <div class="mt-3 py-2 px-3 rounded-3 text-center" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                <span style="font-size: 11px; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">
                     {% if request.user.role == 'OWNER' or request.user.is_superuser %}
                         <i class="fas fa-crown text-warning me-1"></i> {% trans "الإدارة العليا (المالك)" %}
                     {% elif request.user.country %}
-                        <i class="fas fa-flag me-1"></i> {% trans "فرع" %} {{ request.user.country.name }}
+                        <i class="fas fa-flag text-info me-1"></i> {% trans "فرع" %} {{ request.user.country.name }}
                     {% else %}
-                        <i class="fas fa-shield-alt me-1"></i> {% trans "مشرف محلي" %}
+                        <i class="fas fa-shield-alt text-success me-1"></i> {% trans "مشرف محلي" %}
                     {% endif %}
                 </span>
             </div>
         </div>
         
+        <!-- القائمة الجانبية -->
         <div class="sidebar-menu">
-            
             {% if request.user.role == 'OWNER' or request.user.is_superuser %}
-                <div class="nav-title text-warning">{% trans "التحكم المركزي" %}</div>
-                
+                <div class="nav-title text-warning"><i class="fas fa-bolt me-1"></i> {% trans "التحكم المركزي" %}</div>
                 <a href="{% url 'owner_dashboard' %}" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}">
                     <i class="fas fa-home"></i> {% trans "الرئيسية" %}
                 </a>
-                
                 <a href="{% url 'super_send_broadcast' %}" class="nav-link {% if 'broadcast' in request.path %}active{% endif %}">
                     <i class="fas fa-bullhorn"></i> {% trans "إرسال إشعارات" %}
                 </a>
-                
                 <a href="{% url 'super_team' %}" class="nav-link {% if 'team' in request.path or 'roles' in request.path %}active{% endif %}">
                     <i class="fas fa-user-shield text-info"></i> {% trans "فريق العمل والمشرفين" %}
                 </a>
-                
                 <a href="{% url 'super_manage_countries' %}" class="nav-link text-warning {% if 'countries' in request.path %}active{% endif %}">
                     <i class="fas fa-globe text-warning"></i> {% trans "إدارة الدول والأسواق" %}
+                </a>
+                <a href="{% url 'super_manage_terms' %}" class="nav-link {% if 'terms' in request.path %}active{% endif %}">
+                    <i class="fas fa-balance-scale text-warning"></i> {% trans "الوثائق والشروط" %}
+                </a>
+                <a href="{% url 'super_edit_about_us' %}" class="nav-link {% if 'about' in request.path %}active{% endif %}">
+                    <i class="fas fa-address-card text-info"></i> {% trans "صفحة من نحن" %}
                 </a>
 
             {% else %}
@@ -202,6 +276,12 @@
                 <a href="{% url 'super_all_products' %}" class="nav-link {% if 'all-products' in request.path %}active{% endif %}">
                     <i class="fas fa-boxes"></i> {% trans "كل المنتجات" %}
                 </a>
+                
+                <!-- 🔥 أرشيف المنتجات أُضيف هنا -->
+                <a href="{% url 'super_archived_products' %}" class="nav-link {% if 'archived' in request.path %}active{% endif %}">
+                    <i class="fas fa-archive text-danger"></i> {% trans "أرشيف المنتجات" %}
+                </a>
+                
                 <a href="{% url 'super_reviews_list' %}" class="nav-link {% if 'reviews' in request.path %}active{% endif %}">
                     <i class="fas fa-star text-warning"></i> {% trans "تقييمات العملاء" %}
                 </a>
@@ -237,7 +317,7 @@
 
                 {% if request.user|has_perm:'users' %}
                 <a href="{% url 'super_customers_analytics' %}" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
-                    <i class="fas fa-chart-user"></i> {% trans "تحليلات العملاء" %}
+                    <i class="fas fa-chart-line"></i> {% trans "تحليلات العملاء" %}
                 </a>
                 <a href="{% url 'super_users_list' %}" class="nav-link {% if 'users' in request.path %}active{% endif %}">
                     <i class="fas fa-users"></i> {% trans "كل الأعضاء" %}
@@ -266,7 +346,6 @@
                     <div class="bg-black py-2 mt-1">
                         <a href="{% url 'super_finance_overview' %}" class="nav-link"><i class="fas fa-chart-pie"></i> {% trans "نظرة عامة" %}</a>
                         <a href="{% url 'super_wallets_list' %}" class="nav-link"><i class="fas fa-users-cog"></i> {% trans "محافظ التجار" %}</a>
-                        <a href="{% url 'super_pending_deposits' %}" class="nav-link"><i class="fas fa-arrow-down"></i> {% trans "الإيداعات" %}</a>
                         <a href="{% url 'super_pending_withdrawals' %}" class="nav-link"><i class="fas fa-arrow-up"></i> {% trans "السحوبات" %}</a>
                         <a href="{% url 'super_finance_logs' %}" class="nav-link"><i class="fas fa-list"></i> {% trans "سجل العمليات" %}</a>
                     </div>
@@ -295,87 +374,101 @@
                 <a href="{% url 'super_site_settings' %}" class="nav-link {% if 'settings' in request.path %}active{% endif %}">
                     <i class="fas fa-cogs"></i> {% trans "إعدادات المنصة" %}
                 </a>
-                <a href="{% url 'super_system_translations' %}" class="nav-link {% if 'translations' in request.path %}active{% endif %}">
-                    <i class="fas fa-language"></i> {% trans "المترجمات" %}
+                <a href="{% url 'super_manage_terms' %}" class="nav-link {% if 'terms' in request.path %}active{% endif %}">
+                    <i class="fas fa-balance-scale"></i> {% trans "الوثائق والشروط" %}
+                </a>
+                <a href="{% url 'super_edit_about_us' %}" class="nav-link {% if 'about' in request.path %}active{% endif %}">
+                    <i class="fas fa-address-card text-info"></i> {% trans "صفحة من نحن" %}
                 </a>
                 {% endif %}
-                
             {% endif %}
-            </div>
-        
-        <div class="p-3 border-top border-secondary border-opacity-25 mt-auto">
-            <a href="{% url 'home' %}" class="btn btn-outline-light w-100 fw-bold rounded-3 py-2 shadow-sm" target="_blank">
-                <i class="fas fa-external-link-alt me-2"></i> {% trans "معاينة المتجر" %}
-            </a>
         </div>
     </nav>
 
     <div class="main-content">
-        <nav class="top-navbar">
+        <!-- الشريط العلوي الزجاجي -->
+        <nav class="top-navbar glass-effect">
             <div class="d-flex align-items-center">
-                <button class="btn btn-light d-lg-none mx-2 shadow-sm rounded-3" id="openSidebarBtn">
+                <!-- زر القائمة الجانبية (يظهر فقط على الشاشات الكبيرة) -->
+                <button class="btn btn-light d-none d-lg-flex align-items-center justify-content-center mx-2 shadow-sm rounded-circle top-hamburger" id="openSidebarBtn" style="width: 40px; height: 40px;">
                     <i class="fas fa-bars text-primary"></i>
                 </button>
-                <h5 class="mb-0 fw-bold text-dark">{% block page_title %}{% trans "لوحة القيادة" %}{% endblock %}</h5>
+                <h5 class="mb-0 fw-bold text-dark fs-5">{% block page_title %}{% trans "لوحة القيادة" %}{% endblock %}</h5>
             </div>
             
             <div class="d-flex align-items-center">
-                
-                <form action="{% url 'set_language' %}" method="post" class="d-inline-flex align-items-center mx-3">
+                <!-- مبدل اللغة بتصميم أيقونة للموبايل -->
+                <form action="{% url 'set_language' %}" method="post" class="d-inline-flex align-items-center mx-1 mx-md-3 lang-container">
                     {% csrf_token %}
                     <input name="next" type="hidden" value="{{ request.path }}">
-                    <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden">
-                        <span class="input-group-text bg-light border-0 text-primary"><i class="fas fa-globe"></i></span>
-                        <select name="language" class="form-select border-0 bg-light fw-bold text-dark" onchange="this.form.submit()" style="cursor: pointer;">
+                    <div class="position-relative d-flex align-items-center bg-light rounded-pill px-2 py-1 shadow-sm border border-white">
+                        <i class="fas fa-globe text-primary globe-icon ms-1"></i>
+                        <select name="language" class="form-select lang-select form-select-sm" onchange="this.form.submit()">
                             {% get_available_languages as LANGUAGES %}
                             {% for lang in LANGUAGES %}
                                 <option value="{{ lang.0 }}" {% if lang.0 == LANGUAGE_CODE %}selected{% endif %}>
-                                    {% if lang.0 == 'ar' %}العربية 🇪🇬{% else %}English 🇺🇸{% endif %}
+                                    {% if lang.0 == 'ar' %}عربي 🇪🇬{% else %}En 🇺🇸{% endif %}
                                 </option>
                             {% endfor %}
                         </select>
                     </div>
                 </form>
 
+                <!-- البروفايل -->
                 <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                        <div class="d-none d-md-block mx-3 text-start">
-                            <span class="d-block fw-bold">{{ request.user.first_name|default:request.user.username }}</span>
+                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle border-0" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="d-none d-md-block mx-2 text-start">
+                            <span class="d-block fw-bold" style="font-size: 14px;">{{ request.user.first_name|default:request.user.username }}</span>
                             <span class="d-block text-muted" style="font-size: 11px;">{{ request.user.get_role_display }}</span>
                         </div>
-                        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name|default:request.user.username }}&background=3b82f6&color=fff&bold=true" class="rounded-circle shadow-sm" width="42">
+                        <img src="https://ui-avatars.com/api/?name={{ request.user.first_name|default:request.user.username }}&background=3b82f6&color=fff&bold=true" class="rounded-circle shadow-sm border border-2 border-white" width="40" height="40">
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-3 rounded-4 p-2">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3 rounded-4 p-2" style="min-width: 200px;">
                         <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{% url 'profile' %}"><i class="fas fa-user-circle text-primary me-2"></i> {% trans "ملفي الشخصي" %}</a></li>
-                        <li><hr class="dropdown-divider my-2"></li>
+                        <li><hr class="dropdown-divider my-2 opacity-10"></li>
                         <li><a class="dropdown-item rounded-3 py-2 text-danger fw-bold" href="{% url 'account_logout' %}"><i class="fas fa-sign-out-alt me-2"></i> {% trans "تسجيل خروج" %}</a></li>
                     </ul>
                 </div>
             </div>
         </nav>
 
+        <!-- التنبيهات (Messages) بتصميم دائري عصري -->
         {% if messages %}
             {% for message in messages %}
-                <div class="alert border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center bg-white border-start border-4 
+                <div class="alert border-0 shadow-sm rounded-pill mb-4 d-flex align-items-center bg-white border-start border-5 
                     {% if message.tags == 'error' %}border-danger
                     {% elif message.tags == 'success' %}border-success
                     {% elif message.tags == 'warning' %}border-warning
-                    {% else %}border-info{% endif %}">
+                    {% else %}border-info{% endif %}" style="padding: 10px 20px;">
                     
-                    <i class="fas fs-4 mx-3
+                    <i class="fas fs-5 mx-2
                         {% if message.tags == 'error' %}fa-exclamation-circle text-danger
                         {% elif message.tags == 'success' %}fa-check-circle text-success
                         {% elif message.tags == 'warning' %}fa-exclamation-triangle text-warning
                         {% else %}fa-info-circle text-info{% endif %}">
                     </i> 
                     
-                    <div class="fw-bold text-dark flex-grow-1">{{ message }}</div>
-                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                    <div class="fw-bold text-dark flex-grow-1" style="font-size: 14px;">{{ message }}</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size: 10px;"></button>
                 </div>
             {% endfor %}
         {% endif %}
 
         {% block content %}{% endblock %}
+    </div>
+
+    <!-- الشريط السفلي (Bottom Navigation) للموبايل فقط -->
+    <div class="mobile-bottom-nav">
+        <!-- زر القائمة (يفتح الـ Sidebar) -->
+        <button class="mobile-nav-item border-0 bg-transparent" id="mobileMenuBtn">
+            <i class="fas fa-bars"></i>
+            <span>{% trans "القائمة" %}</span>
+        </button>
+
+        <a href="{% if request.user.role == 'OWNER' %}{% url 'owner_dashboard' %}{% else %}{% url 'supervisor_dashboard' %}{% endif %}" class="mobile-nav-item {% if request.resolver_match.url_name == 'supervisor_dashboard' or request.resolver_match.url_name == 'owner_dashboard' %}active{% endif %}">
+            <i class="fas fa-home"></i>
+            <span>{% trans "الرئيسية" %}</span>
+        </a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -387,6 +480,7 @@
             const overlay = document.getElementById('sidebarOverlay');
             const openBtn = document.getElementById('openSidebarBtn');
             const closeBtn = document.getElementById('closeSidebarBtn');
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn'); // زر الموبايل الجديد
 
             function toggleSidebar() {
                 sidebar.classList.toggle('show');
@@ -394,6 +488,7 @@
             }
 
             if(openBtn) openBtn.addEventListener('click', toggleSidebar);
+            if(mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleSidebar);
             if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
             if(overlay) overlay.addEventListener('click', toggleSidebar);
         });

@@ -1,6 +1,6 @@
 {% extends 'supervisor/base_supervisor.html' %}
 {% load i18n supervisor_tags %}
-{% block head_title %}{% trans "طلبات السحب المعلقة | Elbazaar" %}{% endblock %}
+{% block head_title %}{% trans "طلبات السحب المعلقة | " %}{{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}{% trans "طلبات سحب الأرباح" %}{% endblock %}
 
 {% block content %}

@@ -1,86 +1,117 @@
 {% extends 'supervisor/base_supervisor.html' %}
 {% load i18n supervisor_tags %}
-{% block head_title %}{% trans "قائمة التجار | Elbazaar" %}{% endblock %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+{% block head_title %}{% trans "قائمة التجار | " %}{{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}{% trans "قائمة التجار والمتاجر" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0">
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-            <h5 class="fw-bold text-dark m-0"><i class="fas fa-store text-primary me-2"></i> {% trans "قائمة التجار النشطين" %}</h5>
-            <small class="text-muted">{% trans "جميع المتاجر المعتمدة والتي تعمل حالياً على المنصة." %}</small>
-        </div>
-        <a href="{% url 'super_pending_merchants' %}" class="btn btn-outline-success shadow-sm rounded-3 px-3 fw-bold">
-            <i class="fas fa-user-clock me-1"></i> {% trans "طلبات الانضمام المعلقة" %}
-        </a>
+    <div class="mb-4">
+        <h5 class="fw-bold text-dark m-0"><i class="fas fa-store text-primary mx-2"></i> {% trans "قائمة التجار النشطين" %}</h5>
+        <small class="text-muted">{% trans "إدارة المتاجر المعتمدة والبحث فيها بسهولة." %}</small>
     </div>
 
-    <div class="row g-3">
-        {% for m in merchants %}
-        <div class="col-12 col-md-6 col-xl-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card overflow-hidden position-relative">
-                
-                <div class="position-absolute top-0 start-0 w-100" style="height: 4px; background-color: #10b981;"></div>
+    <div class="row g-2 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-success text-white text-center p-3 h-100 transition-hover">
+                <i class="fas fa-store-alt mb-2 fs-5 opacity-75"></i>
+                <h3 class="fw-bold mb-0">{{ total_active|default:0 }}</h3>
+                <small class="opacity-75" style="font-size: 12px;">{% trans "تجار نشطين" %}</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <a href="{% url 'super_pending_merchants' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 bg-warning text-dark text-center p-3 h-100 transition-hover">
+                    <i class="fas fa-user-clock mb-2 fs-5 opacity-75"></i>
+                    <h3 class="fw-bold mb-0">{{ pending_count|default:0 }}</h3>
+                    <small class="opacity-75" style="font-size: 12px;">{% trans "طلبات معلقة" %}</small>
+                </div>
+            </a>
+        </div>
+    </div>
 
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-start gap-3 mb-3">
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-2 p-md-3">
+            <form class="row g-2 align-items-center" method="GET">
+                <div class="col-12 col-md-6">
+                    <div class="input-group shadow-sm rounded-3">
+                        <span class="input-group-text bg-light border-0 px-3 rounded-end-3"><i class="fas fa-search text-primary"></i></span>
+                        <input type="text" name="q" value="{{ request.GET.q }}" class="form-control bg-light border-0 rounded-start-3 px-2" style="font-size: 14px;" placeholder="{% trans 'ابحث باسم التاجر، رقم الهاتف...' %}">
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <select name="rank" class="form-select bg-light border-0 shadow-sm rounded-3 text-dark" style="font-size: 14px;" onchange="this.form.submit()">
+                        <option value="">{% trans "كل التوثيقات" %}</option>
+                        <option value="NONE" {% if request.GET.rank == 'NONE' %}selected{% endif %}>{% trans "عادي" %}</option>
+                        <option value="SILVER" {% if request.GET.rank == 'SILVER' %}selected{% endif %}>{% trans "فضي" %}</option>
+                        <option value="GOLD" {% if request.GET.rank == 'GOLD' %}selected{% endif %}>{% trans "ذهبي" %}</option>
+                        <option value="BLUE" {% if request.GET.rank == 'BLUE' %}selected{% endif %}>{% trans "أزرق" %}</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold rounded-3 shadow-sm transition-hover text-truncate" style="font-size: 14px;">{% trans "بحث" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-2 g-md-3">
+        {% for m in merchants %}
+        <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-card position-relative overflow-hidden">
+                
+                <div class="position-absolute top-0 bottom-0 start-0" style="width: 3px; background-color: {% if m.verification_rank == 'GOLD' %}#f59e0b{% elif m.verification_rank == 'BLUE' %}#3b82f6{% elif m.verification_rank == 'SILVER' %}#9ca3af{% else %}#10b981{% endif %};"></div>
+
+                <div class="card-body p-2 p-md-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1 ps-2">
+                        
                         {% if m.shop_image %}
-                            <img src="{{ m.shop_image.url }}" class="rounded-circle shadow-sm" width="60" height="60" style="object-fit: cover;">
+                            <img src="{{ m.shop_image.url }}" class="rounded-circle shadow-sm flex-shrink-0" width="40" height="40" style="object-fit: cover;">
                         {% else %}
-                            <div class="bg-primary-subtle text-primary rounded-circle d-flex justify-content-center align-items-center shadow-sm fw-bold fs-4" style="width: 60px; height: 60px;">
+                            <div class="bg-primary-subtle text-primary rounded-circle d-flex justify-content-center align-items-center shadow-sm fw-bold flex-shrink-0" style="width: 40px; height: 40px; font-size: 16px;">
                                 {{ m.user.first_name|slice:":1" }}
                             </div>
                         {% endif %}
                         
-                        <div class="text-start flex-grow-1">
-                            <h6 class="fw-bold text-dark m-0 mb-1 text-truncate" style="max-width: 150px;">{{ m.user.first_name }} {{ m.user.last_name|default:"" }}</h6>
+                        <div class="text-truncate" style="text-align: {% if LANGUAGE_BIDI %}right{% else %}left{% endif %} !important;">
+                            <h6 class="fw-bold text-dark m-0 mb-1 text-truncate" style="font-size: 13px;" title="{{ m.user.first_name }} {{ m.user.last_name|default:'' }}">
+                                {{ m.user.first_name }} {{ m.user.last_name|default:"" }}
+                            </h6>
                             
-                            <div class="d-flex flex-wrap gap-1 mt-1">
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
                                 {% if m.verification_rank == 'GOLD' %}
-                                    <span class="badge bg-warning text-dark border border-warning" style="font-size: 10px;"><i class="fas fa-medal"></i> {% trans "موثق ذهبي" %}</span>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size: 10px; padding: 3px 6px;"><i class="fas fa-medal"></i> {% trans "ذهبي" %}</span>
                                 {% elif m.verification_rank == 'BLUE' %}
-                                    <span class="badge bg-primary text-white border border-primary" style="font-size: 10px;"><i class="fas fa-check-circle"></i> {% trans "موثق أزرق" %}</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10px; padding: 3px 6px;"><i class="fas fa-check-circle"></i> {% trans "أزرق" %}</span>
                                 {% elif m.verification_rank == 'SILVER' %}
-                                    <span class="badge bg-secondary text-white border border-secondary" style="font-size: 10px;"><i class="fas fa-award"></i> {% trans "موثق فضي" %}</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size: 10px; padding: 3px 6px;"><i class="fas fa-award"></i> {% trans "فضي" %}</span>
                                 {% else %}
-                                    <span class="badge bg-light text-dark border" style="font-size: 10px;">{% trans "عادي" %}</span>
+                                    <span class="badge bg-light text-dark border rounded-pill" style="font-size: 10px; padding: 3px 6px;">{% trans "عادي" %}</span>
                                 {% endif %}
 
-                                {% if request.user.role == 'OWNER' %}
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 10px;">
-                                        <i class="fas fa-globe me-1"></i> {% if m.user.country.name %}{% trans m.user.country.name %}{% else %}{% trans "غير محدد" %}{% endif %}
+                                {% if request.user.role == 'OWNER' and m.user.country %}
+                                    <span class="badge bg-light text-dark border rounded-pill" style="font-size: 9px; padding: 3px 6px;">
+                                        <i class="fas fa-globe"></i> {{ m.user.country.code }}
                                     </span>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-light rounded-3 p-3 mb-0">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted" style="font-size: 12px;"><i class="fas fa-phone-alt me-1"></i> {% trans "الهاتف:" %}</span>
-                            <span class="fw-bold text-dark" dir="ltr" style="font-size: 12px;">{{ m.user.phone_primary }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span class="text-muted" style="font-size: 12px;"><i class="fas fa-box me-1"></i> {% trans "المنتجات:" %}</span>
-                            <span class="fw-bold text-primary" style="font-size: 12px;">{% blocktrans with count=m.products.count %}{{ count }} منتج{% endblocktrans %}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-footer bg-white border-top border-light p-3 d-flex">
-                    <a href="{% url 'super_merchant_profile' m.pk %}" class="btn btn-light border flex-grow-1 rounded-3 text-primary fw-bold shadow-sm" style="font-size: 13px;">
-                        <i class="fas fa-user-tie me-1"></i> {% trans "عرض ملف التاجر" %}
+                    <a href="{% url 'super_merchant_profile' m.pk %}" class="btn btn-light btn-sm border rounded-circle d-flex align-items-center justify-content-center transition-hover flex-shrink-0 ms-1" style="width: 32px; height: 32px; background: #f8f9fa;" title="{% trans 'عرض ملف التاجر والتفاصيل' %}">
+                        <i class="fas fa-arrow-left text-primary" style="font-size: 12px; transform: {% if not LANGUAGE_BIDI %}rotate(180deg){% else %}none{% endif %};"></i>
                     </a>
                 </div>
             </div>
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <div class="bg-white rounded-4 shadow-sm p-5 d-inline-block w-100" style="max-width: 500px;">
-                <i class="fas fa-store-slash text-muted mb-3" style="font-size: 4rem; opacity: 0.2;"></i>
-                <h5 class="text-dark fw-bold">{% trans "لا يوجد تجار نشطين" %}</h5>
-                <p class="text-muted small mb-0">{% trans "لم يتم تفعيل أي متجر على المنصة حتى الآن." %}</p>
+            <div class="bg-white rounded-4 shadow-sm p-4 p-md-5 d-inline-block w-100" style="max-width: 400px;">
+                <i class="fas fa-store-slash text-muted mb-3" style="font-size: 3rem; opacity: 0.2;"></i>
+                <h6 class="text-dark fw-bold">{% trans "لا توجد نتائج" %}</h6>
+                <p class="text-muted small mb-0">{% trans "جرب البحث بكلمات أخرى أو تغيير الفلاتر." %}</p>
             </div>
         </div>
         {% endfor %}
@@ -89,7 +120,9 @@
 </div>
 
 <style>
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important; }
     .hover-card { transition: all 0.2s ease-in-out; }
-    .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; }
+    .hover-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; border-color: #e9ecef !important; }
 </style>
 {% endblock %}

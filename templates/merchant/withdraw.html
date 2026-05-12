@@ -12,7 +12,7 @@
     </a>
     <div>
         <h5 class="m-0 fw-bold text-dark">{% trans "طلب سحب أرباح 💸" %}</h5>
-        <p class="text-muted small mb-0">{% trans "اسحب أرباحك لمحفظتك الإلكترونية" %}</p>
+        <p class="text-muted small mb-0">{% trans "اسحب أرباحك للحساب البنكي أو المحفظة الإلكترونية" %}</p>
     </div>
 </div>
 
@@ -57,14 +57,26 @@
         </div>
 
         <div class="mb-4">
-            <label class="form-label fw-bold small text-dark">{% trans "رقم المحفظة (المحلية)" %}</label>
+            <label class="form-label fw-bold small text-dark">{% trans "طريقة السحب" %}</label>
             <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                <span class="input-group-text bg-light border-0 text-success"><i class="fas fa-mobile-alt"></i></span>
-                <input type="tel" 
-                       name="phone" 
+                <span class="input-group-text bg-light border-0 text-primary"><i class="fas fa-university"></i></span>
+                <select name="withdrawal_method" class="form-select bg-light border-0 fw-bold" required>
+                    <option value="WALLET">{% trans "محفظة إلكترونية (فودافون كاش، أورانج، الخ)" %}</option>
+                    <option value="INSTAPAY">{% trans "إنستا باي (InstaPay)" %}</option>
+                    <option value="BANK">{% trans "حساب بنكي (Bank Account)" %}</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-dark">{% trans "تفاصيل الحساب (الرقم / IBAN / المعرف)" %}</label>
+            <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                <span class="input-group-text bg-light border-0 text-success"><i class="fas fa-money-check-alt"></i></span>
+                <input type="text" 
+                       name="payment_details" 
                        class="form-control bg-light border-0 fw-bold" 
                        value="{{ request.user.phone_primary }}" 
-                       placeholder="010xxxxxxxx" 
+                       placeholder="{% trans 'اكتب رقم المحفظة، أو حساب إنستا باي، أو رقم الآيبان...' %}" 
                        dir="ltr"
                        style="text-align: {% if LANGUAGE_BIDI %}right{% else %}left{% endif %};"
                        required>

@@ -97,9 +97,6 @@
                     <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-gateways" type="button" role="tab">
                         <i class="fas fa-credit-card me-2"></i> {% trans "بوابات الدفع" %}
                     </button>
-                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-finance" type="button" role="tab">
-                        <i class="fas fa-coins me-2"></i> {% trans "المالية والعمولات" %}
-                    </button>
                     <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-wallet" type="button" role="tab">
                         <i class="fas fa-wallet me-2"></i> {% trans "المحفظة والسحب" %}
                     </button>
@@ -119,62 +116,39 @@
                                 <label class="form-label small text-muted fw-bold">{% trans "اسم الموقع / الفرع" %}</label>
                                 <input type="text" name="site_name" class="form-control bg-light border-0 py-2 fw-bold" value="{{ settings.site_name }}" required>
                             </div>
-                            {% comment %} <div class="col-12 mt-4">
-                                <label class="form-label small text-muted fw-bold">{% trans "صورة البانر الترويجي (اختياري)" %}</label>
-                                <input type="file" name="banner" class="form-control bg-light border-0 py-2" accept="image/*">
-                                {% if settings.banner_image %}
-                                    <div class="mt-3 rounded-3 overflow-hidden border" style="max-height: 150px;">
-                                        <img src="{{ settings.banner_image.url }}" class="img-fluid w-100" style="object-fit: cover;">
-                                    </div>
-                                {% endif %}
-                            </div> {% endcomment %}
                         </div>
                     </div>
 
                     <div class="tab-pane fade" id="tab-gateways" role="tabpanel">
                         <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom"><i class="fas fa-credit-card text-primary me-2"></i> {% trans "بوابات الدفع الإلكتروني" %}</h5>
-                        <p class="text-muted small fw-bold mb-4">{% trans "اختر بوابة الدفع الافتراضية التي سيتم استخدامها لاستقبال المدفوعات وشحن المحافظ في هذا الفرع." %}</p>
+                        <p class="text-muted small fw-bold mb-4">{% trans "تم ضبط فواتيرك كبوابة الدفع الرسمية للمنصة." %}</p>
                         
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="w-100 h-100">
-                                    <input type="radio" name="active_payment_gateway" value="FAWATERK" class="gateway-input" {% if settings.active_payment_gateway == 'FAWATERK' %}checked{% endif %}>
+                                    <input type="radio" name="active_payment_gateway" value="FAWATERK" class="gateway-input" checked>
                                     <div class="gateway-card text-center d-flex flex-column align-items-center justify-content-center">
                                         <i class="fas fa-bolt fa-3x text-primary mb-3"></i>
                                         <h5 class="fw-bold text-dark mb-1">{% trans "فواتيرك (Fawaterk)" %}</h5>
-                                        <span class="badge bg-success rounded-pill mt-2">{% trans "موصى به - أسرع وأسهل" %}</span>
-                                    </div>
-                                </label>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="w-100 h-100">
-                                    <input type="radio" name="active_payment_gateway" value="PAYMOB" class="gateway-input" {% if settings.active_payment_gateway == 'PAYMOB' %}checked{% endif %}>
-                                    <div class="gateway-card text-center d-flex flex-column align-items-center justify-content-center">
-                                        <i class="fas fa-building-columns fa-3x text-secondary mb-3"></i>
-                                        <h5 class="fw-bold text-dark mb-1">{% trans "باي موب (Paymob)" %}</h5>
-                                        <span class="badge bg-light text-dark border rounded-pill mt-2">{% trans "النظام القديم" %}</span>
+                                        <span class="badge bg-success rounded-pill mt-2">{% trans "البوابة الحالية والنشطة" %}</span>
                                     </div>
                                 </label>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="tab-pane fade" id="tab-finance" role="tabpanel">
-                        <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom"><i class="fas fa-coins text-success me-2"></i> {% trans "المالية والعمولات" %}</h5>
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">{% trans "الرسوم الثابتة لكل طلب" %}</label>
-                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                                    <input type="number" name="fee_fixed" class="form-control border-0 bg-light fw-bold" step="0.01" value="{{ settings.platform_fee_fixed|unlocalize }}" required>
-                                    <span class="input-group-text bg-white text-muted border-0 fw-bold">{{ settings.country.currency_symbol|default:"ج.م" }}</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">{% trans "نسبة عمولة المنصة" %}</label>
-                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                                    <input type="number" name="fee_percent" class="form-control border-0 bg-light fw-bold" step="0.01" min="0" max="100" value="{{ settings.platform_fee_percentage|unlocalize }}" required>
-                                    <span class="input-group-text bg-white text-muted border-0 fw-bold">%</span>
+                        <div class="row g-4 mt-4 border-top pt-4">
+                            <h6 class="fw-bold text-dark mb-3"><i class="fas fa-sliders-h text-primary me-2"></i> {% trans "ضبط عمولات فواتيرك" %}</h6>
+                            
+                            <div class="col-md-8">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <label class="form-label small text-muted fw-bold"><i class="fas fa-percent text-primary me-1"></i> {% trans "نسبة رسوم Fawaterk (%)" %}</label>
+                                    <input type="number" name="fawaterk_fee_percent" class="form-control border-0 fw-bold shadow-sm mb-3" step="0.01" value="{{ settings.fawaterk_fee_percentage|unlocalize|default:'2.00' }}" required>
+                                    
+                                    <label class="form-label small text-muted fw-bold"><i class="fas fa-money-bill-wave text-success me-1"></i> {% trans "رسوم Fawaterk (المبلغ الثابت)" %}</label>
+                                    <div class="input-group shadow-sm">
+                                        <input type="number" name="fawaterk_fee_fixed" class="form-control border-0 fw-bold" step="0.01" value="{{ settings.fawaterk_fee_fixed|unlocalize|default:'2.00' }}" required>
+                                        <span class="input-group-text bg-white border-0">{{ settings.country.currency_symbol|default:"ج.م" }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -197,13 +171,7 @@
                                     <span class="input-group-text bg-white text-muted border-0">{{ settings.country.currency_symbol|default:"ج.م" }}</span>
                                 </div>
                             </div>
-                            {% comment %} <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">{% trans "حد المديونية (بالسالب)" %}</label>
-                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                                    <input type="number" name="min_active" class="form-control border-0 bg-light fw-bold" step="0.01" value="{{ settings.min_active_balance|unlocalize }}" required>
-                                    <span class="input-group-text bg-white text-muted border-0">{{ settings.country.currency_symbol|default:"ج.م" }}</span>
-                                </div>
-                            </div> {% endcomment %}
+
                             <div class="col-md-6">
                                 <label class="form-label small text-muted fw-bold">{% trans "مدة تعليق الأرباح للمراجعة" %}</label>
                                 <div class="input-group shadow-sm rounded-3 overflow-hidden">
@@ -214,35 +182,87 @@
                         </div>
                     </div>
 
+                    <!-- 🔥 نظام المكافآت الجديد والمقسّم 🔥 -->
                     <div class="tab-pane fade" id="tab-referral" role="tabpanel">
                         <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom"><i class="fas fa-gift text-danger me-2"></i> {% trans "نظام المكافآت والدعوات" %}</h5>
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">{% trans "قيمة مكافأة الدعوة" %}</label>
-                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                                    <input type="number" name="ref_reward" class="form-control border-0 bg-light fw-bold" step="0.01" value="{{ settings.referral_reward_amount|unlocalize }}" required>
-                                    <span class="input-group-text bg-white text-muted border-0">{{ settings.country.currency_symbol|default:"ج.م" }}</span>
-                                </div>
+                        
+                        <!-- 1. إعدادات الداعي -->
+                        <div class="card border border-primary border-opacity-25 shadow-sm rounded-4 mb-4">
+                            <div class="card-header bg-primary bg-opacity-10 border-0 pt-3 pb-2">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-bullhorn me-2"></i> {% trans "إعدادات الداعي (اكتساب المكافآت)" %}</h6>
+                                <p class="small text-muted mt-1 mb-0">{% trans "القواعد الخاصة بالشخص الذي يشارك الكود للحصول على رصيد مكافأة." %}</p>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">{% trans "مهلة استخدام كود الدعوة" %}</label>
-                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                                    <input type="number" name="ref_grace" class="form-control border-0 bg-light fw-bold" value="{{ settings.referral_grace_period_hours }}" required>
-                                    <span class="input-group-text bg-white text-muted border-0"><i class="fas fa-clock me-1"></i> {% trans "ساعة" %}</span>
+                            <div class="card-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted fw-bold">{% trans "نسبة المكافأة للداعي من الطلب" %}</label>
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                            <input type="number" name="ref_reward_percent" class="form-control border-0 bg-light fw-bold" step="0.01" max="100" value="{{ settings.referral_reward_percentage|unlocalize|default:'10.00' }}" required>
+                                            <span class="input-group-text bg-white text-muted border-0 fw-bold">%</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted fw-bold">{% trans "الحد الأقصى للمكافأة في الطلب الواحد" %}</label>
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                            <input type="number" name="ref_reward_max_amount" class="form-control border-0 bg-light fw-bold text-danger" step="0.01" value="{{ settings.referral_reward_max_amount|unlocalize|default:'100.00' }}" required>
+                                            <span class="input-group-text bg-white text-danger border-0">{{ settings.country.currency_symbol|default:"ج.م" }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted fw-bold">{% trans "عدد الطلبات المؤهلة (للمدعو الواحد)" %}</label>
+                                        <input type="number" name="ref_orders_limit" class="form-control border-0 bg-light fw-bold py-2 shadow-sm rounded-3" min="1" value="{{ settings.referral_reward_limit_orders|default:'1' }}" required>
+                                        <small class="text-muted d-block mt-1">{% trans "كم عدد الطلبات التي سيحصل الداعي على مكافأة منها؟" %}</small>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted fw-bold">{% trans "صلاحية رصيد المكافأة للداعي" %}</label>
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                            <input type="number" name="ref_validity_days" class="form-control border-0 bg-light fw-bold" value="{{ settings.referral_reward_validity_days|default:'30' }}" required>
+                                            <span class="input-group-text bg-white text-muted border-0"><i class="fas fa-calendar-day me-1"></i> {% trans "أيام" %}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">{% trans "أقصى نسبة خصم من سعر المنتج" %}</label>
-                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                                    <input type="number" name="ref_limit" class="form-control border-0 bg-light fw-bold" min="0" max="100" value="{{ settings.referral_discount_limit_pct }}" required>
-                                    <span class="input-group-text bg-white text-muted border-0">%</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted fw-bold">{% trans "عدد الطلبات المؤهلة للخصم" %}</label>
-                                <input type="number" name="ref_orders_limit" class="form-control border-0 bg-light fw-bold py-2 shadow-sm rounded-3" min="1" value="{{ settings.referral_reward_limit_orders }}" required>
                             </div>
                         </div>
+
+                        <!-- 2. إعدادات المدعو (والاستخدام) -->
+                        <div class="card border border-success border-opacity-25 shadow-sm rounded-4">
+                            <div class="card-header bg-success bg-opacity-10 border-0 pt-3 pb-2">
+                                <h6 class="fw-bold text-success mb-0"><i class="fas fa-shopping-bag me-2"></i> {% trans "إعدادات المدعو واستخدام الرصيد" %}</h6>
+                                <p class="small text-muted mt-1 mb-0">{% trans "قواعد تسجيل المستخدم الجديد، وكيفية استخدام وتطبيق رصيد المكافآت عند الشراء." %}</p>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-md-12">
+                                        <label class="form-label small text-muted fw-bold">{% trans "مهلة إدخال كود الدعوة للمستخدم الجديد" %}</label>
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                            <input type="number" name="ref_grace" class="form-control border-0 bg-light fw-bold" value="{{ settings.referral_grace_period_hours|default:'24' }}" required>
+                                            <span class="input-group-text bg-white text-muted border-0"><i class="fas fa-clock me-1"></i> {% trans "ساعة" %}</span>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">أقصى مدة مسموحة للمدعو لإدخال كود صديقه (الداعي) بعد إنشاء الحساب.</small>
+                                    </div>
+
+                                    <div class="col-md-6 border-top pt-3">
+                                        <label class="form-label small text-muted fw-bold">{% trans "أقصى نسبة خصم يمكن استخدامها للمنتج" %}</label>
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                            <input type="number" name="ref_limit" class="form-control border-0 bg-light fw-bold" min="0" max="100" value="{{ settings.referral_discount_limit_pct|default:'10' }}" required>
+                                            <span class="input-group-text bg-white text-muted border-0">%</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 border-top pt-3">
+                                        <label class="form-label small text-muted fw-bold">{% trans "الحد الأقصى المالي لخصم الإحالة بالسلة" %}</label>
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                            <input type="number" name="ref_discount_max_amount" class="form-control border-0 bg-light fw-bold text-danger" step="0.01" value="{{ settings.referral_discount_max_amount|unlocalize|default:'100.00' }}" required>
+                                            <span class="input-group-text bg-white text-danger border-0">{{ settings.country.currency_symbol|default:"ج.م" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                     </div>
 
                 </div>

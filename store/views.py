@@ -51,14 +51,37 @@ def custom_500_view(request):
 # 3. الدوال المساعدة (النظام الدولي والتحقق)
 # ==========================================
 def get_user_country(request):
-    """تحديد دولة المستخدم بدقة من خلال الحساب أو الجلسة (Session)"""
+    """تحديد دولة المستخدم بدقة مع اختيار تلقائي إذا كانت هناك دولة واحدة نشطة فقط"""
+    # 1. إذا كان المستخدم مسجلاً وله دولة مختارة مسبقاً
     if request.user.is_authenticated and request.user.country:
         return request.user.country
         
+    # 2. إذا كانت الدولة محفوظة في الجلسة (Session) للزوار
     country_id = request.session.get('user_country_id')
     if country_id:
-        return Country.objects.filter(id=country_id, is_active=True).first()
+        country = Country.objects.filter(id=country_id, is_active=True).first()
+        if country:
+            return country
+
+    # 3. 🔥 التعديل المطلوب: فحص عدد الدول النشطة في النظام
+    active_countries = Country.objects.filter(is_active=True)
+    active_count = active_countries.count()
+
+    if active_count == 1:
+        # إذا وجدنا دولة واحدة فقط نشطة، نختارها تلقائياً
+        single_country = active_countries.first()
+        
+        # حفظ الاختيار في الجلسة (Session) فوراً لضمان عدم تكرار الفحص
+        request.session['user_country_id'] = single_country.id
+        
+        # إذا كان المستخدم مسجلاً، نحدث بياناته أيضاً
+        if request.user.is_authenticated:
+            request.user.country = single_country
+            request.user.save(update_fields=['country'])
             
+        return single_country
+            
+    # إذا كان هناك أكثر من دولة، نرجع None ليتم توجيهه لصفحة الاختيار (حسب منطق مشروعك)
     return None
 
 def set_user_country(request):
@@ -242,7 +265,7 @@ def merchant_shop(request, merchant_id):
         'merchant': merchant, 'products': products,
     })
 
-@login_required
+
 def all_offers_page(request):
     """صفحة العروض الشاملة مع فلاتر أمنية قوية"""
     user_country = get_user_country(request)
@@ -422,18 +445,20 @@ def checkout(request):
     merchant_totals = defaultdict(int)
     
     limit_pct = settings_obj.referral_discount_limit_pct if settings_obj else 10
-    total_max_discount = 0 
+    max_discount_amount = settings_obj.referral_discount_max_amount if settings_obj else Decimal('100.00')
+    
+    total_max_discount_from_pct = Decimal('0.00') 
     
     for item in cart_items:
         merch = item.product_size.product.merchant
         grouped_items[merch].append(item)
-        price = item.price_at_purchase
+        price = Decimal(item.price_at_purchase)
         qty = item.quantity
         merchant_totals[merch] += price * qty
-        total_max_discount += (price * Decimal(limit_pct) / 100) * qty
+        total_max_discount_from_pct += (price * Decimal(limit_pct) / Decimal('100.0')) * qty
 
     user_balance = request.user.referral_balance
-    applicable_discount = min(user_balance, total_max_discount)
+    applicable_discount = min(user_balance, total_max_discount_from_pct, max_discount_amount)
 
     cart_structure = []
     cart_total_display = 0
@@ -463,7 +488,6 @@ def checkout(request):
 
         gov = get_object_or_404(Governorate, pk=gov_id, country=current_country)
         created_orders = []
-        grand_total_final = 0
         
         remaining_discount = applicable_discount if use_wallet else Decimal(0)
         total_discount_used = Decimal(0)
@@ -481,7 +505,7 @@ def checkout(request):
             voucher_items_left = applied_voucher.remaining_items
             voucher_discount_accumulated = Decimal(0)
 
-        from store.services import OrderService # 👈 استدعاء ملف الخدمات السحري
+        from store.services import OrderService
 
         try:
             with transaction.atomic():
@@ -489,7 +513,6 @@ def checkout(request):
                     merchant = group['merchant']
                     items = group['items']
                     
-                    # 🚀 هنا السحر: حساب الشحن بسطر واحد بدلاً من 15 سطر!
                     shipping_cost, is_free_offer = OrderService.calculate_merchant_shipping(
                         merchant, gov, items, is_first_order, has_free_voucher
                     )
@@ -533,7 +556,6 @@ def checkout(request):
                     
                     new_order.save()
                     created_orders.append(new_order)
-                    grand_total_final += new_order.final_total
 
                     if payment_method == 'COD':
                         try:
@@ -562,6 +584,7 @@ def checkout(request):
                     cart.delete()
 
         except Exception as e:
+            import traceback
             print(f"Checkout Error: {traceback.format_exc()}") 
             messages.error(request, _("حدث خطأ أثناء إتمام الطلب، يرجى المحاولة مرة أخرى."))
             return redirect('checkout')
@@ -571,19 +594,20 @@ def checkout(request):
             try:
                 active_gateway = getattr(settings_obj, 'active_payment_gateway', 'PAYMOB') if settings_obj else 'PAYMOB'
                 
-                # 🚀 هنا السحر: حساب رسوم الدفع بسطر واحد!
-                online_fees = OrderService.calculate_gateway_fees(grand_total_final, current_country)
-                total_to_pay = float(grand_total_final + online_fees)
-                
-                if created_orders:
-                    first_order = created_orders[0]
-                    first_order.platform_fees = online_fees
-                    first_order.final_total += Decimal(online_fees)
-                    first_order.save()
-
+                total_to_pay = 0.0
                 for o in created_orders:
+                    # 🔥 الحل السحري: تحميل الأسعار الحقيقية من قاعدة البيانات بعد الـ Signals
+                    o.refresh_from_db()
+
+                    o_base_total = (o.total_products_price + o.shipping_cost) - getattr(o, 'admin_discount', Decimal('0.00'))
+                    o_fees = OrderService.calculate_gateway_fees(o_base_total, current_country)
+                    
+                    o.platform_fees = o_fees
+                    o.final_total = o_base_total + o_fees
                     o.payment_gateway_used = active_gateway
                     o.save()
+                    
+                    total_to_pay += float(o.final_total)
 
                 if active_gateway == 'PAYMOB':
                     paymob = PaymobManager()
@@ -636,7 +660,7 @@ def checkout(request):
                         "address": f"{gov.name} - {address}"
                     }
                     
-                    items_summary = [{"name": f"Order #{created_orders[0].order_id}", "price": float(total_to_pay), "quantity": 1}]
+                    items_summary = [{"name": f"Orders #{created_orders[0].order_id}", "price": float(total_to_pay), "quantity": 1}]
                     
                     success, data = fawaterk.create_invoice(
                         cart_total=total_to_pay, 
@@ -660,7 +684,8 @@ def checkout(request):
                         return redirect('my_orders')
 
             except Exception as e:
-                print(f"Payment Gateway Error: {e}")
+                import traceback
+                print(f"Payment Gateway Error: {traceback.format_exc()}")
                 messages.error(request, _("فشل الاتصال بالبنك. تم حفظ الطلب، يرجى المحاولة من 'طلباتي'."))
                 return redirect('my_orders')
         
@@ -700,13 +725,16 @@ def checkout(request):
 
 @login_required
 def retry_payment(request, order_id):
-    """إعادة محاولة الدفع لطلب غير مدفوع وتحديد البوابة آلياً"""
+    """إعادة محاولة الدفع لطلب غير مدفوع وتحديد البوابة آلياً بدقة متناهية"""
     order = get_object_or_404(Order, pk=order_id, customer=request.user, status=Order.Status.WAITING_PAYMENT)
     
-    old_fees = order.platform_fees if order.platform_fees else Decimal(0)
-    base_total = order.final_total - old_fees
+    # 🔥 الحساب الحتمي للسعر الأساسي (منعاً لتراكم الرسوم السابقة أو قراءة قيم ملوثة)
+    base_total = (order.total_products_price + order.shipping_cost) - getattr(order, 'admin_discount', Decimal('0.00'))
+    
     current_country = get_user_country(request)
     settings_obj = SiteSetting.objects.filter(country=current_country).first() or SiteSetting.objects.first()
+    
+    from store.services import OrderService
     
     if request.method == 'POST':
         method = request.POST.get('payment_method')
@@ -716,7 +744,7 @@ def retry_payment(request, order_id):
             if method == 'COD':
                 order.payment_method = 'COD'
                 order.status = Order.Status.PENDING 
-                order.platform_fees = 0 
+                order.platform_fees = Decimal('0.00') 
                 order.final_total = base_total 
                 order.save()
                 
@@ -730,29 +758,28 @@ def retry_payment(request, order_id):
             elif method in ['ONLINE', 'WALLET']:
                 active_gateway = getattr(settings_obj, 'active_payment_gateway', 'PAYMOB') if settings_obj else 'PAYMOB'
                 
-                online_fees = 0
-                if settings_obj:
-                    fixed = float(settings_obj.platform_fee_fixed)
-                    percent = float(settings_obj.platform_fee_percentage) / 100
-                    online_fees = fixed + (float(base_total) * percent)
+                # إعادة الحساب للرسوم الدقيقة لهذا الطلب فقط باستخدام الـ Service
+                online_fees = OrderService.calculate_gateway_fees(base_total, current_country)
                 
                 order.platform_fees = online_fees
-                order.final_total = Decimal(base_total) + Decimal(online_fees)
+                order.final_total = base_total + online_fees
                 order.payment_method = method
                 order.payment_gateway_used = active_gateway
                 order.save()
 
+                total_to_pay = float(order.final_total)
+
                 if active_gateway == 'PAYMOB':
                     paymob = PaymobManager()
                     token = paymob.get_token()
-                    amount_cents = int(order.final_total * 100)
+                    amount_cents = int(total_to_pay * 100)
                     gateway_invoice_id = paymob.create_order(token, amount_cents)
 
                     order.gateway_order_id = str(gateway_invoice_id)
                     order.save()
                     
                     billing_data = {
-                        "first_name": request.user.first_name or "G", "last_name": request.user.last_name or "U",
+                        "first_name": request.user.first_name or "Customer", "last_name": request.user.last_name or "User",
                         "email": request.user.email or "retry@pay.com", "phone_number": order.shipping_phone,
                         "apartment": "NA", "floor": "NA", "street": "NA", "building": "NA", 
                         "shipping_method": "NA", "postal_code": "NA", "city": "Cairo", 
@@ -772,7 +799,6 @@ def retry_payment(request, order_id):
                 elif active_gateway == 'FAWATERK':
                     fawaterk = FawaterkManager()
                     
-# تنظيف وتجهيز الاسم للـ Retry
                     safe_recipient_name = order.recipient_name or ""
                     name_parts = safe_recipient_name.strip().split(' ', 1)
                     
@@ -790,21 +816,19 @@ def retry_payment(request, order_id):
                         "address": order.shipping_address or "Cairo, EG"
                     }
                     
-                    items_summary = [{"name": f"Order #{order.order_id}", "price": float(order.final_total), "quantity": 1}]
+                    items_summary = [{"name": f"Order #{order.order_id}", "price": total_to_pay, "quantity": 1}]
                     
                     success, data = fawaterk.create_invoice(
-                        cart_total=float(order.final_total), 
+                        cart_total=total_to_pay, 
                         customer_data=cust_info, 
                         cart_items=items_summary, 
                         order_id=order.order_id
                     )
                     
                     if success:
-                        # 🔥 التعديل السحري: اصطياد رقم الفاتورة بأي مسمى
                         inv_id = data.get('invoice_id') or data.get('invoiceId') or data.get('id')
                         inv_url = data.get('url') or data.get('payment_url')
                         
-                        # حفظ رقم الفاتورة وتأكيد الحفظ
                         order.gateway_order_id = str(inv_id)
                         order.save()
                         
@@ -824,7 +848,7 @@ def retry_payment(request, order_id):
     active_gateway = getattr(settings_obj, 'active_payment_gateway', 'PAYMOB') if settings_obj else 'PAYMOB' 
 
     return render(request, 'store/retry_payment.html', {
-        'order': order, 'base_total': base_total,
+        'order': order, 'base_total': float(base_total),
         'fee_fixed': fee_fixed, 'fee_percent': fee_percent,'active_gateway': active_gateway
     })
 
@@ -851,6 +875,8 @@ def confirm_delivery_view(request, order_id):
                 
                 order.rating = rating_val
                 order.save()
+                from store.services import OrderService
+                OrderService.apply_merchant_cashback(order) # 🔥 تفعيل الكاش باك
                 
                 for item in order.items.all():
                     product = item.product_size.product
@@ -963,21 +989,27 @@ def confirm_delivery_view(request, order_id):
 
     return render(request, 'store/confirm_delivery.html', {'order': order})
 
+from store.services import OrderService # لا تنسى الاستدعاء ده فوق في الملف
+
 @login_required
 def customer_order_detail(request, order_id):
     order = get_object_or_404(Order, pk=order_id, customer=request.user)
-    expected_fees = order.platform_fees
+    
+    # 1. الحساب الدقيق للمبلغ الأساسي (زي ما عملنا في الدفع بالظبط)
+    base_total = (order.total_products_price + order.shipping_cost) - getattr(order, 'admin_discount', Decimal('0.00'))
+    
+    # 2. جلب الرسوم لو محفوظة
+    expected_fees = order.platform_fees or Decimal('0.00')
+    
+    # 3. لو الرسوم صفر والطلب لسه قيد الدفع، نحسبها بملف الخدمات المركزي!
     if order.status == Order.Status.WAITING_PAYMENT and expected_fees == 0:
         current_country = get_user_country(request)
-        settings_obj = SiteSetting.objects.filter(country=current_country).first() or SiteSetting.objects.first()
-        if settings_obj:
-            base = float(order.total_products_price + order.shipping_cost)
-            fixed = float(settings_obj.platform_fee_fixed)
-            percent = float(settings_obj.platform_fee_percentage) / 100
-            expected_fees = fixed + (base * percent)
+        expected_fees = OrderService.calculate_gateway_fees(base_total, current_country)
 
     return render(request, 'store/customer_order_detail.html', {
-        'order': order, 'expected_fees': round(expected_fees, 2) 
+        'order': order, 
+        'base_total': float(base_total),  # ضفنا دي عشان نعرض السعر الأساسي النظيف
+        'expected_fees': float(expected_fees) 
     })
 
 def order_success(request):
@@ -994,96 +1026,133 @@ def my_orders(request):
 @csrf_exempt
 def payment_callback(request):
     """
-    استقبال إشعارات فواتيرك بوضع الأشعة السينية (X-Ray) لمعرفة سبب التوقف وتأكيد الدفع.
+    استقبال إشعارات الدفع (Webhooks) وتوجيهات العودة (Redirects) من Paymob و Fawaterk.
     """
     invoice_id = None
     is_success = False
-
-    # 1. استخراج الفاتورة
+    gateway_used = None
+    
+    # 1. استخراج البيانات بشكل آمن لتفادي أخطاء الـ Parsing
+    data = {}
     if request.method == 'POST':
         try:
             if 'application/json' in request.content_type:
                 data = json.loads(request.body)
             else:
                 data = request.POST
-            invoice_id = data.get('invoice_id')
         except: pass
 
+    # ==========================================
+    # 2. تحديد البوابة وقراءة حالة الدفع (Paymob أو Fawaterk)
+    # ==========================================
+    
+    # أ- فحص إذا كان الرد من Paymob (Webhook POST)
+    if data.get('type') == 'TRANSACTION' and 'obj' in data:
+        obj = data['obj']
+        invoice_id = str(obj.get('order', {}).get('id'))
+        is_success = obj.get('success') is True
+        gateway_used = 'PAYMOB'
+        
+    # ب- فحص إذا كان الرد من Paymob (Redirect GET للعميل)
+    elif 'id' in request.GET and 'success' in request.GET and 'order' in request.GET:
+        invoice_id = str(request.GET.get('order'))
+        is_success = request.GET.get('success') == 'true'
+        gateway_used = 'PAYMOB'
+
+    # ج- فحص إذا كان الرد من Fawaterk (Webhook أو Redirect)
+    else:
+        invoice_id = data.get('invoice_id') or request.GET.get('invoice_id') or request.GET.get('order')
+        if invoice_id:
+            gateway_used = 'FAWATERK'
+
+    # ==========================================
+
     if not invoice_id:
-        invoice_id = request.GET.get('invoice_id') or request.GET.get('order')
+        if request.method == 'POST': return HttpResponse("Ignored: No Invoice ID", status=200)
+        return redirect('my_orders')
 
-    print("\n" + "="*50)
-    print(f"🔔 WEBHOOK TRIGGERED | Invoice ID: {invoice_id}")
-    print("="*50)
+    inv_str = str(invoice_id).strip()
 
-    if invoice_id:
-        inv_str = str(invoice_id).strip()
-        gateway_used = 'FAWATERK' # نفترض فواتيرك كإجراء افتراضي
-        
-        deposit_tx = WalletDepositTransaction.objects.filter(gateway_order_id=inv_str, is_paid=False).first()
-        order_tx = None
+    # 3. البحث في قاعدة البيانات (محافظ أو طلبات)
+    deposit_tx = WalletDepositTransaction.objects.filter(gateway_order_id=inv_str, is_paid=False).first()
+    order_tx = Order.objects.filter(gateway_order_id=inv_str).first()
 
-        # 2. البحث في الداتابيز
-        if deposit_tx:
-            gateway_used = deposit_tx.gateway_name or 'FAWATERK'
-            print(f"✅ Found in Wallet Deposit: ID {deposit_tx.id}")
-        else:
-            order_tx = Order.objects.filter(gateway_order_id=inv_str).first()
-            if order_tx:
-                gateway_used = order_tx.payment_gateway_used or 'FAWATERK'
-                print(f"✅ Found in Orders: Order ID {order_tx.order_id} | Status: {order_tx.status} | Gateway: {gateway_used}")
+    if not deposit_tx and not order_tx:
+        if request.method == 'POST': return HttpResponse("Not Found", status=404)
+        return redirect('my_orders')
+
+    # تأكيد اسم البوابة من الداتابيز لو كانت ناقصة
+    if not gateway_used:
+        if deposit_tx: gateway_used = deposit_tx.gateway_name or 'FAWATERK'
+        elif order_tx: gateway_used = order_tx.payment_gateway_used or 'FAWATERK'
+
+    # 4. التحقق عبر الـ API (خاص بـ Fawaterk فقط لأن Paymob أرسل حالة الدفع مسبقاً في الرد)
+    if gateway_used.upper() == 'FAWATERK':
+        try:
+            fawaterk = FawaterkManager()
+            success, api_data = fawaterk.get_transaction_data(inv_str)
+            if success and api_data.get('paid') == 1:
+                is_success = True
             else:
-                print(f"❌ ERROR: Cannot find any order in Database with gateway_order_id = {inv_str}")
+                is_success = False
+        except Exception as e:
+            is_success = False
 
-        # 3. التحقق من البنك (API)
-        if gateway_used.upper() == 'FAWATERK':
-            print("🔄 Calling Fawaterk API to verify...")
-            try:
-                fawaterk = FawaterkManager()
-                success, api_data = fawaterk.get_transaction_data(inv_str)
-                if success and api_data.get('paid') == 1:
-                    is_success = True
-                    print(f"💵 API Verification: SUCCESS! Paid {api_data.get('total')} EGP")
-                else:
-                    print(f"🚫 API Verification: FAILED or UNPAID! Response: {api_data}")
-            except Exception as e:
-                print(f"❌ Fawaterk API Error: {e}")
-        
-        # 4. تحديث الداتابيز
-        if is_success:
-            print("🚀 Updating Database Now...")
-            
-            if deposit_tx:
-                with transaction.atomic():
-                    deposit_tx.is_paid = True
-                    deposit_tx.save()
-                    # (تحديث رصيد المحفظة هنا)
-                print("✅ Wallet Updated Successfully!")
-                if request.method == 'POST': return HttpResponse("OK", status=200)
-                return redirect('merchant_wallet')
-
-            if order_tx:
-                pending_orders = Order.objects.filter(gateway_order_id=inv_str, status=Order.Status.WAITING_PAYMENT)
-                if pending_orders.exists():
-                    with transaction.atomic():
-                        for order in pending_orders:
-                            # غير كلمة PENDING دي لأي حالة إنت بتستخدمها في الداتابيز للدفع زي PAID لو حابب
-                            order.status = Order.Status.PENDING 
-                            order.save()
-                    print("✅ Order Status Changed to PENDING (Paid)!")
-                else:
-                    print(f"⚠️ Order is found, BUT status is NOT 'WAITING_PAYMENT' (Current Status: {order_tx.status})")
+    # ==========================================
+    # 5. تحديث قاعدة البيانات في حالة الدفع الناجح
+    # ==========================================
+    if is_success:
+        # حالة 1: الدفع كان لشحن محفظة التاجر
+        if deposit_tx:
+            with transaction.atomic():
+                deposit_tx.is_paid = True
+                deposit_tx.save()
                 
-                if request.method == 'POST': return HttpResponse("OK", status=200)
-                return redirect('my_orders')
+                # 🔥 إضافة الرصيد الفعلي للمحفظة وتسجيل العملية
+                wallet = deposit_tx.wallet
+                wallet.balance += deposit_tx.amount
+                wallet.save()
+                
+                WalletTransaction.objects.create(
+                    wallet=wallet, 
+                    amount=deposit_tx.amount, 
+                    transaction_type='COMPENSATION', # أو DEPOSIT حسب الموديل عندك
+                    description=f"شحن رصيد إلكتروني بوابة ({gateway_used})",
+                    balance_after=wallet.balance, 
+                    is_released=True
+                )
+            if request.method == 'POST': return HttpResponse("OK", status=200)
+            messages.success(request, _("تم شحن محفظتك بنجاح!"))
+            return redirect('merchant_wallet') # تأكد من اسم الـ url الخاص بمحفظة التاجر
 
-    print("⚠️ Reached end of function without any database updates.")
-    if request.method == 'POST': return HttpResponse("Ignored", status=200)
+        # حالة 2: الدفع كان لطلبات شراء
+        if order_tx:
+            pending_orders = Order.objects.filter(gateway_order_id=inv_str, status=Order.Status.WAITING_PAYMENT)
+            if pending_orders.exists():
+                with transaction.atomic():
+                    for order in pending_orders:
+                        order.status = Order.Status.PENDING # تم الدفع، في انتظار التاجر
+                        order.save()
+                        
+                        # إرسال إشعارات للتاجر بأن الطلب تم دفعه!
+                        try:
+                            send_notification(
+                                user=order.merchant.user, title=_("طلب مدفوع جديد! 💳"),
+                                message=_("تم استلام مبلغ الطلب #%(id)s، يرجى التجهيز.") % {'id': order.order_id},
+                                link=f"/merchant/order/{order.order_id}/"
+                            )
+                        except: pass
+                        
+            if request.method == 'POST': return HttpResponse("OK", status=200)
+            messages.success(request, _("تم تأكيد الدفع بنجاح! شكراً لتسوقك معنا."))
+            return redirect('order_success') # توجيه لصفحة النجاح بدلاً من الطلبات
+
+    # إذا الدفع لم ينجح أو تم الإلغاء
+    if request.method == 'POST': return HttpResponse("Ignored or Failed", status=200)
+    messages.error(request, _("لم يتم تأكيد الدفع أو تم إلغاؤه."))
     return redirect('my_orders')
 
-# ==========================================
-# 8. الملحقات الإضافية (API, Wishlist, Referral)
-# ==========================================
+
 from store.services import OrderService # 👈 استدعاء ملف الخدمات السحري
 
 @login_required
@@ -1277,3 +1346,37 @@ def customer_privacy_policy(request):
         'policies': policies
     }
     return render(request, 'store/privacy_policy.html', context)
+
+import os
+import markdown
+from django.conf import settings
+from django.shortcuts import render, Http404
+from django.utils.safestring import mark_safe
+
+def project_docs_view(request, doc_name):
+    # خريطة بأسماء الملفات والروابط الخاصة بها
+    docs_map = {
+        'summary': 'md/PROJECT_SUMMARY_AR.md',
+        'migration': 'md/MIGRATION_GUIDE_AR.md',
+        'index': 'md/DOCUMENTATION_INDEX_AR.md',
+        'completion': 'md/SUMMARY_COMPLETION.md',
+    }
+
+    if doc_name not in docs_map:
+        raise Http404("Document not found")
+
+    file_path = os.path.join(settings.BASE_DIR, docs_map[doc_name])
+    
+    if not os.path.exists(file_path):
+        raise Http404("File not found on server")
+
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+        # تحويل المارك داون إلى HTML مع دعم الجداول والقوائم
+        html_content = markdown.markdown(content, extensions=['extra', 'tables', 'toc'])
+
+    context = {
+        'doc_content': mark_safe(html_content),
+        'title': docs_map[doc_name].replace('_', ' ').replace('.md', '')
+    }
+    return render(request, 'docs/doc_viewer.html', context)

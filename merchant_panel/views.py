@@ -100,17 +100,18 @@ def dashboard(request):
 
 @login_required
 def my_products(request):
-    """عرض قائمة منتجات التاجر."""
+    """عرض قائمة منتجات التاجر (بدون المؤرشفة)."""
     if not is_merchant(request.user):
         return redirect('home')
         
-    products = Product.objects.filter(merchant=request.user.merchant_profile).order_by('-created_at')
+    # 🔥 تم إضافة is_archived=False لكي يختفي المنتج من عند التاجر
+    products = Product.objects.filter(merchant=request.user.merchant_profile, is_archived=False).order_by('-created_at')
     return render(request, 'merchant/products.html', {'products': products})
 
 
 @login_required
 def add_product(request):
-    """إضافة منتج جديد مع دعم المتغيرات (المقاسات والألوان) والتأكد من عدم تجاوز الحد المسموح."""
+    """إضافة منتج جديد مع دعم المتغيرات والتأكد من الحد المسموح وإشعار الإدارة."""
     if not is_merchant(request.user): 
         return redirect('home')
 
@@ -122,23 +123,34 @@ def add_product(request):
         return redirect('merchant_products')
 
     if request.method == 'POST':
-        name = request.POST.get('name')
-        description = request.POST.get('description')
+        # 1. التقاط البيانات باللغتين
+        name_ar = request.POST.get('name')
+        name_en = request.POST.get('name_en')
+        description_ar = request.POST.get('description')
+        description_en = request.POST.get('description_en')
+        
         price = request.POST.get('price')
         shipping_fee = request.POST.get('shipping_fee', 0)
         category_id = request.POST.get('category')
         main_image = request.FILES.get('main_image')
 
+        # 2. حفظ المنتج (المكتبة ستتعرف على _en و _ar تلقائياً)
         product = Product.objects.create(
             merchant=merchant,
-            name=name, description=description, base_price=price,
-            shipping_fee=shipping_fee, category_id=category_id,
-            image=main_image, is_active=False
+            name_ar=name_ar,
+            name_en=name_en,
+            description_ar=description_ar,
+            description_en=description_en,
+            base_price=price,
+            shipping_fee=shipping_fee, 
+            category_id=category_id,
+            image=main_image, 
+            is_active=False
         )
 
         has_variations = request.POST.get('has_variations') == 'on'
         
-        # معالجة المنتجات البسيطة أو المتعددة المتغيرات
+        # 3. معالجة المنتجات البسيطة أو المتعددة المتغيرات
         if not has_variations:
             simple_stock = int(request.POST.get('simple_stock', 0))
             if simple_stock > 0:
@@ -159,28 +171,54 @@ def add_product(request):
                                 product=product, color_label=color_name, size_label=sizes[i], stock_quantity=qtys[i]
                             )
 
+        # 4. حفظ صور المعرض الإضافية
         for img in request.FILES.getlist('gallery_images'):
             ProductImage.objects.create(product=product, image=img)
 
-        # إرسال الإشعارات للتاجر بنجاح الإضافة
-        send_notification(
-            user=request.user,
-            title="تم إضافة المنتج بنجاح 📦",
-            message=f"تم رفع المنتج '{product.name}' إلى متجرك بنجاح وهو الآن قيد المراجعة.",
-            link="/merchant/products/"
-        )
-        send_push_to_user(
-            user=request.user,
-            title="إضافة منتج جديد 📦",
-            body=f"تم رفع '{product.name}' بنجاح، جاري مراجعته ونشره قريباً."
-        )
+        # 5. --- [ إشعارات النظام الشاملة ] ---
+        try:
+            from django.db.models import Q
+            from accounts.models import User
+            
+            # أ. إرسال الإشعار للتاجر بنجاح الإضافة
+            send_notification(
+                user=request.user,
+                title="تم إضافة المنتج بنجاح 📦",
+                message=f"تم رفع المنتج '{product.name_ar}' إلى متجرك بنجاح وهو الآن قيد المراجعة.",
+                link="/merchant/products/"
+            )
+            send_push_to_user(
+                user=request.user,
+                title="إضافة منتج جديد 📦",
+                body=f"تم رفع '{product.name_ar}' بنجاح، جاري مراجعته ونشره قريباً."
+            )
 
-        messages.success(request, "تم إضافة المنتج بنجاح ✅")
+            # ب. 🔥 إشعار للمشرفين (المالك + مشرفي نفس الدولة)
+            admins = User.objects.filter(
+                Q(role='OWNER') | 
+                (Q(role__in=['COUNTRY_ADMIN', 'ADMIN_LVL2', 'ADMIN_LVL3']) & Q(country=request.user.country))
+            ).distinct()
+
+            for admin in admins:
+                send_notification(
+                    user=admin,
+                    title="منتج جديد بانتظار المراجعة 🔍",
+                    message=f"قام التاجر '{request.user.first_name}' برفع منتج جديد ({product.name_ar}). يرجى فحصه وتفعيله.",
+                    link=f"/supervisor/products/" 
+                )
+                send_push_to_user(
+                    user=admin,
+                    title="مراجعة منتج جديد 🔍",
+                    body=f"هناك منتج جديد من متجر '{request.user.first_name}' يحتاج لموافقتك."
+                )
+        except Exception as e:
+            print(f"Notification Error: {e}") # لن يعطل حفظ المنتج إذا فشل الإشعار
+
+        messages.success(request, "تم إضافة المنتج بنجاح وهو قيد المراجعة حالياً ✅")
         return redirect('merchant_products')
 
     categories = Category.objects.all()
     return render(request, 'merchant/add_product.html', {'categories': categories})
-
 
 @login_required
 def edit_product(request, product_id):
@@ -193,9 +231,13 @@ def edit_product(request, product_id):
     is_simple_product = variations.count() == 1 and variations.first().color_label == 'افتراضي'
 
     if request.method == 'POST':
-        product.name = request.POST.get('name')
+        # تحديث البيانات باللغتين
+        product.name_ar = request.POST.get('name')
+        product.name_en = request.POST.get('name_en')
+        product.description_ar = request.POST.get('description')
+        product.description_en = request.POST.get('description_en')
         product.base_price = request.POST.get('price')
-        product.description = request.POST.get('description')
+        
         product.save()
 
         # تحديث المخزون
@@ -259,10 +301,11 @@ def delete_product(request, product_id):
     
     if has_orders:
         product.is_active = False 
+        product.is_archived = True  # 🔥 إرسال المنتج للأرشيف وإخفاؤه
         product.save()
-        messages.warning(request, "تم إخفاء المنتج بدلاً من حذفه (لأنه موجود في طلبات سابقة).")
-        send_notification(request.user, "أرشفة منتج 📦", f"تم إيقاف عرض '{product.name}' نظراً لارتباطه بطلبات سابقة.", "/merchant/products/")
-        send_push_to_user(request.user, "أرشفة منتج 📦", f"تم إخفاء '{product.name}' لوجود طلبات سابقة عليه.")
+        messages.success(request, "تم حذف المنتج بنجاح (تم حفظه في الأرشيف لارتباطه بطلبات سابقة).")
+        # تم تغيير الإشعار ليكون مريحاً للتاجر
+        send_notification(request.user, "حذف منتج 🗑️", f"تم حذف '{product.name}' من متجرك بنجاح.", "/merchant/products/")
     else:
         product.delete()
         messages.success(request, "تم حذف المنتج نهائياً.")
@@ -280,6 +323,12 @@ def add_offer(request, product_id):
         return redirect('home')
     
     product = get_object_or_404(Product, pk=product_id, merchant=request.user.merchant_profile)
+
+    # 🔥 التعديل الجديد: منع التاجر من إضافة عرض على منتج قيد المراجعة
+    if not product.is_approved:
+        messages.error(request, "عفواً، لا يمكنك إضافة عرض على منتج قيد المراجعة. يرجى الانتظار حتى توافق عليه الإدارة أولاً.")
+        return redirect('merchant_products')
+
     try:
         current_offer = product.active_offer
     except Offer.DoesNotExist:
@@ -526,8 +575,10 @@ def request_withdrawal(request):
 
     if request.method == 'POST':
         try:
+            # 1. التقاط الحقول الجديدة
             amount = Decimal(request.POST.get('amount'))
-            phone = request.POST.get('phone')
+            withdrawal_method = request.POST.get('withdrawal_method')
+            payment_details = request.POST.get('payment_details')
             
             if amount > withdrawable_balance:
                 messages.error(request, f"رصيدك غير كافٍ. يجب إبقاء {reserved_balance} في المحفظة.")
@@ -535,21 +586,45 @@ def request_withdrawal(request):
                 messages.error(request, f"أقل مبلغ يمكن سحبه هو {min_withdraw_amount}")
             else:
                 with transaction.atomic():
-                    # 🔥 قفل المحفظة
+                    # 2. قفل المحفظة وتحديث الرصيد
                     locked_wallet = Wallet.objects.select_for_update().get(merchant=request.user.merchant_profile)
-                    WithdrawalRequest.objects.create(merchant=request.user.merchant_profile, amount=amount, phone_number=phone)
+                    
+                    # 3. إنشاء طلب السحب بالحقول الجديدة
+                    withdrawal_req = WithdrawalRequest.objects.create(
+                        merchant=request.user.merchant_profile, 
+                        amount=amount, 
+                        withdrawal_method=withdrawal_method,
+                        payment_details=payment_details
+                    )
+                    
                     locked_wallet.balance -= amount
                     locked_wallet.save()
+                    
+                    # 4. تسجيل العملية وربطها برقم الطلب لكي يتعرف عليها المشرف
                     WalletTransaction.objects.create(
-                        wallet=locked_wallet, amount=-amount, transaction_type=WalletTransaction.TxType.WITHDRAWAL,
-                        description="طلب سحب (قيد المراجعة)", balance_after=locked_wallet.balance, is_released=False 
+                        wallet=locked_wallet, 
+                        amount=-amount, 
+                        transaction_type=WalletTransaction.TxType.WITHDRAWAL,
+                        description=f"طلب سحب أرباح #{withdrawal_req.id} (قيد المراجعة)", 
+                        balance_after=locked_wallet.balance, 
+                        is_released=False 
                     )
+                    
                 messages.success(request, "تم تقديم طلب السحب بنجاح. سيتم تحويل المبلغ قريباً.")
                 return redirect('merchant_wallet')
+                
         except Exception as e:
+            # 🔥 إظهار الخطأ في الترمنال بدلاً من الصمت
+            print(f"Withdrawal Error: {str(e)}")
             messages.error(request, "حدث خطأ في البيانات.")
 
-    return render(request, 'merchant/withdraw.html', {'wallet': wallet, 'withdrawable_balance': withdrawable_balance, 'min_withdraw': min_withdraw_amount, 'reserved_balance': reserved_balance})
+    return render(request, 'merchant/withdraw.html', {
+        'wallet': wallet, 
+        'withdrawable_balance': withdrawable_balance, 
+        'min_withdraw': min_withdraw_amount, 
+        'reserved_balance': reserved_balance
+    })
+
 
 import uuid
 

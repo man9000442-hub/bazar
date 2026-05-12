@@ -55,63 +55,80 @@ class CustomerSignupForm(forms.ModelForm):
         return user
 
 
-# 2. Merchant Form (المحدث للعالمية)
+# 2. Merchant Form (المحدث للعالمية والمطابق لقاعدة البيانات)
+# 2. Merchant Form (المحدث للعالمية والمطابق لقاعدة البيانات)
+# 2. Merchant Form (المحدث لحذف اسم العائلة)
 class MerchantSignupForm(forms.ModelForm):
     # User Data
-    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("الاسم الأول"))
-    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("اسم العائلة"))
-    phone_primary = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("رقم الهاتف"))
+    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("الاسم بالكامل"))
+    # ❌ تم حذف حقل last_name من هنا
+    phone_primary = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_phone_primary'}), label=_("رقم الهاتف"))
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'id': 'id_password'}), label=_("كلمة المرور"))
     
-    # حقل الدولة للتاجر (يتم تمريره للـ User لاحقاً)
     country = forms.ModelChoiceField(
-        queryset=Country.objects.all(), # يمكنك إضافة .filter(is_active=True) لو عندك دول غير مفعلة
+        queryset=Country.objects.all(), 
         widget=forms.Select(attrs={'class': 'form-select fw-bold'}),
         label=_("دولة المتجر (أين تبيع؟)")
     )
     
     # Merchant Data
-    #national_id = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("الرقم القومي / الهوية"))
     tax_register_number = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("رقم السجل الضريبي (اختياري)"))
     
-    # تفاصيل البضاعة
-    goods_quantity = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("كمية البضاعة (تقريباً)"))
+    # تفاصيل البضاعة 
+    goods_quantity = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("كمية البضاعة (الكلية)"))
     goods_types = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}), label=_("أنواع البضاعة"))
     goods_average_price = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("متوسط الأسعار"))
-    goods_sizes = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}), label=_("المقاسات المتاحة"))
+    goods_sizes = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("المقاسات المتاحة"))
+    
+    expected_sales_quantity = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control'}), label=_("الكميات المتوقع بيعها (شهرياً)"))
+    whatsapp_number = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_whatsapp_number'}), label=_("رقم الواتساب للتواصل"))
 
-    # الصور
-    #id_card_front = forms.ImageField(label=_("صورة البطاقة / الهوية (أمام)"))
-    #id_card_back = forms.ImageField(label=_("صورة البطاقة / الهوية (خلف)"))
     shop_image = forms.ImageField(label=_("صورة المحل / اللوجو"))
 
     class Meta:
         model = MerchantProfile
         fields = [
             'tax_register_number', 
-            'goods_quantity', 'goods_types', 'goods_average_price', 'goods_sizes',
+            'goods_quantity', 'goods_types', 'goods_average_price', 'goods_sizes', 
+            'expected_sales_quantity', 'whatsapp_number', 
             'shop_image'
         ]
 
     def save(self, commit=True):
-        # هنا قمنا بإضافة الدولة (country) أثناء إنشاء حساب التاجر
-        user = User.objects.create_user(
-            username=self.cleaned_data['phone_primary'],
-            password=self.cleaned_data['password'],
-            phone_primary=self.cleaned_data['phone_primary'],
-            first_name=self.cleaned_data['first_name'],
-            last_name=self.cleaned_data['last_name'],
-            country=self.cleaned_data['country'], # <-- ربط التاجر بدولته
-            role=User.Role.MERCHANT
-        )
+        from django.db import transaction
+        import uuid
         
-        merchant = super().save(commit=False)
-        merchant.user = user
-        merchant.is_approved = False
-        if commit: 
-            merchant.save()
-        return user
+        with transaction.atomic():
+            unique_email = f"m_{uuid.uuid4().hex[:6]}@elbazaare.com"
+            
+            # 1. إنشاء المستخدم (بدون اسم العائلة)
+            user = User.objects.create_user(
+                username=self.cleaned_data['phone_primary'],
+                password=self.cleaned_data['password'],
+                phone_primary=self.cleaned_data['phone_primary'],
+                first_name=self.cleaned_data['first_name'],
+                # ❌ حذفنا تمرير last_name هنا
+                email=unique_email,
+                country=self.cleaned_data['country'],
+                role=User.Role.MERCHANT
+            )
+            
+            # 2. ربط البيانات ببروفايل التاجر
+            merchant = super().save(commit=False)
+            merchant.user = user
+            merchant.is_approved = False
+            
+            merchant.whatsapp_number = self.cleaned_data.get('whatsapp_number')
+            merchant.expected_sales_quantity = self.cleaned_data.get('expected_sales_quantity')
+            merchant.tax_register_number = self.cleaned_data.get('tax_register_number')
+            merchant.goods_quantity = self.cleaned_data.get('goods_quantity')
+            merchant.goods_types = self.cleaned_data.get('goods_types')
+            merchant.goods_average_price = self.cleaned_data.get('goods_average_price')
+            merchant.goods_sizes = self.cleaned_data.get('goods_sizes')
 
+            if commit: 
+                merchant.save()
+            return user
 
 # 3. Google Complete Profile Form
 class GoogleCompleteProfileForm(forms.ModelForm):

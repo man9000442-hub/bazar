@@ -159,14 +159,20 @@
         </h1>
         
         <p class="small m-0 px-3" style="color: var(--text-secondary); font-weight: 500; line-height: 1.6;">
-            {% trans "هذا الرصيد حقيقي! يمكنك استخدامه كخصم إضافي عند إتمام طلبك القادم." %}
+            {% trans "يمكنك استخدام هذا الرصيد كخصم إضافي عند إتمام طلبك القادم." %}
+            <br>
+            <span class="text-danger fw-bold"><i class="fas fa-clock me-1"></i> {% trans "تأكد من استخدامه قبل انتهاء صلاحيته!" %}</span>
         </p>
     </div>
 
     <div class="neo-card text-center animate-fade-up" style="animation-delay: 200ms;">
         <h5 class="fw-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.5px;">{% trans "كود الدعوة الخاص بك" %}</h5>
+        
         <p class="small mb-4" style="color: var(--text-secondary); font-weight: 500; line-height: 1.6;">
-            {% trans "شارك الكود مع أصدقائك، وسيحصل كل منكم على رصيد مجاني عند تسجيلهم وإتمام أول طلب!" %}
+            {% trans "شارك الكود مع أصدقائك! ستحصل على نسبة" %} 
+            <strong class="text-success">{{ site_settings.referral_reward_percentage|default:"10" }}%</strong> 
+            {% trans "من إجمالي طلباتهم كأرباح تضاف لمحفظتك هنا، صالحة للاستخدام لمدة" %}
+            <strong class="text-dark">{{ site_settings.referral_reward_validity_days|default:"30" }}</strong> {% trans "يوماً." %}
         </p>
 
         <div class="code-box-neo">
@@ -186,7 +192,7 @@
             <div>
                 <h6 class="fw-bold mb-1" style="color: var(--text-primary);">{% trans "لديك كود دعوة من صديق؟" %}</h6>
                 <p class="small mb-0" style="color: #B45309; font-weight: 600;">
-                    {% blocktrans with hours=grace_hours %}أدخله الآن للحصول على رصيدك (مهلة {{ hours }} ساعة){% endblocktrans %}
+                    {% blocktrans with hours=grace_hours %}أدخله الآن للحصول على الخصم (مهلة {{ hours }} ساعة){% endblocktrans %}
                 </p>
             </div>
         </div>

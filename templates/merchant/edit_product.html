@@ -18,9 +18,15 @@
 
         <h6 class="fw-bold text-primary mb-3"><i class="fas fa-info-circle mx-1"></i> {% trans "1. البيانات الأساسية" %}</h6>
         
-        <div class="mb-3">
-            <label class="form-label fw-bold small text-muted">{% trans "اسم المنتج" %}</label>
-            <input type="text" name="name" class="form-control bg-light border-0" value="{{ product.name }}" required>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold small text-muted">{% trans "اسم المنتج (عربي)" %}</label>
+                <input type="text" name="name" class="form-control bg-light border-0" value="{{ product.name }}" required>
+            </div>
+            <div class="col-md-6 mb-3" dir="ltr">
+                <label class="form-label fw-bold small text-muted d-block text-start">Product Name (English)</label>
+                <input type="text" name="name_en" class="form-control bg-light border-0 text-start" value="{{ product.name_en|default:'' }}" placeholder="Optional">
+            </div>
         </div>
         
         <div class="row">
@@ -30,9 +36,15 @@
             </div>
         </div>
         
-        <div class="mb-4">
-            <label class="form-label fw-bold small text-muted">{% trans "وصف المنتج" %}</label>
-            <textarea name="description" class="form-control bg-light border-0" rows="4" required>{{ product.description }}</textarea>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <label class="form-label fw-bold small text-muted">{% trans "وصف المنتج (عربي)" %}</label>
+                <textarea name="description" class="form-control bg-light border-0" rows="4" required>{{ product.description }}</textarea>
+            </div>
+            <div class="col-md-6 mb-4" dir="ltr">
+                <label class="form-label fw-bold small text-muted d-block text-start">Product Description (English)</label>
+                <textarea name="description_en" class="form-control bg-light border-0 text-start" rows="4" placeholder="Optional">{{ product.description_en|default:'' }}</textarea>
+            </div>
         </div>
 
         <hr class="text-muted opacity-25 mb-4">

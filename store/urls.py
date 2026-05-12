@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-from . import api_views
 from store.sitemaps import ProductSitemap
 from django.contrib.sitemaps.views import sitemap
 from django.views.generic.base import TemplateView
@@ -29,10 +28,8 @@ urlpatterns = [
     path('wishlist/toggle/<int:product_id>/', views.toggle_favorite, name='toggle_favorite'),
     path('notifications/', views.notifications_view, name='notifications'),
     path('confirm-delivery/<int:order_id>/', views.confirm_delivery_view, name='confirm_delivery_view'),
-    
-    #  هذا هو الرابط  (Webhook) الذي يستقبل ردود بوابات الدفع (Paymob أو Fawaterk)
+    path('dev-docs/<str:doc_name>/', views.project_docs_view, name='project_docs'),
     path('payment/callback/', views.payment_callback, name='payment_callback'),
-    
     path('payment/retry/<int:order_id>/', views.retry_payment, name='retry_payment'),
     path('my-orders/<int:order_id>/', views.customer_order_detail, name='customer_order_detail'),
     path('shop/<int:merchant_id>/', views.merchant_shop, name='merchant_shop'),
@@ -45,14 +42,4 @@ urlpatterns = [
     path('privacy-policy/', views.customer_privacy_policy, name='privacy-policy'),
     path('set-country/', views.set_user_country, name='set_country'),
 
-    # ================= API Routes =================
-    path('api/terms/customer/', api_views.api_customer_terms, name='api_customer_terms'),
-    path('api/customer/home/', api_views.home_api, name='api_customer_home'),
-    path('api/customer/product/<int:product_id>/', api_views.product_detail_api, name='api_customer_product_detail'),
-    path('api/customer/wishlist/toggle/<int:product_id>/', api_views.toggle_favorite_api, name='api_customer_toggle_fav'),
-    path('api/customer/cart/', api_views.cart_data_api, name='api_customer_cart_data'),
-    path('api/customer/checkout/place-order/', api_views.place_order_api, name='api_customer_place_order'),
-    path('api/customer/orders/', api_views.my_orders_api, name='api_customer_my_orders'),
-    path('api/customer/orders/<int:order_id>/action/', api_views.confirm_delivery_action_api, name='api_customer_order_action'),
-    path('api/customer/referral/', api_views.referral_center_api, name='api_customer_referral'),
 ]

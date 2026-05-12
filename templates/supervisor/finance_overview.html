@@ -1,5 +1,6 @@
 {% extends 'supervisor/base_supervisor.html' %}
-{% load supervisor_tags i18n %} {% block head_title %}{% trans "نظرة عامة على المالية" %} | Elbazaar{% endblock %}
+{% load supervisor_tags i18n %} 
+{% block head_title %}{% trans "نظرة عامة على المالية" %} | {{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}{% trans "التقارير المالية والأرباح" %}{% endblock %}
 
 {% block content %}
@@ -49,20 +50,20 @@
             </div>
         </div>
         
+        <!-- كارت صافي الربح (تم إزالة الأيقونة الكبيرة لتوضيح الرقم) -->
         <div class="col-12 col-md-3">
             <div class="card border-0 rounded-4 shadow-sm overflow-hidden h-100 transition-hover" style="background: linear-gradient(135deg, #10b981, #059669);">
                 <div class="card-body p-3 text-white position-relative">
-                    <i class="fas fa-chart-pie position-absolute top-50 start-0 translate-middle-y opacity-25 fa-4x ms-n2"></i>
                     <h6 class="text-white-50 small fw-bold mb-2 z-1 position-relative">{% trans "صافي الربح الفعلي" %}</h6>
                     <h3 class="fw-bolder mb-0 z-1 position-relative">{{ net_profit|floatformat:2|default:"0.00" }} <span class="fs-6 opacity-75">{{ request.user.country.currency_symbol|default:default_currency }}</span></h3>
                 </div>
             </div>
         </div>
         
+        <!-- كارت أرصدة التجار (تم إزالة أيقونة المحفظة لتوضيح الرقم) -->
         <div class="col-12 col-md-3">
             <div class="card border-0 rounded-4 shadow-sm overflow-hidden h-100 transition-hover bg-dark text-white position-relative">
                 <div class="card-body p-3">
-                    <i class="fas fa-wallet position-absolute top-50 start-0 translate-middle-y opacity-10 fa-4x ms-n2"></i>
                     <h6 class="text-white-50 small fw-bold mb-2 z-1 position-relative">{% trans "أرصدة التجار (إجمالي المنصة)" %}</h6>
                     <h3 class="fw-bolder mb-0 z-1 position-relative">{{ total_merchants_balance|floatformat:2|default:"0.00" }} <span class="fs-6 opacity-75">{{ request.user.country.currency_symbol|default:default_currency }}</span></h3>
                 </div>
@@ -136,14 +137,11 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // جلب البيانات من JSON Scripts
     const labelsRaw = document.getElementById('labelsData').textContent;
     const valuesRaw = document.getElementById('valuesData').textContent;
     
-    // تعريف نص الإيرادات المترجم
     const msgRevenues = '{% trans "الإيرادات" %}';
     
-    // إذا لم تكن البيانات مصفوفة JSON صالحة (فارغة مثلاً) سنضع مصفوفة فارغة لتجنب خطأ الجافاسكريبت
     let labels = [];
     let values = [];
     try {
@@ -157,8 +155,8 @@ document.addEventListener("DOMContentLoaded", function() {
     if (canvas && labels.length > 0) {
         const ctx = canvas.getContext('2d');
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); // أخضر شفاف
-        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)'); // شفاف
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); 
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)'); 
 
         new Chart(ctx, {
             type: 'line',
@@ -167,7 +165,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 datasets: [{
                     label: msgRevenues,
                     data: values,
-                    borderColor: '#10b981', // أخضر
+                    borderColor: '#10b981', 
                     backgroundColor: gradient,
                     borderWidth: 3,
                     pointBackgroundColor: '#ffffff',
@@ -176,7 +174,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     pointRadius: 4,
                     pointHoverRadius: 6,
                     fill: true,
-                    tension: 0.4 // انحناء سلس
+                    tension: 0.4 
                 }]
             },
             options: {

@@ -1,11 +1,8 @@
 from django.views.decorators.csrf import csrf_exempt
 from . import views
-from . import api_views
-from .api_views import NativeLoginAPI,NativeGoogleLoginAPI,PoliciesAPI,ChangePasswordAPI
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .api_views import UserProfileAPI, UpdateMerchantProfileAPI
-from .api_views import NativeCustomerSignupAPI, NativeMerchantSignupAPI
+
 # from .api_views import (
 #     # LoginAPIView, 
 #     # CustomerRegisterAPIView, 
@@ -35,20 +32,6 @@ urlpatterns = [
     path('delete-account/', views.delete_account_request, name='delete-account'),
     path('save-fcm-token/', views.save_fcm_token, name='save_fcm_token'),
     path('settings/', views.user_settings, name='user_settings'),
-
-    #---------------------------------------
-    #------------FLUTTER--------------------
-    path('api/profile/change-password/', ChangePasswordAPI.as_view(), name='api_change_password'),
-    path('api/policies/', PoliciesAPI.as_view(), name='api_policies'),
-    path('api/auth/login/', csrf_exempt(NativeLoginAPI.as_view()), name='native_login'),
-    path('api/auth/google-login/', csrf_exempt(NativeGoogleLoginAPI.as_view()), name='google_login'),
-    path('api/profile/', UserProfileAPI.as_view(), name='api_profile'),
-    path('api/profile/merchant/update/', UpdateMerchantProfileAPI.as_view(), name='api_update_merchant'),
-    path('api/auth/signup/customer/', NativeCustomerSignupAPI.as_view(), name='api_signup_customer'),
-    path('api/auth/signup/merchant/', NativeMerchantSignupAPI.as_view(), name='api_signup_merchant'),
-    path('api/fcm/update-token/', api_views.update_fcm_token, name='update-fcm-token'),
-
-
 
 ]
 

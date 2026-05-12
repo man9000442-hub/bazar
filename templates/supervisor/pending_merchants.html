@@ -1,6 +1,6 @@
 {% extends 'supervisor/base_supervisor.html' %}
 {% load i18n supervisor_tags %}
-{% block head_title %}{% trans "طلبات الانضمام | Elbazaar" %}{% endblock %}
+{% block head_title %}{% trans "طلبات الانضمام | " %}{{ site_settings.site_name|default:"Elbazaar" }}{% endblock %}
 {% block page_title %}{% trans "تجار بانتظار التفعيل" %}{% endblock %}
 
 {% block content %}
@@ -71,10 +71,6 @@
 
                     <h6 class="fw-bold text-dark mb-3"><i class="fas fa-id-card text-primary me-2"></i> {% trans "مستندات التوثيق (KYC)" %}</h6>
                     <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded-3">
-                        <div>
-                            <p class="mb-1 small text-muted">{% trans "الرقم القومي:" %}</p>
-                            <span class="fw-bolder text-dark font-monospace fs-6">{{ merchant.national_id }}</span>
-                        </div>
                         <div class="text-end">
                             <p class="mb-1 small text-muted">{% trans "السجل الضريبي:" %}</p>
                             {% if merchant.tax_register_number %}
@@ -101,7 +97,7 @@
 
                     <div class="d-grid gap-2 mt-auto">
                         <button type="button" class="btn btn-success fw-bold py-2 shadow-sm rounded-3" data-bs-toggle="modal" data-bs-target="#approveModal{{ merchant.id }}">
-                            <i class="fas fa-check-circle me-2"></i> {% trans "تفعيل الحساب وتحديد الرتبة" %}
+                            <i class="fas fa-check-circle me-2"></i> {% trans "تفعيل الحساب وضبط الإعدادات" %}
                         </button>
 
                         <div class="d-flex gap-2 mt-2">
@@ -115,30 +111,58 @@
                     </div>
 
                     <div class="modal fade" id="approveModal{{ merchant.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered modal-sm">
+                        <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content border-0 shadow-lg rounded-4">
                                 <div class="modal-header bg-light border-0 rounded-top-4">
-                                    <h6 class="modal-title fw-bold text-success"><i class="fas fa-shield-check me-1"></i> {% trans "تفعيل الحساب" %}</h6>
+                                    <h6 class="modal-title fw-bold text-success"><i class="fas fa-shield-check me-1"></i> {% trans "تفعيل الحساب وضبط الصلاحيات" %}</h6>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form action="{% url 'super_approve_merchant' merchant.pk %}" method="POST">
                                     {% csrf_token %}
-                                    <div class="modal-body p-4">
+                                    <div class="modal-body p-4 text-start">
                                         <p class="small text-muted mb-4 text-center">
-                                            {% blocktrans with name=merchant.user.first_name %}سيتم تفعيل حساب "{{ name }}" ومنحه صلاحية الدخول كتاجر. يرجى تحديد رتبة التوثيق.{% endblocktrans %}
+                                            {% blocktrans with name=merchant.user.first_name %}سيتم تفعيل حساب "{{ name }}" ومنحه صلاحية الدخول كتاجر. يرجى تحديد رتبة التوثيق وإعدادات المتجر الأساسية.{% endblocktrans %}
                                         </p>
                                         
-                                        <label class="form-label fw-bold small text-primary">{% trans "رتبة التوثيق (Badge):" %}</label>
-                                        <select name="verification_rank" class="form-select bg-light border-0 rounded-3 fw-bold py-2 mb-3">
-                                            <option value="NONE">{% trans "بدون شارة (تفعيل فقط)" %}</option>
-                                            <option value="SILVER">{% trans "شارة فضية 🥈" %}</option>
-                                            <option value="BLUE">{% trans "شارة زرقاء 🔵" %}</option>
-                                            <option value="GOLD">{% trans "شارة ذهبية 🥇" %}</option>
-                                        </select>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-primary">{% trans "رتبة التوثيق (Badge):" %}</label>
+                                            <select name="verification_rank" class="form-select bg-light border-0 rounded-3 fw-bold py-2">
+                                                <option value="NONE">{% trans "ترتيب عادي (افتراضي)" %}</option>
+                                                <option value="SILVER">{% trans "أولوية برونزية 🥉" %}</option>
+                                                <option value="BLUE">{% trans "أولوية فضية 🥈" %}</option>
+                                                <option value="GOLD">{% trans "أولوية ذهبية 🥇 (المركز الأول)" %}</option>
+                                            </select>
+                                        </div>
+
+                                        <hr class="opacity-25 my-3">
+                                        <h6 class="fw-bold small text-dark mb-3"><i class="fas fa-sliders-h me-1"></i> {% trans "إعدادات وصلاحيات المتجر" %}</h6>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-muted">{% trans "الحد الأقصى للمنتجات المسموح بإضافتها:" %}</label>
+                                            <input type="number" name="product_limit" class="form-control bg-light border-0 rounded-3" value="50" min="1" required>
+                                            <small class="text-muted" style="font-size: 11px;">الافتراضي 50 منتج.</small>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-muted">{% trans "الحد الأدنى للرصيد (ليظل المتجر نشطاً):" %}</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" name="minimum_balance_required" class="form-control bg-light border-0" value="0">
+                                                <span class="input-group-text bg-light border-0">{% if request.user.country %}{{ request.user.country.currency_symbol }}{% else %}ج.م{% endif %}</span>
+                                            </div>
+                                            <small class="text-muted" style="font-size: 11px;">إذا قل رصيد التاجر عن هذا الرقم، ستختفي منتجاته تلقائياً.</small>
+                                        </div>
+
+                                        <div class="mb-2">
+                                            <label class="form-label fw-bold small text-muted">{% trans "تاريخ انتهاء الاشتراك/الظهور (اختياري):" %}</label>
+                                            <input type="date" name="subscription_end_date" class="form-control bg-light border-0 rounded-3">
+                                            <small class="text-muted" style="font-size: 11px;">اتركه فارغاً إذا كان الاشتراك مفتوحاً/غير مقيد بوقت.</small>
+                                        </div>
+
                                     </div>
-                                    <div class="modal-footer border-top-0 p-4 pt-0">
-                                        <button type="submit" class="btn btn-success w-100 rounded-3 fw-bold py-2 shadow-sm">
-                                            <i class="fas fa-check-circle me-1"></i> {% trans "تأكيد وتفعيل الحساب" %}
+                                    <div class="modal-footer border-top-0 p-4 pt-0 gap-2">
+                                        <button type="button" class="btn btn-light border fw-bold flex-grow-1 rounded-3 py-2" data-bs-dismiss="modal">إلغاء</button>
+                                        <button type="submit" class="btn btn-success flex-grow-1 rounded-3 fw-bold py-2 shadow-sm">
+                                            <i class="fas fa-check-circle me-1"></i> {% trans "تفعيل المتجر" %}
                                         </button>
                                     </div>
                                 </form>

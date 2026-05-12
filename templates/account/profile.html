@@ -338,7 +338,7 @@
     </a>
 
     <div class="text-center mt-4 mb-2">
-      <span class="small fw-bold" style="color: #d4d4d8; letter-spacing: 2px">ELBAZAAR APP <i class="fas fa-bolt text-warning mx-1"></i> V1.0</span>
+      <span class="small fw-bold" style="color: #d4d4d8; letter-spacing: 2px">{{ site_settings.site_name|default:"Elbazaar" }} APP <i class="fas fa-bolt text-warning mx-1"></i> V1.0</span>
     </div>
   </div>
 </div>
@@ -406,7 +406,7 @@
   </div>
 
   <div class="text-center mt-5 mb-2">
-    <span class="small fw-bold" style="color: #d4d4d8; letter-spacing: 2px">ELBAZAAR APP <i class="fas fa-bolt text-warning mx-1"></i> V1.0</span>
+    <span class="small fw-bold" style="color: #d4d4d8; letter-spacing: 2px">{{ site_settings.site_name|default:"Elbazaar" }} APP <i class="fas fa-bolt text-warning mx-1"></i> V1.0</span>
   </div>
 </div>
 {% endif %}

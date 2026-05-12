@@ -13,10 +13,9 @@ class Country(models.Model):
     currency_name = models.CharField(max_length=50, verbose_name="اسم العملة (مثل جنيه)")
     currency_symbol = models.CharField(max_length=10, verbose_name="رمز العملة (مثل ج.م)")
     is_active = models.BooleanField(default=True, verbose_name="دولة مفعلة")
-
-    # 🔥 إعدادات الدفع لكل دولة منفصلة (عشان كل عملة ليها Integration ID في Paymob)
     paymob_integration_id_card = models.CharField(max_length=100, blank=True, null=True, verbose_name="ID دفع البطاقات")
     paymob_integration_id_wallet = models.CharField(max_length=100, blank=True, null=True, verbose_name="ID دفع المحافظ")
+# 🧾 رسوم بوابة Fawaterk
 
     class Meta:
         verbose_name = "دولة"
@@ -93,6 +92,19 @@ class User(AbstractUser):
         if self.custom_role:
             return perm_name in self.custom_role.permissions
         return False
+    # أضف هذه الدالة داخل كلاس User
+    def clear_expired_referrals(self):
+        """دالة تقوم بخصم الأرصدة التي انتهت صلاحيتها من حساب العميل"""
+        from decimal import Decimal
+        expired_rewards = self.referral_rewards_log.filter(is_expired=False, expires_at__lt=timezone.now())
+        
+        expired_total = sum(reward.amount for reward in expired_rewards)
+        if expired_total > 0:
+            self.referral_balance -= expired_total
+            if self.referral_balance < 0: 
+                self.referral_balance = Decimal('0.00')
+            self.save()
+            expired_rewards.update(is_expired=True) # تحديد كمنتهي
 
 # ==========================================
 # 4. موديل العنوان
@@ -125,3 +137,16 @@ class NotificationLog(models.Model):
     status = models.CharField(max_length=50, verbose_name="الحالة")
     details = models.TextField(blank=True, null=True, verbose_name="تفاصيل/إيرور")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="وقت الإرسال")
+
+from django.utils import timezone
+
+class ReferralRewardLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='referral_rewards_log')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="قيمة المكافأة")
+    order_id = models.CharField(max_length=20, verbose_name="من طلب رقم")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(verbose_name="تاريخ الانتهاء")
+    is_expired = models.BooleanField(default=False, verbose_name="انتهت صلاحيته؟")
+
+    def __str__(self):
+        return f"{self.user.username} - {self.amount} EGP"

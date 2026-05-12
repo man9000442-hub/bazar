@@ -1,6 +1,6 @@
 {% extends 'supervisor/base_supervisor.html' %}
 {% load i18n %}
-{% block head_title %}{% blocktrans with ticket_id=ticket.id %}تذكرة #{{ ticket_id }} | Elbazaar{% endblocktrans %}{% endblock %}
+{% block head_title %}{% blocktrans with ticket_id=ticket.id %}تذكرة #{{ ticket_id }} | {{ site_settings.site_name|default:"Elbazaar" }}{% endblocktrans %}{% endblock %}
 {% block page_title %}{% trans "متابعة التذكرة" %}{% endblock %}
 
 {% block content %}

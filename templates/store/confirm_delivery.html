@@ -142,26 +142,51 @@
   }
 
   /* --- نجوم التقييم العصرية الفاتحة --- */
+/* --- نجوم التقييم العصرية الفاتحة --- */
   .interactive-stars {
     display: flex;
     flex-direction: row-reverse;
     justify-content: center;
     gap: 12px;
+    direction: ltr; /* 🔥 مهم جداً: إجبار الاتجاه عشان الترتيب يضبط مع الـ RTL */
   }
-  .interactive-stars input { display: none; }
+  
+  .interactive-stars input { 
+    display: none; 
+  }
+  
   .interactive-stars label {
-    color: #E4E4E7; /* رمادي باهت للنجمة غير المحددة */
+    color: #E4E4E7; /* لون النجمة المطفية */
     font-size: 3.5rem;
     cursor: pointer;
-    transition: color 0.2s ease-in-out, transform 0.1s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .interactive-stars label:hover,
-  .interactive-stars label:hover ~ label,
+
+  /* 1. تلوين النجمة المحددة وما قبلها باللون الذهبي */
   .interactive-stars input:checked ~ label {
     color: var(--accent-gold);
-    text-shadow: 0 10px 20px rgba(245, 166, 35, 0.3);
+    text-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
   }
-  .interactive-stars label:active { transform: scale(0.85); }
+
+  /* 2. إلغاء لون التحديد لو المستخدم بيعمل Hover لتغيير التقييم */
+  .interactive-stars:hover label {
+    color: #E4E4E7 !important;
+    text-shadow: none !important;
+    transform: scale(1);
+  }
+
+  /* 3. تلوين النجمة اللي عليها الماوس واللي قبلها (التأثير المباشر) */
+  .interactive-stars label:hover,
+  .interactive-stars label:hover ~ label {
+    color: var(--accent-gold) !important;
+    text-shadow: 0 6px 20px rgba(245, 166, 35, 0.6) !important;
+    transform: scale(1.15) translateY(-2px); /* تأثير حركة بسيط وجميل */
+  }
+
+  /* تأثير الضغطة */
+  .interactive-stars label:active { 
+    transform: scale(0.9) translateY(0); 
+  }
 
   /* --- الأقسام المخفية --- */
   .reveal-section {

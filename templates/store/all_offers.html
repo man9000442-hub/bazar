@@ -11,8 +11,10 @@
     --text-primary: #0A0A0A;
     --text-secondary: #71717A;
     --accent-dark: #000000;
+    --accent-gold: #F5A623;
     --danger: #EF4444; /* أحمر عصري للخصومات */
-    --success: #10B981;
+    --success-bg: #ECFDF5;
+    --success-text: #10B981;
     --border-light: rgba(0, 0, 0, 0.04);
   }
 
@@ -36,153 +38,173 @@
   /* --- هيدر العروض --- */
   .offers-hero {
     background: var(--surface);
-    padding: 40px 20px;
-    border-radius: 0 0 40px 40px;
+    padding: 30px 20px;
+    border-radius: 0 0 30px 30px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.02);
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
     position: relative;
     z-index: 10;
   }
 
   .fire-icon-box {
-    width: 65px; height: 65px;
+    width: 55px; height: 55px;
     background: rgba(239, 68, 68, 0.1);
     color: var(--danger);
-    border-radius: 20px;
+    border-radius: 16px;
     display: inline-flex; align-items: center; justify-content: center;
-    font-size: 28px;
-    margin-bottom: 16px;
+    font-size: 24px;
+    margin-bottom: 12px;
     box-shadow: 0 8px 20px rgba(239, 68, 68, 0.1);
     transform: rotate(-10deg);
   }
 
-  /* --- كروت المنتجات العصرية --- */
+  /* --- كروت المنتجات العصرية (مطابقة للرئيسية) --- */
   .neo-offer-card {
     background: var(--surface);
-    border-radius: 28px;
-    padding: 12px;
+    border-radius: 20px;
+    padding: 10px;
     border: none;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     height: 100%;
     display: flex;
     flex-direction: column;
   }
   .neo-offer-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.06);
   }
 
-  /* --- منطقة الصورة وشارة الخصم --- */
+  /* --- منطقة الصورة --- */
   .img-showcase {
     background: #F4F4F5;
-    border-radius: 20px;
-    height: 170px;
+    border-radius: 16px;
+    height: 140px; 
     display: flex; align-items: center; justify-content: center;
     position: relative;
-    padding: 15px;
-    margin-bottom: 12px;
+    padding: 10px;
+    margin-bottom: 10px;
   }
+  
   .img-showcase img {
-    max-height: 100%;
-    max-width: 100%;
-    object-fit: contain;
-    mix-blend-mode: darken; /* لجعل الخلفيات البيضاء للصور تندمج مع الرمادي الفاتح */
+    width: 100%;
+    height: 100%;
+    object-fit: contain; 
+    mix-blend-mode: darken; 
   }
 
-  .discount-tag-neo {
+  .discount-tag {
     position: absolute;
-    top: 10px; right: 10px; /* متوافق مع RTL */
+    top: 8px; right: 8px;
     background: var(--danger);
     color: #fff;
     font-weight: 800;
-    font-size: 13px;
-    padding: 6px 12px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
     z-index: 5;
-    letter-spacing: 0.5px;
+  }
+
+  /* --- شارة الشحن المجاني الأنيقة --- */
+  .badge-free-shipping {
+    background: var(--success-bg);
+    color: var(--success-text);
+    font-size: 8px;
+    font-weight: 900;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid #D1FAE5;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* --- شارات العروض والعداد التنازلي الجديد --- */
+  .urgency-badge {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    padding: 3px 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  
+  .pulse-dot {
+    width: 6px; height: 6px;
+    background-color: var(--danger);
+    border-radius: 50%;
+    margin-inline-end: 4px;
+    animation: pulseDanger 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
+  }
+
+  @keyframes pulseDanger {
+    to { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  }
+
+  .offer-countdown {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--accent-gold);
+    background: rgba(245, 166, 35, 0.1);
+    padding: 2px 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 6px;
   }
 
   /* --- نصوص الكارت --- */
   .product-category {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
     color: #A1A1AA;
     text-transform: uppercase;
-    margin-bottom: 4px;
-    display: block;
+    letter-spacing: 0.5px;
+    max-width: 50%;
   }
   .product-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 800;
     color: var(--text-primary);
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     line-height: 1.4;
   }
 
-  /* --- الأسعار --- */
+  /* --- الأسعار (تم تكبيرها حسب طلبك) --- */
   .price-wrapper {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
   }
-  .new-price-neo {
-    color: var(--text-primary);
+  .new-price {
+    color: var(--danger);
     font-weight: 900;
-    font-size: 18px;
-    letter-spacing: -0.5px;
+    font-size: 18px; /* تكبير السعر الجديد */
   }
-  .currency-neo {
-    font-size: 11px;
-    color: var(--text-secondary);
-    font-weight: 700;
+  .currency {
+    color: var(--danger);
+    font-weight: bold;
+    font-size: 10px;
   }
-  .old-price-neo {
+  .old-price {
     text-decoration: line-through;
     color: #A1A1AA;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px; /* تكبير السعر المشطوب */
+    font-weight: 700;
+    text-decoration-thickness: 1.5px;
   }
-
-  /* --- شحن مجاني --- */
-  .free-shipping-neo {
-    color: var(--success);
-    font-weight: 800;
-    font-size: 11px;
-    background: #ECFDF5;
-    padding: 4px 8px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 12px;
+  .regular-price {
+    color: var(--text-primary);
+    font-weight: 900;
+    font-size: 17px;
   }
-
-  /* --- زر التسوق --- */
-  .btn-neo-buy {
-    background: var(--accent-dark);
-    color: #fff !important;
-    border: none;
-    font-weight: 800;
-    border-radius: 16px;
-    padding: 12px;
-    width: 100%;
-    text-align: center;
-    text-decoration: none;
-    font-size: 14px;
-    transition: all 0.3s;
-    margin-top: auto; /* لدفعه لأسفل الكارت دائماً */
-  }
-  .btn-neo-buy:active { transform: scale(0.96); }
-
-  /* ريسبونسيف للموبايل */
-  @media (max-width: 768px) {
-    .img-showcase { height: 140px; }
-    .new-price-neo { font-size: 16px; }
+  .regular-currency {
+    color: var(--text-secondary);
+    font-weight: bold;
+    font-size: 10px;
   }
 </style>
 
@@ -198,44 +220,67 @@
 
 <div class="container pb-5 mb-4">
     {% if offers %}
-        <div class="row g-3">
+        <div class="row g-2"> 
             {% for offer in offers %}
                 <div class="col-6 col-md-4 col-lg-3 animate-fade-up" style="animation-delay: {{ forloop.counter0|add:1 }}00ms;">
                     <div class="neo-offer-card">
                         
-                        <div class="img-showcase">
-                            <span class="discount-tag-neo" dir="ltr">-{{ offer.discount_percentage|floatformat:0 }}%</span>
-                            {% if offer.product.image %}
-                                <img src="{{ offer.product.image.url }}" alt="{{ offer.product.name }}">
-                            {% else %}
-                                <i class="fas fa-box text-muted fa-2x opacity-25"></i>
-                            {% endif %}
-                        </div>
-
-                        <div class="px-2 d-flex flex-column flex-grow-1">
-                            <span class="product-category">{{ offer.product.category.name }}</span>
-                            <h6 class="product-title text-truncate">{{ offer.product.name }}</h6>
+                        <a href="{% url 'product_detail' offer.product.id %}" class="text-decoration-none d-block flex-grow-1">
                             
-                            <div class="price-wrapper">
-                                <div>
-                                    <span class="new-price-neo">{{ offer.discounted_price|floatformat:0 }}</span>
-                                    <span class="currency-neo">{{ offer.product.country.currency_symbol|default:"ج.م" }}</span>
+                            <div class="img-showcase">
+                                {% if offer.discount_percentage > 0 %}
+                                    <span class="discount-tag" dir="ltr">-{{ offer.discount_percentage|floatformat:0 }}%</span>
+                                {% endif %}
+
+                                {% if offer.product.image %}
+                                    <img src="{{ offer.product.image.url }}" alt="{{ offer.product.name }}">
+                                {% else %}
+                                    <i class="fas fa-box text-muted fa-2x opacity-25"></i>
+                                {% endif %}
+                            </div>
+
+                            <div class="px-1 pb-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="product-category text-truncate">{{ offer.product.category.name }}</span>
+                                    {% if offer.free_shipping %}
+                                        <span class="badge-free-shipping"><i class="fas fa-truck" style="margin-inline-end: 3px;"></i>{% trans "شحن مجاني" %}</span>
+                                    {% endif %}
                                 </div>
-                                <span class="old-price-neo">{{ offer.product.base_price|floatformat:0 }}</span>
-                            </div>
 
-                            {% if offer.free_shipping %}
-                            <div>
-                                <span class="free-shipping-neo">
-                                    <i class="fas fa-truck"></i> {% trans "شحن مجاني" %}
-                                </span>
-                            </div>
-                            {% endif %}
+                                <h6 class="product-title text-truncate">{{ offer.product.name }}</h6>
+                                
+                                <!-- 🔥 شارة العرض والعداد التنازلي -->
+                                <div class="d-flex flex-wrap gap-1">
+                                    <div class="urgency-badge">
+                                        <span class="pulse-dot"></span>
+                                        <span style="font-size: 9px; font-weight: 800; color: var(--danger);">{% trans "عرض لفترة محدودة" %}</span>
+                                    </div>
+                                    {% if offer.end_date %}
+                                    <div class="offer-countdown" data-countdown="{{ offer.end_date|date:'c' }}">
+                                        <i class="fas fa-stopwatch me-1" style="font-size: 9px;"></i>
+                                        <span class="time-display">--:--:--</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
 
-                            <a href="{% url 'product_detail' offer.product.id %}" class="btn-neo-buy">
-                                {% trans "تسوق الآن" %}
-                            </a>
-                        </div>
+                                <div class="price-wrapper mt-1">
+                                    <!-- شرط ظهور السعر القديم والجديد -->
+                                    {% if offer.discount_percentage > 0 %}
+                                        <div>
+                                            <span class="new-price">{{ offer.discounted_price|floatformat:0 }}</span>
+                                            <span class="currency">{{ offer.product.merchant.user.country.currency_symbol|default:"ج.م" }}</span>
+                                        </div>
+                                        <span class="old-price">{{ offer.product.base_price|floatformat:0 }}</span>
+                                    {% else %}
+                                        <div>
+                                            <span class="regular-price">{{ offer.product.base_price|floatformat:0 }}</span>
+                                            <span class="regular-currency">{{ offer.product.merchant.user.country.currency_symbol|default:"ج.م" }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                        </a>
                         
                     </div>
                 </div>
@@ -254,5 +299,50 @@
         </div>
     {% endif %}
 </div>
+
+<!-- 🔥 إسكربت العداد التنازلي -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const timers = document.querySelectorAll(".offer-countdown");
+    
+    function updateTimers() {
+        const now = new Date().getTime();
+        
+        timers.forEach(timer => {
+            const endTimeStr = timer.getAttribute("data-countdown");
+            if (!endTimeStr) return;
+            
+            const countDownDate = new Date(endTimeStr).getTime();
+            const distance = countDownDate - now;
+            const display = timer.querySelector(".time-display");
+            
+            if (distance < 0) {
+                display.innerHTML = "{% trans 'انتهى' %}";
+                timer.style.background = "#F4F4F5";
+                timer.style.color = "#A1A1AA";
+                return;
+            }
+            
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            let timeString = "";
+            if (days > 0) timeString += days + "ي ";
+            
+            const h = hours.toString().padStart(2, '0');
+            const m = minutes.toString().padStart(2, '0');
+            const s = seconds.toString().padStart(2, '0');
+            
+            timeString += `${h}:${m}:${s}`;
+            display.innerHTML = timeString;
+        });
+    }
+    
+    updateTimers();
+    setInterval(updateTimers, 1000);
+});
+</script>
 
 {% endblock %}
